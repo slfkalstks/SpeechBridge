@@ -1,0 +1,13 @@
+{
+  "name": "speechbridge-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=.env server.mjs",
+    "setup:local": "node setup-local.mjs",
+    "start:local": "node --env-file=../.runtime/server.env server.mjs",
+    "start:ai": "sh start-ai.sh",
+    "test": "node --test *.test.mjs"
+  },
+  "engines": { "node": ">=22" }
+}

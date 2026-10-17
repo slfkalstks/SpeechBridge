@@ -1,0 +1,10 @@
+{
+  "testAndroidHostTest": {
+    "tests": 28,
+    "failures": 0
+  },
+  "iosSimulatorArm64Test": {
+    "tests": 28,
+    "failures": 0
+  }
+}

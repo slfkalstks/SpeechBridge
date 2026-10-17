@@ -1,0 +1,94 @@
+{
+  "at": "2026-10-17T13:40:17.268Z",
+  "model": "gemma4:12b-it-qat",
+  "synthetic": true,
+  "rows": [
+    {
+      "name": "daily-ko",
+      "text": "이번 주말에 가족과 부산으로 여행 가자. 토요일 아침에 출발하고 저녁에는 바다를 보자.",
+      "category": "DAILY",
+      "type": null,
+      "result": {
+        "title": "부산 가족 여행 계획",
+        "category": "DAILY",
+        "workType": null,
+        "folderId": null
+      },
+      "ms": 982,
+      "pass": true
+    },
+    {
+      "name": "work-meeting-folder",
+      "text": "아폴로 프로젝트 주간 회의를 시작합니다. 이번 릴리스는 금요일로 확정했습니다. QA 결과는 다음 회의에서 공유합시다.",
+      "category": "WORK",
+      "type": "MEETING",
+      "folder": "apollo",
+      "result": {
+        "title": "아폴로 프로젝트 주간 회의",
+        "category": "WORK",
+        "workType": "MEETING",
+        "folderId": "apollo"
+      },
+      "ms": 1933,
+      "pass": true
+    },
+    {
+      "name": "work-task",
+      "text": "민수님, 고객에게 보낼 견적서를 내일 오전까지 준비해 주세요. 세금 항목도 확인해 주세요.",
+      "category": "WORK",
+      "type": "TASK",
+      "result": {
+        "title": "고객 견적서 작성 요청",
+        "category": "WORK",
+        "workType": "TASK",
+        "folderId": "apollo"
+      },
+      "ms": 1889,
+      "pass": false
+    },
+    {
+      "name": "work-idea",
+      "text": "신제품 아이디어를 브레인스토밍합시다. 업무용 일정 공유 기능을 넣으면 어떨까요? 자동 일정 추천도 검토해 봅시다.",
+      "category": "WORK",
+      "type": "IDEA",
+      "result": {
+        "title": "신제품 일정 기능 브레인스토밍",
+        "category": "WORK",
+        "workType": "IDEA",
+        "folderId": "apollo"
+      },
+      "ms": 1884,
+      "pass": false
+    },
+    {
+      "name": "personal-errand-en",
+      "language": "en",
+      "text": "Please pick up milk and bread on the way home. We need them for breakfast with the kids.",
+      "category": "DAILY",
+      "type": null,
+      "result": {
+        "title": "Grocery Shopping Request",
+        "category": "DAILY",
+        "workType": null,
+        "folderId": null
+      },
+      "ms": 1591,
+      "pass": true
+    },
+    {
+      "name": "daily-ja",
+      "language": "ja",
+      "text": "週末は家族で公園に行こう。お弁当を持っていって、午後はゆっくり休もう。",
+      "category": "DAILY",
+      "type": null,
+      "result": {
+        "title": "家族との公園への計画",
+        "category": "DAILY",
+        "workType": null,
+        "folderId": null
+      },
+      "ms": 1661,
+      "pass": true
+    }
+  ]
+}

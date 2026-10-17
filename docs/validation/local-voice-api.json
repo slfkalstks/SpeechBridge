@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-17T12:09:46.265Z",
+  "scope": "synthetic samples via authenticated HTTP; no microphone or listening evaluation",
+  "processPolicy": "new process per request, 90s deadline, close before release",
+  "results": [
+    {
+      "language": "ko",
+      "input": "유키 씨, 금요일까지 수정한 일정을 보내 주세요.",
+      "transcription": {
+        "text": "유키씨 금요일까지 수정한 일정을 보내주세요.",
+        "language": "ko"
+      },
+      "sttHttpSecondsIncludingLoad": 0.315577541,
+      "ttsHttpSecondsIncludingLoad": 4.172519833,
+      "audioSeconds": 4.96,
+      "wavBytes": 238124
+    },
+    {
+      "language": "en",
+      "input": "Yuki, please send the updated schedule by Friday.",
+      "transcription": {
+        "text": "Yuki please send the updated schedule by Friday.",
+        "language": "en"
+      },
+      "sttHttpSecondsIncludingLoad": 0.2786024580000003,
+      "ttsHttpSecondsIncludingLoad": 2.9913380000000007,
+      "audioSeconds": 4.56,
+      "wavBytes": 218924
+    },
+    {
+      "language": "ja",
+      "input": "ユキさん、金曜日までに修正した予定を送ってください。",
+      "transcription": {
+        "text": "由さん金曜日までに修正した予定を送ってください。",
+        "language": "ja"
+      },
+      "sttHttpSecondsIncludingLoad": 0.26657079200000044,
+      "ttsHttpSecondsIncludingLoad": 3.245704958,
+      "audioSeconds": 5.28,
+      "wavBytes": 253484
+    }
+  ],
+  "health": {
+    "status": "ok",
+    "configured": {
+      "auth": true,
+      "translation": true,
+      "extraction": true,
+      "speech": true
+    },
+    "available": {
+      "translation": false,
+      "extraction": false,
+      "speech": true
+    },
+    "runtime": "offline",
+    "speechRuntime": "files_ready"
+  },
+  "cancelToProcessCloseSeconds": 0.003194916000000376,
+  "afterCancel": {
+    "text": "Yuki please send the updated schedule by Friday.",
+    "language": "en"
+  },
+  "temporaryRequestsRemaining": 0
+}

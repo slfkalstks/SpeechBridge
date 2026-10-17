@@ -1,0 +1,121 @@
+{
+  "status": "interrupted after slow/timeout findings",
+  "conditions": "development apps running; model download and build overlapped parts of this probe",
+  "results": [
+    {
+      "name": "translation_ko_en",
+      "success": true,
+      "elapsedMs": 8401,
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      }
+    },
+    {
+      "name": "translation_en_ko",
+      "success": true,
+      "elapsedMs": 13631,
+      "result": {
+        "text": "예약을 취소하지 마시고, 내일 저녁 7시로 변경해 주세요.",
+        "revision": 1
+      }
+    },
+    {
+      "name": "translation_ko_ja",
+      "success": true,
+      "elapsedMs": 14144,
+      "result": {
+        "text": "この料理にはピーナッツが入っていますか？ 私はピーナッツを食べることができません。",
+        "revision": 1
+      }
+    },
+    {
+      "name": "translation_ja_ko",
+      "success": true,
+      "elapsedMs": 13877,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다.",
+        "revision": 1
+      }
+    },
+    {
+      "name": "translation_en_ja",
+      "success": true,
+      "elapsedMs": 12765,
+      "result": {
+        "text": "更新されたスケジュールを金曜日までにユキに送ってください。",
+        "revision": 1
+      }
+    },
+    {
+      "name": "translation_ja_en",
+      "success": true,
+      "elapsedMs": 16989,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I won't be using a taxi.",
+        "revision": 1
+      }
+    },
+    {
+      "name": "translation_ko_en_repeat",
+      "success": true,
+      "elapsedMs": 16813,
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      }
+    },
+    {
+      "name": "ko_request",
+      "success": false,
+      "elapsedMs": 90051,
+      "code": "model_timeout"
+    },
+    {
+      "name": "en_request",
+      "success": true,
+      "elapsedMs": 32929,
+      "result": {
+        "items": [
+          {
+            "sourceUtteranceId": "u1",
+            "sourceRevision": 1,
+            "kind": "request",
+            "text": "send the updated schedule",
+            "owner": "Yuki",
+            "dueText": "Friday",
+            "evidenceQuote": "Yuki, please send the updated schedule by Friday."
+          }
+        ],
+        "expectedPresencePassed": true
+      }
+    },
+    {
+      "name": "ja_request",
+      "success": true,
+      "elapsedMs": 12084,
+      "result": {
+        "items": [],
+        "expectedPresencePassed": false
+      }
+    },
+    {
+      "name": "cancelled_request",
+      "success": true,
+      "elapsedMs": 13596,
+      "result": {
+        "items": [],
+        "expectedPresencePassed": true
+      }
+    },
+    {
+      "name": "casual",
+      "success": true,
+      "elapsedMs": 12794,
+      "result": {
+        "items": [],
+        "expectedPresencePassed": true
+      }
+    }
+  ]
+}

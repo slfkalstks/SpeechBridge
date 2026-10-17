@@ -1,0 +1,173 @@
+{
+  "scope": "synthetic TTS to STT smoke test; not human speech accuracy or listening quality",
+  "ttsModel": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-bf16",
+  "ttsRevision": "6415d95f88be018ff9e46813119dc3bc12261328",
+  "asrRevision": "ea30d66debe3740a08b573244286791d423d6b3e",
+  "asrSha256": "3fc991d3badad7277c11030a7519832cddaf2057aafed6d4b25147e953a070b1",
+  "mlxAudioVersion": "0.5.9",
+  "metal": true,
+  "results": [
+    {
+      "language": "ko",
+      "input": "유키 씨, 금요일까지 수정한 일정을 보내 주세요.",
+      "speaker": "sohee",
+      "ttsFirstChunkSeconds": 3.0360467090504244,
+      "ttsSeconds": 4.548352084006183,
+      "ttsMlxPeakBytes": 3091830305,
+      "audioSeconds": 4.96,
+      "ttsComputeSecondsPerAudioSecond": 0.9170064685496336,
+      "sttProcessSecondsIncludingLoad": 16.417990584042855,
+      "stt": {
+        "file": "/Users/molla/UC/4-2/AI/middle_test/SpeechBridge/.runtime/voice/fixtures/ko-asr.wav",
+        "text": "유키씨 금요일까지 수정한 일정을 보내주세요.",
+        "confidence": 1,
+        "duration": 4.96,
+        "languages": [
+          "ko-KR"
+        ],
+        "words": [
+          {
+            "word": "유키씨",
+            "start": 0.96,
+            "end": 1.52,
+            "confidence": 1
+          },
+          {
+            "word": "금요일까지",
+            "start": 2,
+            "end": 2.64,
+            "confidence": 1
+          },
+          {
+            "word": "수정한",
+            "start": 2.8,
+            "end": 3.12,
+            "confidence": 1
+          },
+          {
+            "word": "일정을",
+            "start": 3.2,
+            "end": 3.6,
+            "confidence": 1
+          },
+          {
+            "word": "보내주세요.",
+            "start": 3.6,
+            "end": 4.24,
+            "confidence": 1
+          }
+        ]
+      }
+    },
+    {
+      "language": "en",
+      "input": "Yuki, please send the updated schedule by Friday.",
+      "speaker": "ryan",
+      "ttsFirstChunkSeconds": 0.20483341603539884,
+      "ttsSeconds": 1.6312964160460979,
+      "ttsMlxPeakBytes": 3091741829,
+      "audioSeconds": 4.56,
+      "ttsComputeSecondsPerAudioSecond": 0.35774044211537237,
+      "sttProcessSecondsIncludingLoad": 0.3436202920274809,
+      "stt": {
+        "file": "/Users/molla/UC/4-2/AI/middle_test/SpeechBridge/.runtime/voice/fixtures/en-asr.wav",
+        "text": "Yuki please send the updated schedule by Friday.",
+        "confidence": 1,
+        "duration": 4.56,
+        "languages": [
+          "en-US"
+        ],
+        "words": [
+          {
+            "word": "Yuki",
+            "start": 1.6,
+            "end": 1.76,
+            "confidence": 1
+          },
+          {
+            "word": "please",
+            "start": 2,
+            "end": 2.08,
+            "confidence": 1
+          },
+          {
+            "word": "send",
+            "start": 2.32,
+            "end": 2.4,
+            "confidence": 1
+          },
+          {
+            "word": "the",
+            "start": 2.56,
+            "end": 2.64,
+            "confidence": 1
+          },
+          {
+            "word": "updated",
+            "start": 2.72,
+            "end": 3.12,
+            "confidence": 1
+          },
+          {
+            "word": "schedule",
+            "start": 3.2,
+            "end": 3.6,
+            "confidence": 1
+          },
+          {
+            "word": "by",
+            "start": 3.84,
+            "end": 3.92,
+            "confidence": 1
+          },
+          {
+            "word": "Friday.",
+            "start": 4.08,
+            "end": 4.32,
+            "confidence": 1
+          }
+        ]
+      }
+    },
+    {
+      "language": "ja",
+      "input": "ユキさん、金曜日までに修正した予定を送ってください。",
+      "speaker": "ono_anna",
+      "ttsFirstChunkSeconds": 0.11723900004290044,
+      "ttsSeconds": 1.7182490839622915,
+      "ttsMlxPeakBytes": 3091825287,
+      "audioSeconds": 5.28,
+      "ttsComputeSecondsPerAudioSecond": 0.3254259628716461,
+      "sttProcessSecondsIncludingLoad": 0.35001679090783,
+      "stt": {
+        "file": "/Users/molla/UC/4-2/AI/middle_test/SpeechBridge/.runtime/voice/fixtures/ja-asr.wav",
+        "text": "由さん金曜日までに修正した予定を送ってください。",
+        "confidence": 1,
+        "duration": 5.28,
+        "languages": [
+          "ja-JP"
+        ],
+        "words": [
+          {
+            "word": "由さん金曜日までに修正した予定を送ってください。",
+            "start": 1.04,
+            "end": 4.88,
+            "confidence": 1
+          }
+        ]
+      }
+    }
+  ],
+  "ttsLoadSeconds": 2.4675945409107953,
+  "supportedSpeakers": [
+    "serena",
+    "vivian",
+    "uncle_fu",
+    "ryan",
+    "aiden",
+    "ono_anna",
+    "sohee",
+    "eric",
+    "dylan"
+  ]
+}

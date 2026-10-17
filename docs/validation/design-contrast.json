@@ -1,0 +1,216 @@
+{
+  "paletteMatches": true,
+  "textContrast": [
+    {
+      "scheme": "light",
+      "foreground": "onPrimary",
+      "background": "primary",
+      "ratio": 7.32,
+      "passes": true
+    },
+    {
+      "scheme": "light",
+      "foreground": "onPrimaryContainer",
+      "background": "primaryContainer",
+      "ratio": 8.84,
+      "passes": true
+    },
+    {
+      "scheme": "light",
+      "foreground": "ink",
+      "background": "surface",
+      "ratio": 14.35,
+      "passes": true
+    },
+    {
+      "scheme": "light",
+      "foreground": "ink",
+      "background": "background",
+      "ratio": 12.93,
+      "passes": true
+    },
+    {
+      "scheme": "light",
+      "foreground": "ink",
+      "background": "translation",
+      "ratio": 12.47,
+      "passes": true
+    },
+    {
+      "scheme": "light",
+      "foreground": "muted",
+      "background": "surface",
+      "ratio": 6.24,
+      "passes": true
+    },
+    {
+      "scheme": "light",
+      "foreground": "muted",
+      "background": "background",
+      "ratio": 5.62,
+      "passes": true
+    },
+    {
+      "scheme": "light",
+      "foreground": "primary",
+      "background": "surface",
+      "ratio": 7.32,
+      "passes": true
+    },
+    {
+      "scheme": "light",
+      "foreground": "primary",
+      "background": "background",
+      "ratio": 6.6,
+      "passes": true
+    },
+    {
+      "scheme": "light",
+      "foreground": "primary",
+      "background": "translation",
+      "ratio": 6.36,
+      "passes": true
+    },
+    {
+      "scheme": "light",
+      "foreground": "warning",
+      "background": "warningContainer",
+      "ratio": 6.14,
+      "passes": true
+    },
+    {
+      "scheme": "light",
+      "foreground": "warning",
+      "background": "surface",
+      "ratio": 7.19,
+      "passes": true
+    },
+    {
+      "scheme": "light",
+      "foreground": "warning",
+      "background": "background",
+      "ratio": 6.48,
+      "passes": true
+    },
+    {
+      "scheme": "light",
+      "foreground": "danger",
+      "background": "surface",
+      "ratio": 6.54,
+      "passes": true
+    },
+    {
+      "scheme": "light",
+      "foreground": "danger",
+      "background": "translation",
+      "ratio": 5.68,
+      "passes": true
+    },
+    {
+      "scheme": "dark",
+      "foreground": "onPrimary",
+      "background": "primary",
+      "ratio": 8.11,
+      "passes": true
+    },
+    {
+      "scheme": "dark",
+      "foreground": "onPrimaryContainer",
+      "background": "primaryContainer",
+      "ratio": 7.59,
+      "passes": true
+    },
+    {
+      "scheme": "dark",
+      "foreground": "ink",
+      "background": "surface",
+      "ratio": 12.8,
+      "passes": true
+    },
+    {
+      "scheme": "dark",
+      "foreground": "ink",
+      "background": "background",
+      "ratio": 14.76,
+      "passes": true
+    },
+    {
+      "scheme": "dark",
+      "foreground": "ink",
+      "background": "translation",
+      "ratio": 11.0,
+      "passes": true
+    },
+    {
+      "scheme": "dark",
+      "foreground": "muted",
+      "background": "surface",
+      "ratio": 8.03,
+      "passes": true
+    },
+    {
+      "scheme": "dark",
+      "foreground": "muted",
+      "background": "background",
+      "ratio": 9.26,
+      "passes": true
+    },
+    {
+      "scheme": "dark",
+      "foreground": "primary",
+      "background": "surface",
+      "ratio": 9.33,
+      "passes": true
+    },
+    {
+      "scheme": "dark",
+      "foreground": "primary",
+      "background": "background",
+      "ratio": 10.76,
+      "passes": true
+    },
+    {
+      "scheme": "dark",
+      "foreground": "primary",
+      "background": "translation",
+      "ratio": 8.02,
+      "passes": true
+    },
+    {
+      "scheme": "dark",
+      "foreground": "warning",
+      "background": "warningContainer",
+      "ratio": 8.33,
+      "passes": true
+    },
+    {
+      "scheme": "dark",
+      "foreground": "warning",
+      "background": "surface",
+      "ratio": 11.22,
+      "passes": true
+    },
+    {
+      "scheme": "dark",
+      "foreground": "warning",
+      "background": "background",
+      "ratio": 12.93,
+      "passes": true
+    },
+    {
+      "scheme": "dark",
+      "foreground": "danger",
+      "background": "surface",
+      "ratio": 9.18,
+      "passes": true
+    },
+    {
+      "scheme": "dark",
+      "foreground": "danger",
+      "background": "translation",
+      "ratio": 7.89,
+      "passes": true
+    }
+  ],
+  "scope": "Static sRGB normal-text pairs; not screen-reader, focus, touch-target or full WCAG certification"
+}

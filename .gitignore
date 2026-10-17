@@ -1,0 +1,42 @@
+*.iml
+.kotlin
+.gradle
+**/build/
+xcuserdata
+!src/**/build/
+local.properties
+.idea
+.DS_Store
+captures
+.externalNativeBuild
+.cxx
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+node_modules/
+
+# Local provider credentials
+.env
+.env.*
+!.env.example
+
+# Project-local model cache, runtime logs, and temporary access tokens
+.runtime/
+
+# Local design tools and agent installations
+.agents/
+.codex/
+.claude/
+.impeccable/
+
+# Local session handoff (not product documentation)
+docs/SESSION_STATUS.md
+
+# Downloaded third-party design reference screenshots
+docs/validation/references/
+
+# Historical local device screenshots
+docs/validation/*.png

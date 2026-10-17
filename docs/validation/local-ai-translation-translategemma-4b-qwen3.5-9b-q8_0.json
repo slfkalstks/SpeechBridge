@@ -1,0 +1,292 @@
+{
+  "date": "2026-10-16T16:38:58.637Z",
+  "hardware": "Apple M3 Max 36 GiB",
+  "conditions": "Synthetic typed inputs, one sequential client, Metal, no microphone or TTS, not a general accuracy benchmark",
+  "models": [
+    {
+      "name": "qwen3.5:9b-q8_0",
+      "model": "qwen3.5:9b-q8_0",
+      "modified_at": "2026-10-17T01:32:16.415852856+09:00",
+      "size": 10449218124,
+      "digest": "3cc004da6860671a26fc1d45391434dbc2508dde1901f3e3b93e566434cce02f",
+      "details": {
+        "parent_model": "model.gguf",
+        "format": "gguf",
+        "family": "qwen35",
+        "families": [
+          "qwen35"
+        ],
+        "parameter_size": "9.0B",
+        "quantization_level": "Q8_0",
+        "context_length": 262144,
+        "embedding_length": 4096
+      },
+      "capabilities": [
+        "completion",
+        "vision",
+        "tools",
+        "thinking"
+      ]
+    },
+    {
+      "name": "translategemma:4b",
+      "model": "translategemma:4b",
+      "modified_at": "2026-10-17T01:30:01.062574799+09:00",
+      "size": 3298875707,
+      "digest": "c49d986b0764f5881c476eb21435bb62b7abc62347aab3d4a6071e811be510a1",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "gemma3",
+        "families": [
+          "gemma3"
+        ],
+        "parameter_size": "4.3B",
+        "quantization_level": "Q4_K_M",
+        "context_length": 131072,
+        "embedding_length": 2560
+      },
+      "capabilities": [
+        "completion",
+        "vision"
+      ]
+    },
+    {
+      "name": "gemma4:12b-it-qat",
+      "model": "gemma4:12b-it-qat",
+      "modified_at": "2026-10-17T01:25:58.34229767+09:00",
+      "size": 7151003754,
+      "digest": "38044be4f923e5a55264ed7df4eaac2676651a905f735197c504045140c02bd3",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "gemma4",
+        "families": [
+          "gemma4"
+        ],
+        "parameter_size": "11.9B",
+        "quantization_level": "Q4_0",
+        "context_length": 262144,
+        "embedding_length": 3840
+      },
+      "capabilities": [
+        "completion",
+        "vision",
+        "audio",
+        "tools",
+        "thinking"
+      ]
+    },
+    {
+      "name": "translategemma:12b",
+      "model": "translategemma:12b",
+      "modified_at": "2026-10-17T01:23:17.550783741+09:00",
+      "size": 8109827612,
+      "digest": "c2f9a9ca1ec7149f2422581c89937ab0363d9399d9355514d753ee012e99c252",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "gemma3",
+        "families": [
+          "gemma3"
+        ],
+        "parameter_size": "12.2B",
+        "quantization_level": "Q4_K_M",
+        "context_length": 131072,
+        "embedding_length": 3840
+      },
+      "capabilities": [
+        "completion",
+        "vision"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "name": "translation_ko_en",
+      "request": {
+        "text": "내일 오후 3시까지 보고서 두 부를 보내 주세요.",
+        "from": "ko",
+        "to": "en",
+        "revision": 1
+      },
+      "result": {
+        "text": "Please send me both reports by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "success": true,
+      "elapsedMs": 2794,
+      "metrics": [
+        {
+          "model": "translategemma:4b",
+          "done_reason": "stop",
+          "total_duration": 2730579125,
+          "load_duration": 2432493708,
+          "prompt_eval_count": 91,
+          "prompt_eval_duration": 126058000,
+          "eval_count": 15,
+          "eval_duration": 169910000
+        }
+      ]
+    },
+    {
+      "name": "translation_en_ko",
+      "request": {
+        "text": "Please do not cancel the reservation. Change it to 7 PM tomorrow.",
+        "from": "en",
+        "to": "ko",
+        "revision": 1
+      },
+      "result": {
+        "text": "예약을 취소하지 마시고, 대신 내일 저녁 7시로 변경 부탁드립니다.",
+        "revision": 1
+      },
+      "success": true,
+      "elapsedMs": 386,
+      "metrics": [
+        {
+          "model": "translategemma:4b",
+          "done_reason": "stop",
+          "total_duration": 381319958,
+          "load_duration": 968250,
+          "prompt_eval_count": 91,
+          "prompt_eval_duration": 124014000,
+          "eval_count": 22,
+          "eval_duration": 254228000
+        }
+      ]
+    },
+    {
+      "name": "translation_ko_ja",
+      "request": {
+        "text": "이 음식에 땅콩이 들어 있나요? 저는 땅콩을 먹을 수 없습니다.",
+        "from": "ko",
+        "to": "ja",
+        "revision": 1
+      },
+      "result": {
+        "text": "この料理にピーナッツが入っていますか？ 私はピーナッツアレルギーがあるので、食べられません。",
+        "revision": 1
+      },
+      "success": true,
+      "elapsedMs": 414,
+      "metrics": [
+        {
+          "model": "translategemma:4b",
+          "done_reason": "stop",
+          "total_duration": 410262667,
+          "load_duration": 844417,
+          "prompt_eval_count": 95,
+          "prompt_eval_duration": 125828000,
+          "eval_count": 24,
+          "eval_duration": 280348000
+        }
+      ]
+    },
+    {
+      "name": "translation_ja_ko",
+      "request": {
+        "text": "会議は金曜日ではなく、木曜日の午後2時に変更になりました。",
+        "from": "ja",
+        "to": "ko",
+        "revision": 1
+      },
+      "result": {
+        "text": "회의는 금요일이 아닌, 목요일 오후 2시로 변경되었습니다.",
+        "revision": 1
+      },
+      "success": true,
+      "elapsedMs": 344,
+      "metrics": [
+        {
+          "model": "translategemma:4b",
+          "done_reason": "stop",
+          "total_duration": 339558833,
+          "load_duration": 878042,
+          "prompt_eval_count": 91,
+          "prompt_eval_duration": 126232000,
+          "eval_count": 18,
+          "eval_duration": 208914000
+        }
+      ]
+    },
+    {
+      "name": "translation_en_ja",
+      "request": {
+        "text": "Please send the updated schedule to Yuki by Friday.",
+        "from": "en",
+        "to": "ja",
+        "revision": 1
+      },
+      "result": {
+        "text": "つきよさんに、更新されたスケジュールを金曜日までに送ってください。",
+        "revision": 1
+      },
+      "success": true,
+      "elapsedMs": 304,
+      "metrics": [
+        {
+          "model": "translategemma:4b",
+          "done_reason": "stop",
+          "total_duration": 300010417,
+          "load_duration": 849250,
+          "prompt_eval_count": 86,
+          "prompt_eval_duration": 124659000,
+          "eval_count": 15,
+          "eval_duration": 170996000
+        }
+      ]
+    },
+    {
+      "name": "translation_ja_en",
+      "request": {
+        "text": "駅まで歩いて何分かかりますか。タクシーは使いません。",
+        "from": "ja",
+        "to": "en",
+        "revision": 1
+      },
+      "result": {
+        "text": "How long does it take to walk to the station? I don't want to take a taxi.",
+        "revision": 1
+      },
+      "success": true,
+      "elapsedMs": 388,
+      "metrics": [
+        {
+          "model": "translategemma:4b",
+          "done_reason": "stop",
+          "total_duration": 384857792,
+          "load_duration": 850917,
+          "prompt_eval_count": 92,
+          "prompt_eval_duration": 125893000,
+          "eval_count": 22,
+          "eval_duration": 254748000
+        }
+      ]
+    },
+    {
+      "name": "translation_ko_en_repeat",
+      "request": {
+        "text": "내일 오후 3시까지 보고서 두 부를 보내 주세요."
+      },
+      "result": {
+        "text": "Please send me both reports by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "success": true,
+      "elapsedMs": 220,
+      "metrics": [
+        {
+          "model": "translategemma:4b",
+          "done_reason": "stop",
+          "total_duration": 216146625,
+          "load_duration": 915583,
+          "prompt_eval_count": 91,
+          "prompt_eval_duration": 43102000,
+          "eval_count": 15,
+          "eval_duration": 168379000
+        }
+      ]
+    }
+  ]
+}

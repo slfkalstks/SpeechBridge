@@ -1,0 +1,110 @@
+{
+  "at": "2026-10-17T14:41:41.879Z",
+  "model": "gemma4:12b-it-qat",
+  "synthetic": true,
+  "rows": [
+    {
+      "name": "cancelled-decision",
+      "text": "회의에서 금요일 배포를 제안했습니다. 테스트가 끝나지 않아 그 제안을 취소했습니다. 새 배포 날짜는 아직 정하지 않았습니다.",
+      "category": "WORK",
+      "type": "MEETING",
+      "error": "invalid_model_output",
+      "syntheticModelOutput": "{\"summary\":\"회의에서 금요일 배포를 제안했으나 테스트 미완료로 인해 취소되었습니다. 현재 새로운 배포 날짜는 미정인 상태입니다.\",\"\":\"배포 일정 취소 및 미정\", \"category\": \"WORK\", \"workType\": \"MEETING\", \"folderId\": \"apollo\"}",
+      "ms": 3430,
+      "pass": false
+    },
+    {
+      "name": "daily-ko",
+      "text": "이번 주말에 가족과 부산으로 여행 가자. 토요일 아침에 출발하고 저녁에는 바다를 보자.",
+      "category": "DAILY",
+      "type": null,
+      "result": {
+        "summary": "이번 주말에 가족과 함께 부산으로 여행을 가기로 계획했습니다. 토요일 아침에 출발하여 저녁에는 바다를 볼 예정입니다.",
+        "title": "부산 가족 여행 계획",
+        "category": "DAILY",
+        "workType": null,
+        "folderId": null
+      },
+      "ms": 3088,
+      "pass": true
+    },
+    {
+      "name": "work-meeting-folder",
+      "text": "아폴로 프로젝트 주간 회의를 시작합니다. 이번 릴리스는 금요일로 확정했습니다. QA 결과는 다음 회의에서 공유합시다.",
+      "category": "WORK",
+      "type": "MEETING",
+      "folder": "apollo",
+      "result": {
+        "summary": "아폴로 프로젝트 주간 회의에서 이번 릴리스 날짜를 금요일로 확정하였으며, QA 결과는 다음 회의에서 공유하기로 했습니다.",
+        "title": "아폴로 프로젝트 릴리스 일정 확정",
+        "category": "WORK",
+        "workType": "MEETING",
+        "folderId": "apollo"
+      },
+      "ms": 3292,
+      "pass": true
+    },
+    {
+      "name": "work-task",
+      "text": "민수님, 고객에게 보낼 견적서를 내일 오전까지 준비해 주세요. 세금 항목도 확인해 주세요.",
+      "category": "WORK",
+      "type": "TASK",
+      "result": {
+        "summary": "민수에게 내일 오전까지 고객용 견적서를 준비할 것을 요청하였으며, 세금 항목을 확인해 달라고 지시했습니다.",
+        "title": "고객 견적서 준비 요청",
+        "category": "WORK",
+        "workType": "TASK",
+        "folderId": null
+      },
+      "ms": 2998,
+      "pass": true
+    },
+    {
+      "name": "work-idea",
+      "text": "신제품 아이디어를 브레인스토밍합시다. 업무용 일정 공유 기능을 넣으면 어떨까요? 자동 일정 추천도 검토해 봅시다.",
+      "category": "WORK",
+      "type": "IDEA",
+      "result": {
+        "summary": "신제품 아이디어 브레인스토밍을 위해 업무용 일정 공유 기능과 자동 일정 추천 기능 도입을 제안했습니다.",
+        "title": "신제품 일정 기능 브레인스토밍",
+        "category": "WORK",
+        "workType": "IDEA",
+        "folderId": null
+      },
+      "ms": 2998,
+      "pass": true
+    },
+    {
+      "name": "personal-errand-en",
+      "language": "en",
+      "text": "Please pick up milk and bread on the way home. We need them for breakfast with the kids.",
+      "category": "DAILY",
+      "type": null,
+      "result": {
+        "summary": "The user requests that milk and bread be picked up on the way home for breakfast with the children.",
+        "title": "Grocery Request for Breakfast",
+        "category": "DAILY",
+        "workType": null,
+        "folderId": null
+      },
+      "ms": 1615,
+      "pass": true
+    },
+    {
+      "name": "daily-ja",
+      "language": "ja",
+      "text": "週末は家族で公園に行こう。お弁当を持っていって、午後はゆっくり休もう。",
+      "category": "DAILY",
+      "type": null,
+      "result": {
+        "summary": "週末に家族で公園へ行き、お弁当を食べる計画について述べています。午後はゆっくり休む予定です。",
+        "title": "週末の公園への家族旅行",
+        "category": "DAILY",
+        "workType": null,
+        "folderId": null
+      },
+      "ms": 1889,
+      "pass": true
+    }
+  ]
+}
