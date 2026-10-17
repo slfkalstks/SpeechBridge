@@ -19,9 +19,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun App(store: SessionStore? = null, developerTools: Boolean = false) {
+fun App(store: SessionStore? = null, developerTools: Boolean = false, credentialStore: CredentialStore = MemoryCredentialStore(), developerUrl: String = "http://localhost:8787") {
     val actualStore = remember(store) { store ?: MemorySessionStore() }
-    val vm = viewModel { BridgeViewModel(actualStore, HttpBridgeApi(developerMode = developerTools)) }
+    val vm = viewModel {
+        val account = AccountManager(SERVICE_URL.ifBlank { if(developerTools) developerUrl else "" }, credentialStore, developerTools)
+        BridgeViewModel(actualStore, HttpBridgeApi(developerMode = developerTools, account = account), account)
+    }
+    LaunchedEffect(vm) { vm.account?.restore() }
     val state by vm.state.collectAsStateWithLifecycle()
     val historyScroll = remember { LazyListState() }
     val taskScroll = remember { LazyListState() }

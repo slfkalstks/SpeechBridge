@@ -34,7 +34,7 @@ data class BridgeState(
     val selected get() = conversations.firstOrNull { it.id == selectedId }
 }
 
-class BridgeViewModel(private val store: SessionStore, private val api: BridgeApi = HttpBridgeApi()) : ViewModel() {
+class BridgeViewModel(private val store: SessionStore, private val api: BridgeApi = HttpBridgeApi(), val account: AccountManager? = null) : ViewModel() {
     private val mutable = MutableStateFlow(BridgeState())
     val state = mutable.asStateFlow()
     private val writes = Channel<Pair<Long, String>>(Channel.CONFLATED)
@@ -312,6 +312,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         requests.remove(key)?.second?.cancel()
         mutable.update { it.copy(busy = it.busy - key, requestErrors = it.requestErrors + (key to "요청을 취소했습니다. 다시 요청할 수 있습니다."), message = "요청을 취소했습니다. 원문은 유지됩니다.") }
     }
+    fun accountChanging() { invalidate() }
     private fun invalidate() {
         requests.values.forEach { it.second.cancel() }
         requests.clear()
@@ -344,5 +345,5 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     private fun requestFailed(key: String, message: String) {
         mutable.update { it.copy(requestErrors = it.requestErrors + (key to message), message = message) }
     }
-    override fun onCleared() { invalidate(); writes.close(); api.close() }
+    override fun onCleared() { invalidate(); writes.close(); api.close(); account?.close() }
 }

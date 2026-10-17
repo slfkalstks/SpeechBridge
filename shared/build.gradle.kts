@@ -1,3 +1,4 @@
+import java.net.URI
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -62,7 +63,14 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
         }
+        getByName("androidDeviceTest").dependencies {
+            implementation(libs.androidx.testExt.junit)
+            implementation("androidx.test:runner:1.7.0")
+            implementation(libs.kotlin.test)
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${libs.versions.coroutines.get()}")
+        }
         commonTest.dependencies {
+            implementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
             implementation(libs.kotlin.test)
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${libs.versions.coroutines.get()}")
         }
@@ -72,3 +80,28 @@ kotlin {
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
 }
+
+// Public service address only; never put credentials in the app binary.
+val serviceUrl = providers.gradleProperty("speechbridge.serverUrl")
+    .orElse(providers.environmentVariable("SPEECHBRIDGE_SERVER_URL")).orElse("")
+val serviceConfigDir = layout.buildDirectory.dir("generated/serviceConfig")
+val generateServiceConfig by tasks.registering {
+    inputs.property("serviceUrl", serviceUrl)
+    outputs.dir(serviceConfigDir)
+    val address = serviceUrl
+    val output = serviceConfigDir
+    doLast {
+        val raw = address.get().trim().trimEnd('/')
+        if (raw.isNotEmpty()) {
+            val uri = URI(raw)
+            require(uri.scheme == "https" && !uri.host.isNullOrBlank() && uri.userInfo == null &&
+                uri.query == null && uri.fragment == null && (uri.path.isNullOrEmpty() || uri.path == "/")) {
+                "speechbridge.serverUrl must be an HTTPS origin, without credentials, path, query or fragment"
+            }
+        }
+        val file = output.get().file("kc/ac/uc/speechbridge/ServiceConfig.kt").asFile
+        file.parentFile.mkdirs()
+        file.writeText("package kc.ac.uc.speechbridge\ninternal const val SERVICE_URL: String = \"${raw.replace("$", "\\$")}\"\n")
+    }
+}
+kotlin.sourceSets.commonMain { kotlin.srcDir(files(serviceConfigDir).builtBy(generateServiceConfig)) }

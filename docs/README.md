@@ -1,5 +1,6 @@
 # SpeechBridge 문서
 
+- [회원 서버 실행·자동 연결·배포 설정](ACCOUNT_SERVER.md) / [인증 검증](ACCOUNT_VALIDATION.md).
 - [최신 언어·설정·요약 검증](LANGUAGE_SETTINGS_VALIDATION.md): 현재 구현과 검증 범위.
 - [최신 리디자인 검증](REDESIGN_VALIDATION.md) / [참고 디자인 조사](UI_REFERENCE_RESEARCH.md).
 - [음성 제외 개선·검증 결과](NONVOICE_VALIDATION.md): UI/UX·초안·검색·실제 텍스트 모델·시뮬레이터.

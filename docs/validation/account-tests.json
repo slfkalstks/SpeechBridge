@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-18",
+  "node": {
+    "tests": 44,
+    "failures": 0
+  },
+  "scope": "Authentication and horizontal appearance icons; physical devices and voice deferred",
+  "androidHost": {
+    "tests": 48,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "iosSimulator": {
+    "tests": 48,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "androidEmulator": {
+    "tests": 47,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

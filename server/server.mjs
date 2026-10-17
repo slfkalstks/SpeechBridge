@@ -2,8 +2,12 @@ import http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { ApiError, createProviders } from './provider.mjs';
+import { createAccounts } from './auth.mjs';
 
-export function createServer({ env = process.env, providers = createProviders(env), now = Date.now } = {}) {
+export function createServer({ env = process.env, providers = createProviders(env), now = Date.now, accounts: suppliedAccounts } = {}) {
+  const mode = env.AUTH_MODE || "development";
+  if (!["users", "development"].includes(mode)) throw new Error("Invalid AUTH_MODE");
+  const accounts = mode === "users" ? suppliedAccounts || createAccounts({ path: env.AUTH_DB_PATH, now }) : null;
   let active = 0;
   let textActive = 0;
   let voiceActive = false;
@@ -25,19 +29,29 @@ export function createServer({ env = process.env, providers = createProviders(en
     res.on('close', closed);
     try {
       if (req.method === 'GET' && req.url === '/health') {
+        if (accounts) { send(res, 200, { status: 'ok', configured: { auth: true }, authentication: 'users' }); return; }
         const health = providers.health ? await providers.health({ signal: controller.signal }) : { status: 'ok', configured: providers.configured };
         if (!res.destroyed) send(res, 200, health); return;
       }
-      if (req.method !== 'POST' || !['/translate', '/extract', '/organize', '/speech/token', '/speech/transcribe', '/speech/synthesize'].includes(req.url)) throw new ApiError(404, 'not_found', '경로를 찾을 수 없습니다.');
-      if (!providers.configured.auth) throw new ApiError(503, 'auth_not_configured', '서버 접속 인증 설정이 필요합니다.');
-      const expected = Buffer.from(`Bearer ${env.APP_ACCESS_TOKEN}`);
-      const received = Buffer.from(req.headers.authorization || '');
-      if (expected.length !== received.length || !timingSafeEqual(expected, received)) throw new ApiError(401, 'unauthorized', '접속 인증에 실패했습니다.');
+      if (accounts && req.method === 'GET' && req.url === '/auth/me') {
+        const { hash, ...user } = accounts.authenticate(req.headers.authorization);
+        send(res, 200, { user }); return;
+      }
+      const authRoute = accounts && ['/auth/register', '/auth/login', '/auth/logout'].includes(req.url);
+      if (req.method !== 'POST' || (!authRoute && !['/translate', '/extract', '/organize', '/speech/token', '/speech/transcribe', '/speech/synthesize'].includes(req.url))) throw new ApiError(404, 'not_found', '경로를 찾을 수 없습니다.');
+      if (authRoute) accounts.admit(req.socket.remoteAddress || 'unknown');
+      else if (accounts) accounts.authorize(accounts.authenticate(req.headers.authorization), req.url);
+      else {
+        if (!providers.configured.auth) throw new ApiError(503, 'auth_not_configured', '서버 접속 인증 설정이 필요합니다.');
+        const expected = Buffer.from(`Bearer ${env.APP_ACCESS_TOKEN}`);
+        const received = Buffer.from(req.headers.authorization || '');
+        if (expected.length !== received.length || !timingSafeEqual(expected, received)) throw new ApiError(401, 'unauthorized', '접속 인증에 실패했습니다.');
+      }
       if (!req.headers['content-type']?.startsWith('application/json')) throw new ApiError(400, 'invalid_content_type', 'JSON 요청이 필요합니다.');
       if (now() - windowStart >= 60000) { windowStart = now(); count = 0; }
       if (++count > 60 || active >= 6) throw new ApiError(429, 'busy', '잠시 후 다시 시도해 주세요.');
       active++; acquired = true;
-      const maxBody = req.url === '/speech/transcribe' ? 1_300_000 : 256 * 1024;
+      const maxBody = authRoute ? 2048 : req.url === '/speech/transcribe' ? 1_300_000 : 256 * 1024;
       const oversized = () => new ApiError(400, 'payload_too_large', '한 번에 처리할 입력이 너무 큽니다. 나누어 요청해 주세요.');
       if (Number(req.headers['content-length']) > maxBody) { req.resume(); throw oversized(); }
       let length = 0;
@@ -51,6 +65,10 @@ export function createServer({ env = process.env, providers = createProviders(en
       try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new ApiError(400, 'invalid_json', 'JSON 형식을 확인해 주세요.'); }
       if (!body || Array.isArray(body) || typeof body !== 'object') throw new ApiError(400, 'invalid_input', '입력 형식을 확인해 주세요.');
       controller.signal.throwIfAborted();
+      if (authRoute) {
+        const result = await accounts.handle(req.url, body, req.headers.authorization, req.socket.remoteAddress || 'unknown');
+        if (!res.destroyed) send(res, 200, result); return;
+      }
       // Count text work including its bounded provider queue. Voice never queues.
       const isVoice = ['/speech/transcribe', '/speech/synthesize'].includes(req.url);
       const isText = ['/translate', '/extract', '/organize'].includes(req.url);
@@ -86,11 +104,15 @@ export function createServer({ env = process.env, providers = createProviders(en
   server.requestTimeout = 15000;
   server.headersTimeout = 10000;
   server.cancelActiveRequests = () => { for (const controller of controllers) controller.abort(); };
+  server.once('close', () => { if (!suppliedAccounts) accounts?.close(); });
   return server;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const server = createServer();
+  // CLI defaults to individual accounts. Legacy shared-token mode must be explicit.
+  const env = { ...process.env, AUTH_MODE: process.env.AUTH_MODE || 'users' };
+  if (!['127.0.0.1', 'localhost', '::1'].includes(env.HOST || '127.0.0.1')) throw new Error('Bind the Mac API to loopback and expose it through an HTTPS proxy');
+  const server = createServer({ env });
   const port = Number(process.env.PORT || 8787);
   const host = process.env.HOST || '127.0.0.1';
   server.listen(port, host, () => console.log(`SpeechBridge server listening on ${host}:${port}`));

@@ -416,20 +416,32 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
         DeveloperConnectionScreen(state, vm)
     }
     LazyColumn(Modifier.fillMaxSize().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 760.dp), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        item { vm.account?.let { AccountPanel(it, vm::accountChanging) } }
         item { Panel {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("화면 모드", style = MaterialTheme.typography.titleMedium)
-                    Text(state.appearance.label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                val next = Appearance.entries[(state.appearance.ordinal + 1) % Appearance.entries.size]
-                FilledTonalIconButton(onClick = { vm.setAppearance(next) }, modifier = Modifier.size(56.dp).semantics {
-                    contentDescription = "화면 모드: ${state.appearance.label}. ${next.label}로 전환"
-                }) {
-                    AppSymbol(when(state.appearance) { Appearance.LIGHT -> Symbol.SUN; Appearance.DARK -> Symbol.MOON; Appearance.SYSTEM -> Symbol.SYSTEM }, Modifier.size(28.dp))
-                }
+                Text("화면 모드", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                 if(developerTools) MoreMenu("설정 더보기") { close ->
                     DropdownMenuItem(text = { Text("개발자 연결 설정") }, onClick = { close(); developerOpen = true })
+                }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Appearance.entries.forEach { mode ->
+                    val chosen = state.appearance == mode
+                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        FilledTonalIconButton(onClick = { vm.setAppearance(mode) }, modifier = Modifier.size(56.dp).semantics {
+                            contentDescription = mode.label
+                            selected = chosen
+                            role = Role.RadioButton
+                        }, colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = if(chosen) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                            contentColor = if(chosen) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )) {
+                            AppSymbol(when(mode) { Appearance.LIGHT -> Symbol.SUN; Appearance.DARK -> Symbol.MOON; Appearance.SYSTEM -> Symbol.SYSTEM }, Modifier.size(28.dp))
+                        }
+                        Text(when(mode) { Appearance.SYSTEM -> "기기 설정"; Appearance.LIGHT -> "라이트"; Appearance.DARK -> "다크" },
+                            style = MaterialTheme.typography.labelMedium, color = if(chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
         } }

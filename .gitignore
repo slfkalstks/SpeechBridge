@@ -40,3 +40,7 @@ docs/validation/references/
 
 # Historical local device screenshots
 docs/validation/*.png
+
+# Account databases must never be published
+*.sqlite
+*.sqlite-*

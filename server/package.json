@@ -5,9 +5,13 @@
   "scripts": {
     "start": "node --env-file=.env server.mjs",
     "setup:local": "node setup-local.mjs",
-    "start:local": "node --env-file=../.runtime/server.env server.mjs",
+    "start:local": "AUTH_MODE=development node --env-file=../.runtime/server.env server.mjs",
     "start:ai": "sh start-ai.sh",
-    "test": "node --test *.test.mjs"
+    "test": "node --test *.test.mjs",
+    "setup:accounts": "node setup-accounts.mjs",
+    "start:accounts": "node --env-file=../.runtime/accounts-server.env server.mjs"
   },
-  "engines": { "node": ">=22" }
+  "engines": {
+    "node": ">=22.16.0 <26"
+  }
 }

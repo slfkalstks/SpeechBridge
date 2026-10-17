@@ -13,7 +13,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            App(AndroidSessionStore(applicationContext), developerTools = applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0)
+            App(AndroidSessionStore(applicationContext), credentialStore = AndroidCredentialStore(applicationContext), developerUrl = "http://10.0.2.2:8787", developerTools = applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0)
         }
     }
 }
