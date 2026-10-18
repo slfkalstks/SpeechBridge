@@ -7,3 +7,11 @@ plugins {
     alias(libs.plugins.composeCompiler) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
 }
+
+subprojects {
+    val localTls=providers.gradleProperty("speechbridge.localTls").map { it.toBooleanStrict() }.orElse(false)
+    val verifyProductionTransport=tasks.register("verifyProductionTransport") {
+        doLast { check(!localTls.get()) { "Local TLS trust is for Debug demonstrations only; disable speechbridge.localTls for Release." } }
+    }
+    tasks.configureEach { if(name.contains("Release",ignoreCase=true)) dependsOn(verifyProductionTransport) }
+}

@@ -34,7 +34,7 @@ class AccountManager(
     rawEndpoint: String,
     private val store: CredentialStore,
     developerMode: Boolean = false,
-    private val client: HttpClient = HttpClient {
+    private val client: HttpClient = platformHttpClient {
         followRedirects = false
         install(HttpTimeout) { requestTimeoutMillis = 15_000; connectTimeoutMillis = 5_000 }
     },

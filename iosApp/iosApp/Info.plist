@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>같은 네트워크의 SpeechBridge 서버에 연결해 대화를 번역하고 내 계정에 저장합니다.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>대화를 음성으로 입력하고 번역·기록하기 위해 마이크를 사용합니다.</string>
 	<key>NSAppTransportSecurity</key>

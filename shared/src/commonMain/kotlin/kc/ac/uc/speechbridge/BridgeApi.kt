@@ -82,7 +82,7 @@ fun validatedBaseUrl(raw: String): String {
 
 class HttpBridgeApi(private val developerMode: Boolean = false, private val account: AccountManager? = null) : BridgeApi {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
-    private val client = HttpClient {
+    private val client = platformHttpClient {
         followRedirects = false
         install(HttpTimeout) { requestTimeoutMillis = 100_000; connectTimeoutMillis = 5_000; socketTimeoutMillis = 100_000 }
     }

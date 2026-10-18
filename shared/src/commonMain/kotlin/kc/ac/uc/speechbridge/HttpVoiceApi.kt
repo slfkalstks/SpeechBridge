@@ -10,7 +10,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 import kotlin.io.encoding.Base64
 
-class HttpVoiceApi(private val account: AccountManager, private val client: HttpClient = HttpClient {
+class HttpVoiceApi(private val account: AccountManager, private val client: HttpClient = platformHttpClient {
     followRedirects = false
     install(HttpTimeout) { requestTimeoutMillis = 100_000; connectTimeoutMillis = 5_000; socketTimeoutMillis = 100_000 }
 }) : VoiceApi {

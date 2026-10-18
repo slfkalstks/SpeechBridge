@@ -5,6 +5,36 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+abstract class GenerateDebugSecurity : DefaultTask() {
+    @get:Input abstract val localTls: Property<Boolean>
+    @get:InputFile @get:Optional abstract val certificate: RegularFileProperty
+    @get:OutputDirectory abstract val outputDirectory: DirectoryProperty
+    @TaskAction fun generate() {
+        val root=outputDirectory.get().asFile
+        val xml=root.resolve("xml/generated_debug_network_security.xml")
+        xml.parentFile.mkdirs()
+        val raw=root.resolve("raw/speechbridge_test_ca.der")
+        if(localTls.get()) {raw.parentFile.mkdirs();raw.writeBytes(certificate.get().asFile.readBytes())} else raw.delete()
+        val anchors=if(localTls.get()) "<debug-overrides><trust-anchors><certificates src=\"@raw/speechbridge_test_ca\" /></trust-anchors></debug-overrides>" else ""
+        xml.writeText("""<?xml version="1.0" encoding="utf-8"?>
+            <network-security-config>
+                <base-config cleartextTrafficPermitted="false" />
+                <domain-config cleartextTrafficPermitted="true"><domain>localhost</domain><domain>127.0.0.1</domain><domain>10.0.2.2</domain></domain-config>
+                $anchors
+            </network-security-config>
+        """.trimIndent())
+    }
+}
+
+val generateDebugSecurity=tasks.register<GenerateDebugSecurity>("generateDebugSecurity") {
+    localTls.set(providers.gradleProperty("speechbridge.localTls").map {it.toBooleanStrict()}.orElse(false))
+    if(localTls.get()) certificate.set(rootProject.layout.projectDirectory.file(".runtime/tls/ca.der"))
+    outputDirectory.set(layout.buildDirectory.dir("generated/res/debugSecurity"))
+}
+androidComponents.onVariants(androidComponents.selector().withBuildType("debug")) { variant ->
+    variant.sources.res?.addGeneratedSourceDirectory(generateDebugSecurity,GenerateDebugSecurity::outputDirectory)
+}
+
 kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_11

@@ -1,4 +1,10 @@
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
 import java.net.URI
+import java.util.Properties
+import java.util.Base64
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
+import java.security.MessageDigest
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -84,14 +90,36 @@ dependencies {
 // Public service address only; never put credentials in the app binary.
 val serviceUrl = providers.gradleProperty("speechbridge.serverUrl")
     .orElse(providers.environmentVariable("SPEECHBRIDGE_SERVER_URL")).orElse("")
+val localTls = providers.gradleProperty("speechbridge.localTls").map { it.toBooleanStrict() }.orElse(false)
+val tlsProperties = rootProject.layout.projectDirectory.file(".runtime/tls/client.properties")
+val tlsCertificate = rootProject.layout.projectDirectory.file(".runtime/tls/ca.der")
 val serviceConfigDir = layout.buildDirectory.dir("generated/serviceConfig")
 val generateServiceConfig by tasks.registering {
     inputs.property("serviceUrl", serviceUrl)
+    inputs.property("localTls",localTls)
+    if(localTls.get()) inputs.files(tlsProperties,tlsCertificate)
     outputs.dir(serviceConfigDir)
     val address = serviceUrl
     val output = serviceConfigDir
+    val useLocalTls = localTls
+    val propertiesFile = tlsProperties
+    val certificateFile = tlsCertificate
     doLast {
-        val raw = address.get().trim().trimEnd('/')
+        var raw = address.get().trim().trimEnd('/')
+        var ca = ""
+        if(useLocalTls.get()) {
+            val properties=Properties().apply { propertiesFile.asFile.inputStream().use { load(it) } }
+            val localOrigin=properties.getProperty("serverUrl") ?: error("Run npm --prefix server run setup:https first")
+            require(raw.isEmpty() || raw == localOrigin) { "Local TLS build origin must match the prepared test server" }
+            raw=localOrigin
+            val bytes=certificateFile.asFile.readBytes()
+            val certificate=CertificateFactory.getInstance("X.509").generateCertificate(bytes.inputStream()) as X509Certificate
+            require(certificate.basicConstraints >= 0) { "The test certificate must be a CA" }
+            certificate.checkValidity();certificate.verify(certificate.publicKey)
+            val fingerprint=MessageDigest.getInstance("SHA-256").digest(bytes).joinToString(":") { "%02X".format(it) }
+            require(fingerprint == properties.getProperty("caFingerprint")) { "Test CA fingerprint mismatch" }
+            ca=Base64.getEncoder().encodeToString(bytes)
+        }
         if (raw.isNotEmpty()) {
             val uri = URI(raw)
             require(uri.scheme == "https" && !uri.host.isNullOrBlank() && uri.userInfo == null &&
@@ -101,7 +129,14 @@ val generateServiceConfig by tasks.registering {
         }
         val file = output.get().file("kc/ac/uc/speechbridge/ServiceConfig.kt").asFile
         file.parentFile.mkdirs()
-        file.writeText("package kc.ac.uc.speechbridge\ninternal const val SERVICE_URL: String = \"${raw.replace("$", "\\$")}\"\n")
+        file.writeText("package kc.ac.uc.speechbridge\ninternal const val SERVICE_URL: String = \"${raw.replace("$", "\\$")}\"\ninternal const val LOCAL_TLS_CA_BASE64: String = \"$ca\"\n")
     }
 }
 kotlin.sourceSets.commonMain { kotlin.srcDir(files(serviceConfigDir).builtBy(generateServiceConfig)) }
+
+// Security.framework needs the running simulator's trust service; standalone
+// simctl spawn does not provide it (SecTrust returned OSStatus -26276).
+tasks.withType<KotlinNativeSimulatorTest>().configureEach {
+    standalone.set(false)
+    device.set(providers.gradleProperty("speechbridge.simulatorId").orElse("booted"))
+}

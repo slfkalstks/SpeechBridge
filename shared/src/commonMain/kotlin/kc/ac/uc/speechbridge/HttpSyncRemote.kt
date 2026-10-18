@@ -7,7 +7,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.*
 import kotlinx.serialization.json.*
 
-class HttpSyncRemote(private val account: AccountManager, private val client: HttpClient = HttpClient {
+class HttpSyncRemote(private val account: AccountManager, private val client: HttpClient = platformHttpClient {
     followRedirects = false
     install(HttpTimeout) { requestTimeoutMillis = 15_000; connectTimeoutMillis = 5_000; socketTimeoutMillis = 15_000 }
 }, private val platform: String = getPlatform().kind) : SyncRemote {
