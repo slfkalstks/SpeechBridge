@@ -139,3 +139,11 @@ test('authenticated data API derives ownership from the bearer and rejects anony
   const changes = await request('/data/changes', { after: '0' });
   assert.equal((await changes.json()).changes.length, 1);
 });
+
+test('existing mobile folder names up to 200 characters survive import', async t => {
+  const { data, user, put } = await fixture(t);
+  const name = '업'.repeat(200);
+  await put('folder', 'long-folder', { id: 'long-folder', name });
+  assert.equal((await data.snapshot(user.id, 'test-device')).archive.folders[0].name, name);
+  await assert.rejects(put('folder', 'too-long', { id: 'too-long', name: name + '무' }), { code: 'invalid_data' });
+});
