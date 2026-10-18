@@ -100,3 +100,17 @@ test('HTTP accepts asynchronous PostgreSQL authentication without a shared-token
   assert.equal((await translation.json()).text, 'hello');
   assert.throws(() => createServer({ env: { AUTH_MODE: 'users' } }), /PostgreSQL configuration required/);
 });
+
+test('member sessions authorize transcription and synthesis without granting legacy speech tokens', async t => {
+  const {accounts,register}=await fixture(t); const session=await register();
+  const server=createServer({env:{AUTH_MODE:'users'},accounts,providers:{configured:{speech:true},
+    transcribe:async()=>({text:'Test voice',language:'en'}),synthesize:async()=>Buffer.from('synthetic-wav')}});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  t.after(async()=>{server.closeAllConnections();await new Promise(resolve=>server.close(resolve));});
+  const request=(path,token)=>fetch(`http://127.0.0.1:${server.address().port}`+path,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:'{}'});
+  for(const path of ['/speech/transcribe','/speech/synthesize']) {
+    assert.equal((await request(path)).status,401);
+    assert.equal((await request(path,session.token)).status,200);
+  }
+  assert.notEqual((await request('/speech/token',session.token)).status,200);
+});

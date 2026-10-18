@@ -272,3 +272,21 @@ test('server shutdown cancellation reaches the voice child and cleans its reques
   assert.equal((await response).status, 499);
   assert.deepEqual(await readdir(join(root, 'requests')), []);
 });
+
+test('automatic recognition uses model language tags and rejects unsupported or mixed languages', async t => {
+  const root = await fixture(t);
+  let detected = ['ko-KR'];
+  const provider = createVoiceProvider({root,runProcess:async (_,args)=>{
+    assert.equal(args[args.indexOf('--language')+1],'auto');
+    return JSON.stringify({text:'가상 음성입니다.',languages:detected});
+  }});
+  assert.deepEqual(await provider.transcribe({...audioBody(),language:'auto'}),{text:'가상 음성입니다.',language:'ko'});
+  for (const value of [['en-US'],['ja-JP']]) {
+    detected=value;
+    assert.equal((await provider.transcribe({...audioBody(),language:'auto'})).language,value[0].slice(0,2));
+  }
+  for (const value of [[],['fr-FR'],['ko-KR','en-US']]) {
+    detected=value;
+    await assert.rejects(provider.transcribe({...audioBody(),language:'auto'}),{code:'language_not_detected'});
+  }
+});
