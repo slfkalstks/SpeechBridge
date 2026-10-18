@@ -147,3 +147,16 @@ test('existing mobile folder names up to 200 characters survive import', async t
   assert.equal((await data.snapshot(user.id, 'test-device')).archive.folders[0].name, name);
   await assert.rejects(put('folder', 'too-long', { id: 'too-long', name: name + '무' }), { code: 'invalid_data' });
 });
+
+test('device platform is recorded on reads and metadata never changes mutation idempotency', async t => {
+  const {data,db,user}=await fixture(t);
+  await data.snapshot(user.id,'phone_ios','ios');
+  const mutation={deviceId:'phone_android',mutationId:randomUUID(),entity:'settings',id:'settings',baseVersion:'0',value:{appearance:'DARK'}};
+  const first=await data.mutate(user.id,mutation);
+  assert.deepEqual(await data.mutate(user.id,{...mutation,platform:'android'}),first);
+  await data.snapshot(user.id,'phone_android');
+  const devices=(await db.forUser(user.id,c=>c.query('SELECT id,platform FROM devices ORDER BY id'))).rows;
+  assert.deepEqual(devices,[{id:'phone_android',platform:'android'},{id:'phone_ios',platform:'ios'}]);
+  await assert.rejects(data.snapshot(user.id,'bad','other'),{status:400});
+  await assert.rejects(data.mutate(user.id,{...mutation,platform:'other'}),{status:400});
+});

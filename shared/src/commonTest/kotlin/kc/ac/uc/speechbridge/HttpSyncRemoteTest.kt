@@ -4,6 +4,8 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.*
 import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.*
+import io.ktor.http.content.TextContent
 import kotlin.test.*
 
 class HttpSyncRemoteTest {
@@ -19,6 +21,25 @@ class HttpSyncRemoteTest {
         }))
         assertEquals(Appearance.DARK, remote.snapshot(SyncIdentity(origin,"user_a"),"install_1").archive.appearance)
         remote.close(); account.close()
+    }
+    @Test fun platformMetadataAccompaniesSnapshotAndPendingMutationWithoutChangingItsId() = runTest {
+        val account = AccountManager(origin, MemoryCredentialStore(), client = HttpClient(MockEngine { respond(session) }), now = { 1 })
+        account.authenticate("student_a", "Synthetic-password-123!", false)
+        var requests=0
+        val remote = HttpSyncRemote(account,HttpClient(MockEngine { request ->
+            requests++
+            val body=Json.parseToJsonElement((request.body as TextContent).text).jsonObject
+            assertEquals("ios",body["platform"]!!.jsonPrimitive.content)
+            if(request.url.encodedPath.endsWith("snapshot")) respond("""{"archive":{"version":1,"conversations":[],"folders":[],"appearance":"SYSTEM"},"versions":{},"cursor":"0","drafts":{}}""")
+            else {
+                assertEquals("stable_mutation",body["mutationId"]!!.jsonPrimitive.content)
+                respond("""{"entity":"settings","id":"settings","version":"1","cursor":"1"}""")
+            }
+        }),platform="ios")
+        val identity=SyncIdentity(origin,"user_a")
+        remote.snapshot(identity,"install_1")
+        remote.mutate(identity,PendingMutation("install_1","stable_mutation","settings","settings","0",buildJsonObject {put("appearance","DARK")}))
+        assertEquals(2,requests);remote.close();account.close()
     }
     @Test fun wrongAccountOrOriginNeverSendsPendingContents() = runTest {
         val account = AccountManager(origin, MemoryCredentialStore(), client = HttpClient(MockEngine { respond(session) }), now = { 1 })
