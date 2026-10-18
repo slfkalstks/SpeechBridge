@@ -37,7 +37,12 @@ export function createDatabase(env) {
         return operation(client);
       });
     },
-    async ready() { await auth.query('SELECT 1 FROM schema_migrations LIMIT 1'); },
+    async ready() {
+      // A restore is a historical snapshot. Deletions can arrive after it was
+      // copied; never serve it merely because someone edits PGDATABASE.
+      if(/^speechbridge_restore_/.test(env.PGDATABASE))throw new Error('Restored database activation requires cutover reconciliation');
+      await auth.query('SELECT 1 FROM schema_migrations LIMIT 1');
+    },
     async close() { await Promise.all([auth.end(), data.end()]); },
   };
 }
