@@ -8,6 +8,28 @@ import kotlinx.serialization.json.*
 import kotlin.test.*
 
 class SyncRepositoryTest {
+    @Test fun erasingOneDeletedAccountPreservesEveryOtherAccountsPendingData()=runTest {
+        val secure=MemoryCredentialStore();val remote=Remote();val repo=SyncRepository(secure,remote)
+        val a=SyncIdentity("https://example.invalid","a");val b=a.copy(userId="b")
+        repo.open(a);repo.save(archive("erase-a"));repo.open(b);repo.save(archive("keep-b"))
+        repo.eraseAccount(a)
+        assertFalse(secure.read()!!.contains("erase-a"));assertTrue(secure.read()!!.contains("keep-b"))
+        assertEquals(1,repo.pendingCount())
+        repo.eraseAccount(a);assertEquals(1,repo.pendingCount())
+    }
+    @Test fun failedDeletionOfPendingDataIsRetryableAfterSecureStorageUnlocks()=runTest {
+        val secure=object:CredentialStore {
+            var value:String?=null;var fail=false
+            override suspend fun read()=value
+            override suspend fun write(value:String?){if(fail)error("locked");this.value=value}
+        }
+        val repo=SyncRepository(secure,Remote());repo.open(identity);repo.save(archive("pending-secret"))
+        secure.fail=true
+        assertFailsWith<IllegalStateException>{repo.eraseAccount(identity)}
+        assertTrue(secure.read()!!.contains("pending-secret"));assertEquals(1,repo.pendingCount())
+        secure.fail=false;repo.eraseAccount(identity)
+        assertFalse(secure.read()!!.contains("pending-secret"));assertEquals(0,repo.pendingCount())
+    }
     private val identity = SyncIdentity("https://example.invalid", "account_a")
     private fun archive(title: String = "새 기록") = Archive(1, listOf(Conversation(id = "c1", title = title,
         createdAt = "2026-10-18T00:00:00Z", translate = true, record = true, first = Language.KO, second = Language.EN)))
