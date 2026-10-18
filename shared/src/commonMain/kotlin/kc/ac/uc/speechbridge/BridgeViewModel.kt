@@ -118,6 +118,14 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
                     if (userId == null) sync.closeAccount() else loadCloud()
                 }
             }
+            viewModelScope.launch {
+                while (isActive) {
+                    delay(15_000)
+                    if (identity == null || state.value.workspaceBusy || state.value.unsaved || state.value.syncConflict) continue
+                    if (!state.value.loaded && state.value.loadFailed) loadCloud()
+                    else if (state.value.syncPending > 0) retrySync()
+                }
+            }
         }
     }
 
@@ -516,7 +524,6 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         requests.remove(key)?.second?.cancel()
         mutable.update { it.copy(busy = it.busy - key, requestErrors = it.requestErrors + (key to "요청을 취소했습니다. 다시 요청할 수 있습니다."), message = "요청을 취소했습니다. 원문은 유지됩니다.") }
     }
-    fun accountChanging() { invalidate() }
     private fun invalidate() {
         requests.values.forEach { it.second.cancel() }
         requests.clear()
