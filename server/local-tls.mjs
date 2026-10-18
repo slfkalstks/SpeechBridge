@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile, chmod, access, mkdtemp, rm, rename, realpath } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { join, resolve } from 'node:path';
+import { join, resolve, dirname } from 'node:path';
 import { networkInterfaces } from 'node:os';
 import { isIP } from 'node:net';
 import { X509Certificate, createPrivateKey, randomBytes } from 'node:crypto';
@@ -29,6 +29,11 @@ async function openssl(args) {
 export async function checkedTlsRoot(root=tlsRoot) {
   const path=resolve(root),base=resolve(runtime);
   if(!path.startsWith(base+'/'))throw new Error('TLS files must stay inside the project runtime');
+  await mkdir(base,{recursive:true,mode:0o700});
+  if(await realpath(base)!==base)throw new Error('TLS files must stay inside the project runtime');
+  let ancestor=path;
+  while(!await exists(ancestor))ancestor=dirname(ancestor);
+  if(await realpath(ancestor)!==ancestor)throw new Error('TLS files must stay inside the project runtime');
   await mkdir(path,{recursive:true,mode:0o700});
   if(!(await realpath(path)).startsWith((await realpath(base))+'/'))throw new Error('TLS files must stay inside the project runtime');
   await chmod(path,0o700);return path;
@@ -42,8 +47,12 @@ export async function prepareLocalTls({root=tlsRoot,host=localAddress(),port=844
   if(!privateAddress(host))throw new Error('Use a private IPv4 address or 127.0.0.1 for testing');
   if(!Number.isInteger(port) || port<1024 || port>65535)throw new Error('Use an unprivileged TLS port');
   root=await checkedTlsRoot(root);
-  const work=await mkdtemp(join(root,'prepare-'));await chmod(work,0o700);
+  const lock=join(root,'prepare.lock');
+  try {await mkdir(lock,{mode:0o700});}
+  catch(error) {if(error.code==='EEXIST')throw new Error('Project TLS is already preparing; inspect the existing lock before retrying');throw error;}
+  let work;
   try {
+    work=await mkdtemp(join(root,'prepare-'));await chmod(work,0o700);
     const hasCa=await Promise.all(['ca.key','ca.pem','ca.der'].map(name=>exists(join(root,name))));
     if(hasCa.some(Boolean) && !hasCa.every(Boolean))throw new Error('Incomplete project CA; preserve files and inspect before retrying');
     if(!hasCa.every(Boolean)) {
@@ -77,7 +86,7 @@ export async function prepareLocalTls({root=tlsRoot,host=localAddress(),port=844
     await atomic(root,'client.properties',`serverUrl=${config.origin}\ncaFingerprint=${config.caFingerprint}\n`);
     await atomic(root,'config.json',JSON.stringify(config,null,2)+'\n');
     return config;
-  } finally { await rm(work,{recursive:true,force:true}); }
+  } finally { if(work)await rm(work,{recursive:true,force:true});await rm(lock,{recursive:true,force:true}); }
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   try {
