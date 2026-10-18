@@ -118,10 +118,14 @@ export async function restoreBackup(input) {
     await restored.query('COMMIT');
     const migrationPool=new pg.Pool(await configuration(database));
     try {await migrate(migrationPool);}finally{await migrationPool.end();}
+    await source.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
     const ledger=(await source.query('SELECT * FROM account_deletions')).rows;
     await restored.query('BEGIN');
     for(const row of ledger)await restored.query('INSERT INTO account_deletions(user_id_hash,username_hash,receipt_hash,deleted_at) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING',
       [row.user_id_hash,row.username_hash,row.receipt_hash,row.deleted_at]);
+    for(const row of (await source.query('SELECT token_hash,user_id_hash FROM account_deletion_sessions')).rows)
+      await restored.query('INSERT INTO account_deletion_sessions(token_hash,user_id_hash) VALUES($1,$2) ON CONFLICT DO NOTHING',[row.token_hash,row.user_id_hash]);
+    await source.query('COMMIT');
     const deleted=new Set((await restored.query('SELECT user_id_hash FROM account_deletions')).rows.map(row=>row.user_id_hash));
     let deletedAccountsRemoved=0;
     for(const user of (await restored.query('SELECT id FROM users')).rows) {

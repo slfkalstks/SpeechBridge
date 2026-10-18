@@ -38,7 +38,11 @@ export function createPostgresAccounts({ db, now = Date.now }) {
     if (!/^Bearer [A-Za-z0-9_-]{43}$/.test(header)) throw fail();
     const hash = digest(header.slice(7));
     const { rows: [user] } = await db.auth.query('SELECT u.id,u.username FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.token_hash=$1 AND s.expires_at>$2', [hash, new Date(now())]);
-    if (!user) throw fail();
+    if (!user) {
+      if((await db.auth.query('SELECT 1 FROM account_deletion_sessions WHERE token_hash=$1',[hash])).rowCount)
+        throw new ApiError(401,'account_deleted','삭제된 계정입니다. 이 계정의 기기 대기 내용을 정리합니다.');
+      throw fail();
+    }
     return { ...profile(user), hash };
   }
   async function passwordHash(password, salt) {
@@ -82,6 +86,7 @@ export function createPostgresAccounts({ db, now = Date.now }) {
           // A concurrent logout/expiry must win before destructive work commits.
           if(!(await client.query('SELECT 1 FROM sessions WHERE token_hash=$1 AND user_id=$2 AND expires_at>$3 FOR UPDATE',[receipt,user.id,new Date(now())])).rowCount)throw fail();
           await client.query('INSERT INTO account_deletions(user_id_hash,username_hash,receipt_hash) VALUES($1,$2,$3)',[digest(user.id),digest(username),receipt]);
+          await client.query('INSERT INTO account_deletion_sessions(token_hash,user_id_hash) SELECT token_hash,$2 FROM sessions WHERE user_id=$1',[user.id,digest(user.id)]);
           await client.query('DELETE FROM users WHERE id=$1',[user.id]);
           return {deleted:true};
         });
