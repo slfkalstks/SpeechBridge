@@ -23,9 +23,10 @@ class CloudWorkspaceTest {
         val drafts = mutableMapOf<String,MutableMap<String,JsonObject>>()
         val archives = mutableMapOf<String,Archive>()
         val versions = mutableMapOf<String,MutableMap<String,String>>()
+        val jobs = mutableMapOf<String,String>()
         override suspend fun snapshot(identity: SyncIdentity, deviceId: String): DataSnapshot {
             if(offline) error("offline")
-            return DataSnapshot(archives[identity.userId] ?: Archive(1,emptyList()),versions[identity.userId].orEmpty().toMap(),"0",drafts[identity.userId].orEmpty().toMap())
+            return DataSnapshot(archives[identity.userId] ?: Archive(1,emptyList()),versions[identity.userId].orEmpty().toMap(),"0",drafts[identity.userId].orEmpty().toMap(),organizationJobs=jobs.toMap())
         }
         override suspend fun mutate(identity: SyncIdentity, mutation: PendingMutation): MutationReceipt {
             if(offline) error("offline")
@@ -293,6 +294,29 @@ class CloudWorkspaceTest {
             account.authenticate("student_a","Synthetic-password-123!",false);runCurrent()
             assertEquals("second",vm.state.value.activeId)
             vm.select("first");assertEquals("first",vm.state.value.activeId);assertEquals("first",vm.state.value.selectedId)
+        }finally{owner.clear();Dispatchers.resetMain()}
+    }
+    @Test fun endingDefersAiToServerAndAutomaticallyDisplaysItsCompletedResult()=runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val owner=ViewModelStore();val account=account();val remote=Remote()
+        val vm=BridgeViewModel(Legacy(),account=account,sync=SyncRepository(MemoryCredentialStore(),remote));owner.put("vm",vm)
+        try {
+            account.authenticate("student_a","Synthetic-password-123!",false);runCurrent()
+            vm.start("새 대화",false,true,Language.KO,Language.EN);runCurrent()
+            val id=vm.state.value.activeId!!
+            vm.addUtterance(id,Language.KO,"내일까지 문서를 보냅니다.");runCurrent();vm.end(id);runCurrent()
+            assertFalse(vm.state.value.conversations.single().organizationAttempted,"앱에서 AI를 중복 실행하면 안 됩니다.")
+            assertEquals("pending",vm.state.value.organizationJobs[id])
+            assertTrue(vm.state.value.busy.isEmpty())
+            val completed=remote.archives["student_a"]!!.conversations.single().copy(title="문서 전달",summary="문서 전달 예정",organized=true,organizationAttempted=true,metadataRevision=1)
+            remote.archives["student_a"]=Archive(1,listOf(completed))
+            remote.versions["student_a"]!!["conversation:$id"]=(remote.versions["student_a"]!!["conversation:$id"]!!.toLong()+1).toString()
+            remote.jobs[id]="succeeded"
+            advanceTimeBy(15_000);runCurrent()
+            assertEquals("문서 전달",vm.state.value.conversations.single().title)
+            assertEquals("succeeded",vm.state.value.organizationJobs[id]);assertFalse(vm.state.value.syncConflict)
+            vm.editSummary(id,"사용자 요약");runCurrent()
+            assertEquals("사용자 요약",remote.archives["student_a"]!!.conversations.single().summary)
         }finally{owner.clear();Dispatchers.resetMain()}
     }
     private fun account() = AccountManager("https://sync.example.invalid",MemoryCredentialStore(),client=HttpClient(MockEngine { request ->
