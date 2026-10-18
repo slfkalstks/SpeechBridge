@@ -118,6 +118,16 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
     suspend fun closeAccount() = mutex.withLock {
         identity = null; archive = Archive(1, emptyList()); versions = emptyMap(); drafts = emptyMap(); organizationJobs = emptyMap()
     }
+    suspend fun eraseAccount(user: SyncIdentity) = uploadMutex.withLock {
+        mutex.withLock {
+            load()
+            persist(envelope!!.copy(accounts=envelope!!.accounts-key(user)))
+            volatileQueues.remove(key(user))
+            if(identity == user) {
+                identity=null;archive=Archive(1,emptyList());versions=emptyMap();drafts=emptyMap();organizationJobs=emptyMap()
+            }
+        }
+    }
     suspend fun pendingCount(): Int = mutex.withLock { identity?.let { queue(it).size } ?: 0 }
     suspend fun currentDrafts(): Map<String, JsonObject> = mutex.withLock { drafts.toMap() }
     suspend fun currentOrganizationJobs(): Map<String,String> = mutex.withLock { organizationJobs.toMap() }

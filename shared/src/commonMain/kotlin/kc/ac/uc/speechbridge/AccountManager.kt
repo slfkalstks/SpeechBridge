@@ -25,10 +25,14 @@ class MemoryCredentialStore : CredentialStore {
 }
 @Serializable data class AccountUser(val id: String, val username: String, val role: String = "member", val capabilities: List<String> = emptyList())
 @Serializable internal data class AccountSession(val token: String, val expiresAt: Long, val user: AccountUser)
-@Serializable private data class StoredAccount(val origin: String, val session: AccountSession)
+@Serializable enum class AccountDeletion { NONE, REQUESTED, CONFIRMED }
+@Serializable private data class StoredAccount(val origin: String, val session: AccountSession, val deletion: AccountDeletion = AccountDeletion.NONE)
 @Serializable private data class LoginInput(val username: String, val password: String)
+@Serializable private data class DeleteInput(val username: String, val password: String, val confirm: Boolean = true)
+@Serializable private data class DeleteResponse(val deleted: Boolean)
 @Serializable private data class MeResponse(val user: AccountUser)
-data class AccountState(val user: AccountUser? = null, val busy: Boolean = false, val ready: Boolean = false, val error: String? = null)
+data class AccountState(val user: AccountUser? = null, val busy: Boolean = false, val ready: Boolean = false, val error: String? = null,
+    val deletion: AccountDeletion = AccountDeletion.NONE)
 
 class AccountManager(
     rawEndpoint: String,
@@ -81,23 +85,27 @@ class AccountManager(
         catch (e: CancellationException) { throw e }
         catch (_: Exception) { throw BridgeRequestException("secure_storage_failed", "보관된 로그인 정보를 읽지 못했습니다. 기기 잠금을 해제하고 앱을 다시 열어 주세요.") }
         val saved = raw?.let { json.decodeFromString<StoredAccount>(it) } ?: return@action
-        if (saved.origin != endpoint || saved.session.expiresAt <= now()) {
+        if (saved.origin != endpoint || saved.session.expiresAt <= now() && saved.deletion == AccountDeletion.NONE) {
             store.write(null)
             mutable.value = mutable.value.copy(error = "다시 로그인해 주세요.")
             return@action
         }
         session = saved.session
-        mutable.value = mutable.value.copy(user = saved.session.user)
+        mutable.value = mutable.value.copy(user = saved.session.user, deletion = saved.deletion)
+        if(saved.deletion == AccountDeletion.CONFIRMED) return@action
+        if(saved.deletion == AccountDeletion.REQUESTED) { checkDeletion(); return@action }
         try {
             val user = json.decodeFromString<MeResponse>(request("/auth/me", token = saved.session.token)).user
             mutable.value = mutable.value.copy(user = user)
         } catch (e: BridgeRequestException) {
+            if(e.code == "account_deleted") { confirmDeletion(); return@action }
             if (e.code == "unauthorized") clearSession()
             throw e
         }
         // Offline restore retains encrypted credentials for a later connection attempt.
     }
     suspend fun authenticate(username: String, password: String, register: Boolean) = action {
+        requireNoDeletion()
         val clean = username.trim().lowercase()
         if (!Regex("[a-z0-9_]{3,32}").matches(clean) || password.length !in 12..128) {
             throw BridgeRequestException("invalid_credentials", serviceErrorMessage("invalid_credentials", 400))
@@ -114,14 +122,18 @@ class AccountManager(
     }
     private suspend fun clearSession() {
         session = null
-        mutable.value = mutable.value.copy(user = null)
+        mutable.value = mutable.value.copy(user = null, deletion = AccountDeletion.NONE)
         store.write(null)
     }
     suspend fun logout() = action {
+        requireNoDeletion()
         // Server revocation must succeed before reporting logout. Offline failures remain retryable.
         session?.let {
             try { request("/auth/logout", "{}", it.token) }
-            catch (e: BridgeRequestException) { if (e.code != "unauthorized") throw e }
+            catch (e: BridgeRequestException) {
+                if(e.code == "account_deleted") { confirmDeletion(); return@action }
+                if (e.code != "unauthorized") throw e
+            }
         }
         clearSession()
     }
@@ -135,6 +147,7 @@ class AccountManager(
         connectionUnlocked()
     }
     private suspend fun connectionUnlocked(): Connection {
+        requireNoDeletion()
         if (!available) throw BridgeRequestException("service_pending", "서비스 연결을 준비 중입니다. 잠시 후 다시 시도해 주세요.")
         val current = session
         if (current == null || current.expiresAt <= now()) {
@@ -143,11 +156,66 @@ class AccountManager(
         }
         return Connection(endpoint, current.token)
     }
-    suspend fun expired(token: String) = mutex.withLock {
+    suspend fun expired(token: String, deleted: Boolean = false) = mutex.withLock {
         if (session?.token == token) {
+            if(deleted) { confirmDeletion(); return@withLock }
+            if(state.value.deletion != AccountDeletion.NONE) return@withLock
             clearSession()
             mutable.value = mutable.value.copy(error = "로그인이 만료되었습니다. 다시 로그인해 주세요.")
         }
+    }
+    private fun requireNoDeletion() {
+        if(state.value.deletion != AccountDeletion.NONE) throw BridgeRequestException("deletion_pending", "계정 삭제 결과와 기기 정리를 먼저 확인해 주세요.")
+    }
+    private suspend fun confirmDeletion() {
+        val current=session ?: return
+        // Block new work immediately. A failed secure write leaves the previous
+        // REQUESTED marker available for a server receipt check after restart.
+        mutable.value=mutable.value.copy(deletion=AccountDeletion.CONFIRMED)
+        store.write(json.encodeToString(StoredAccount(endpoint,current,AccountDeletion.CONFIRMED)))
+    }
+    suspend fun deleteAccount(password: String) = action {
+        if(state.value.deletion == AccountDeletion.CONFIRMED)return@action
+        val current=session ?: throw BridgeRequestException("login_required","다시 로그인해 주세요.")
+        if(password.length !in 12..128)throw BridgeRequestException("invalid_credentials",serviceErrorMessage("invalid_credentials",400))
+        val previouslyPending=state.value.deletion == AccountDeletion.REQUESTED
+        // Never send destructive work without a durable recovery marker. Passwords
+        // remain request-local and are never included in the stored marker.
+        store.write(json.encodeToString(StoredAccount(endpoint,current,AccountDeletion.REQUESTED)))
+        mutable.value=mutable.value.copy(deletion=AccountDeletion.REQUESTED)
+        try {
+            val result=json.decodeFromString<DeleteResponse>(request("/auth/delete",json.encodeToString(DeleteInput(current.user.username,password)),current.token))
+            check(result.deleted) { "Deletion not confirmed" }
+            confirmDeletion()
+        }catch(e:BridgeRequestException) {
+            if(e.code == "account_deleted") { confirmDeletion();return@action }
+            if(e.code == "unauthorized")clearSession()
+            else if(!previouslyPending && e.code in setOf("password_incorrect","confirmation_required","account_mismatch","invalid_credentials")) {
+                store.write(json.encodeToString(StoredAccount(endpoint,current)))
+                mutable.value=mutable.value.copy(deletion=AccountDeletion.NONE)
+            }
+            throw e
+        }
+    }
+    private suspend fun checkDeletion() {
+        val current=session ?: return
+        try {
+            request("/auth/me",token=current.token)
+            mutable.value=mutable.value.copy(error="삭제 완료가 아직 확인되지 않았습니다. 잠시 후 확인하거나 비밀번호를 입력해 다시 요청해 주세요.")
+        }catch(e:BridgeRequestException) {
+            if(e.code == "account_deleted")confirmDeletion()
+            else {if(e.code == "unauthorized")clearSession();throw e}
+        }
+    }
+    suspend fun recheckDeletion() = action {
+        if(state.value.deletion == AccountDeletion.REQUESTED)checkDeletion()
+    }
+    /** Called only after the view model drained writes and erased this account's queue. */
+    suspend fun finishDeletion(identity: SyncIdentity) = action {
+        check(state.value.deletion == AccountDeletion.CONFIRMED && identity.origin == endpoint && identity.userId == session?.user?.id)
+        store.write(null) // On failure retain both the identity and the confirmed marker.
+        session=null
+        mutable.value=mutable.value.copy(user=null,deletion=AccountDeletion.NONE,error=null)
     }
     fun close() { client.close() }
 }

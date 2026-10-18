@@ -29,6 +29,10 @@ data class Connection(val url: String = "http://localhost:8787", val token: Stri
 class BridgeRequestException(val code: String, message: String) : Exception(message)
 
 fun serviceErrorMessage(code: String, status: Int): String = when (code) {
+    "password_incorrect" -> "현재 비밀번호를 확인해 주세요."
+    "account_deleted" -> "삭제된 계정입니다. 이 계정의 기기 대기 내용을 정리합니다."
+    "account_mismatch" -> "로그인한 계정의 아이디를 확인해 주세요."
+    "confirmation_required" -> "계정과 기록 삭제를 확인해 주세요."
     "version_conflict" -> "다른 기기에서 수정한 내용이 있습니다. 최신 기록과 내 변경을 확인해 주세요."
     "mutation_reused" -> "저장 요청이 충돌했습니다. 기기에 보관한 변경을 확인해 주세요."
     "invalid_data" -> "저장할 내용을 확인해 주세요. 기기의 변경 내용은 유지됩니다."
