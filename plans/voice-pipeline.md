@@ -14,7 +14,7 @@ V0 설계 검토 → V1 엔진 실측 → V2 인증된 음성 API → V3 모바�
 - SDK/모델 준비와 실제 추론 성공을 구분한다. 해당 Mac 성능이 나쁘거나 실행 불가면 근거와 함께 대안을 선택한다.
 - 기존 /speech/token의 외부 토큰 계약 대신 인증된 프로젝트 API가 음성을 중계한다. 엔진은 루프백에만 바인딩한다. 서버 비밀키/임의 upstream URL은 앱에 전달하지 않는다.
 - 초기 제품 흐름은 명시적 시작/완료/취소로 발화 경계를 정한다. 자동 대화 감지/동시 통역은 후속 최적화이며 수동 완료 방식의 지연을 실시간 통역 성능으로 표현하지 않는다.
-- 인식 중간 결과는 미확정 UI에만 표시한다. 최종 결과도 사용자가 확인/수정한 후 기존 addUtterance 경로로 제출하여 번역·기록 규칙을 유지한다.
+- 인식 중간 결과는 미확정 UI에만 표시한다. 최종 결과는 최신 사용자 요구에 따라 addUtterance 경로로 자동 기록·번역하고 이후 원문을 수정할 수 있게 한다. 미확정 중간 결과는 저장하지 않는다.
 - TTS는 선택한 확정 번역만 요청한다. 녹음 중 재생 금지, 재생 중 녹음 시작 시 재생 중단. 수정/세션 전환/연결 변경/백그라운드/취소는 generation을 폐기한다. 자동 화자 식별은 구현하지 않는다.
 
 ### V1 — 엔진 설치와 합성 샘플 검증 (기본 구현)
@@ -39,7 +39,7 @@ Node API의 기존 bearer 인증/오류/취소 정책에 음성 경로를 추가
 ## 진행과 변경 규칙
 
 - V0 완료: 독립 검토의 High(HTTP 취소 뒤 실제 추론 잔존)를 반영한다. 첫 어댑터는 요청별 자식 프로세스에서 실행하며 취소/timeout 시 SIGTERM, 미종료 시 SIGKILL, close 회수 후 슬롯 반환. 모델 재로딩 비용은 실제 지연으로 기록한다. 상주 엔진 최적화는 취소 계약을 확인한 뒤 별도 변경한다.
-- V2 계약: POST /speech/transcribe JSON {audioBase64, language}; 입력 WAV PCM16 mono 16kHz, 최대 30초/960,044 bytes, HTTP JSON 최대 1.3MB. 반환 {text, language}. POST /speech/synthesize JSON {text, language}; 최대 300자, 반환 audio/wav PCM16 mono 24kHz, 최대 30초/1,440,044 bytes. 두 요청의 최대 실행 90초, 단일 음성 작업, 대기 없이 busy(429). STT 무음은 empty_audio(400). 언어 ko/en/ja만 허용. 클라이언트 캡처가 16kHz로 정규화한다. 오디오 파일은 임시 전용 폴더/0600, 요청 완료 시 삭제 및 서버 시작 시 잔여 정리. 서버 음성 엔진 로그에 원문을 남기지 않는다.
+- V2 계약: POST /speech/transcribe JSON {audioBase64, language}; 입력 WAV PCM16 mono 16kHz, 최대 30초/960,044 bytes, HTTP JSON 최대 1.3MB. 반환 {text, language}. POST /speech/synthesize JSON {text, language}; 최대 300자, 반환 audio/wav PCM16 mono 24kHz, 최대 30초/1,440,044 bytes. 두 요청의 최대 실행 90초, 단일 음성 작업, 대기 없이 busy(429). STT 무음은 empty_audio(400). STT 언어 auto/ko/en/ja, TTS ko/en/ja 허용. 클라이언트 캡처가 16kHz로 정규화한다. 오디오 파일은 임시 전용 폴더/0600, 요청 완료 시 삭제 및 서버 시작 시 잔여 정리. 서버 음성 엔진 로그에 원문을 남기지 않는다.
 - V2 자원 정책: 공용 API admission으로 텍스트 요청과 음성 요청이 동시에 실행되지 않도록 한다. 텍스트 요청이 이미 실행 중이면 음성은 busy, 음성 중이면 텍스트는 busy. 음성 슬롯은 실제 프로세스 회수까지 유지한다. 별도 CLI 실측 중에는 다른 모델 추론을 실행하지 않는다. Ollama의 상주 메모리와 음성 프로세스의 순간 메모리는 별도로 측정한다.
 - V3 권한 콜백도 generation 검사한다. 앱 lifecycle 중단/화면 전환/언어 변경은 권한 대기·초안·녹음·재생을 취소한다. 임시 파일은 finally 및 다음 앱 실행 시 잔여 정리. 테스트는 늦은 권한 승인과 취소 직후 재요청을 포함한다.
 - 계획 변경은 원인·영향·대체 검증과 함께 여기 기록한다. 미완료 단계를 완료로 표시하지 않는다.
@@ -48,3 +48,5 @@ Node API의 기존 bearer 인증/오류/취소 정책에 음성 경로를 추가
 - V2 완료(2026-10-17): 인증된 두 API·strict canonical WAV·유한 HTTP body·공용 admission·요청별 프로세스·취소/90초 timeout·SIGTERM/500ms 뒤 SIGKILL·close 후 해제·임시 파일0600/폴더0700 구현. Node34개 검사 및 실제3언어 API/시작 구간 취소/후속 요청/잔여 폴더0개 검증. LOCAL_VOICE_API_RESULTS와 validation/local-voice-api.json 참조. health의 files_ready는 실행 파일/모델 파일 존재 검사이며 추론/품질 보장이 아니다.
 - V2 구체화: WAV는44바이트 표준 헤더만 허용하며 metadata chunk/추가 바이트를 거부한다. TTS300자는 Unicode code point 기준. 무음은 PCM RMS≤16만 거르고 VAD로 표현하지 않는다. 기존 /speech/token은 미지원 상태로 남기고 앱은 새 API를 사용한다. 시작 시 요청 전용 폴더 중 죽은 소유PID의 폴더만 정리하여 다른 실행 중인 API의 파일을 지우지 않는다. 정상 SIGINT/SIGTERM은 활성 작업 취소 후 종료한다. 강제 크래시 복구와 여러 API 인스턴스 사이의 자원 조율은 미검증이므로 서버는 하나만 실행한다.
 - 다음 V3, 이후 V4. 모바일 구현과 실제 마이크/청취/실기기 검증을 서버 검증 완료로 대체하지 않는다.
+
+- 2026-10-18 V3 연결 구현: Android AudioRecord/AudioTrack, iOS AVAudioRecorder/AVAudioPlayer, 사용 시 권한 요청, foreground 캡처, 자동 언어 방향/기록/번역, 번역 읽기, 화면 이탈/계정 변경/수정/언어 변경 취소. 최대30초 명시적 완료 방식이며 스트리밍·화자 구분 아님. 서버 busy이면 같은 오디오/세션으로 제한된 재시도, 시간 초과/취소 후 정리. Android/iOS 공통85개 테스트와 APK/Xcode Debug 빌드. 실기기 녹음·청취는 별도 미검증. NATIVE_VOICE_VALIDATION 참조.

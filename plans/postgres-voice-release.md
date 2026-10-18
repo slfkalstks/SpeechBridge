@@ -49,3 +49,5 @@ ECC tdd-workflow의 RED → GREEN → REFACTOR 및 체크포인트를 적용한�
 복잡도는 높음: 기기 저장을 DB 원본으로 바꾸면서 계정별 복구·동시 수정·이전까지 보존해야 한다. 주요 위험은 데이터 유실, 계정 간 노출, AI 지연 응답, 마이크 권한과 앱 이탈, Mac 휴면/네트워크 중단이다. 각각 실패 시나리오를 먼저 테스트한다. 실제 사용자 데이터나 토큰을 테스트 결과/PPT/Git에 넣지 않는다.
 
 PostgreSQL 선정 근거: 관계 무결성, 트랜잭션과 행 수준 정책을 함께 사용할 수 있다. 속도 우위를 실측한 주장은 아니다. [공식 행 보안 문서](https://www.postgresql.org/docs/18/ddl-rowsecurity.html), [빌드·설치](https://www.postgresql.org/docs/18/install-make.html), [백업](https://www.postgresql.org/docs/18/backup-dump.html).
+
+2026-10-18 음성 체크포인트: Android/iOS 네이티브 캡처·재생, 권한·취소·백그라운드·장치교체·시간초과·busy 재시도, 자동 언어 방향/기록/번역을 연결했다. Node66, AndroidHost85/iOSSim85, APK/Xcode Debug 성공. 실제 모델+회원+테스트 PostgreSQL의 합성 3언어 전체 흐름 검증 완료; 일본어 이름 오류·한국어 호명의 영어 번역 의미 변화와 긴 지연 사례를 발견했다. NATIVE_VOICE_VALIDATION 및 server/validation/member-voice-flow.json 참조. 실제 마이크/실기기/청취는 아직 미검증. 단계5 구현은 진행됐지만 네이티브 실제 동작 검증은 남아 있다. 단계1 복원, 단계3 AI 작업 DB 복구, 단계4 다중기기 충돌, HTTPS 테스트 연결과 전체배포점검을 계속한다.

@@ -1,0 +1,59 @@
+{
+  "createdAt": "2026-10-18T13:04:47.265Z",
+  "scope": "Synthetic audio through member-authenticated HTTP and real local models. No microphone or listening evaluation.",
+  "results": [
+    {
+      "expectedLanguage": "ko",
+      "transcription": {
+        "text": "유키씨 금요일까지 수정한 일정을 보내주세요.",
+        "language": "ko"
+      },
+      "sttMilliseconds": 462,
+      "translation": {
+        "text": "Please send Yuki the revised schedule by Friday.",
+        "revision": 1
+      },
+      "targetLanguage": "en",
+      "translationMilliseconds": 6265,
+      "databaseRoundTrip": true,
+      "ttsMilliseconds": 5414,
+      "audioSeconds": 4.16
+    },
+    {
+      "expectedLanguage": "en",
+      "transcription": {
+        "text": "Yuki please send the updated schedule by Friday.",
+        "language": "en"
+      },
+      "sttMilliseconds": 20370,
+      "translation": {
+        "text": "유키 씨, 업데이트된 일정을 금요일까지 보내주세요.",
+        "revision": 1
+      },
+      "targetLanguage": "ko",
+      "translationMilliseconds": 1094,
+      "databaseRoundTrip": true,
+      "ttsMilliseconds": 5469,
+      "audioSeconds": 5.28
+    },
+    {
+      "expectedLanguage": "ja",
+      "transcription": {
+        "text": "由さん金曜日までに修正した予定を送ってください。",
+        "language": "ja"
+      },
+      "sttMilliseconds": 522,
+      "translation": {
+        "text": "유 씨, 금요일까지 수정된 일정을 보내주세요.",
+        "revision": 1
+      },
+      "targetLanguage": "ko",
+      "translationMilliseconds": 1068,
+      "databaseRoundTrip": true,
+      "ttsMilliseconds": 4038,
+      "audioSeconds": 4.8
+    }
+  ],
+  "revokedSessionRejected": true,
+  "temporaryFolders": 0
+}

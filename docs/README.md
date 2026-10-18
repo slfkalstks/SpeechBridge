@@ -1,5 +1,7 @@
 # SpeechBridge 문서
 
+- [네이티브 음성 연결·검증·바로 실행할 테스트](NATIVE_VOICE_VALIDATION.md).
+
 - [모바일 계정별 DB 연결 검증](CLOUD_WORKSPACE_VALIDATION.md).
 
 - [PostgreSQL 서버·스키마·동기화 계약](POSTGRES.md) / [TDD 근거](POSTGRES_TDD.md) / [전체 기능·배포 준비 진행표](../plans/postgres-voice-release.md).

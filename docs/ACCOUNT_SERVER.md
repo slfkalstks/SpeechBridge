@@ -79,7 +79,7 @@ Gradle property가 환경 변수보다 우선한다. HTTPS가 아닌 주소, 사
 | `GET /health` | 회원 모드에서 가벼운 공개 API 상태만 반환; 모델 준비 검사 아님 |
 | `POST /translate`, `/organize`, `/extract` | 개인 세션 필수; 기존 텍스트 요청 계약 유지 |
 
-회원 모드에서는 공용 `APP_ACCESS_TOKEN`으로 우회할 수 없다. `/auth/guest`는 없으며 404다. 모바일 음성 연결은 진행 중이며 회원 API의 음성 경로도 준비 중 오류를 반환한다.
+회원 모드에서는 공용 `APP_ACCESS_TOKEN`으로 우회할 수 없다. `/auth/guest`는 없으며 404다. 회원은 `/speech/transcribe`와 `/speech/synthesize`를 사용할 수 있다. `SPEECH_PROVIDER=local-process`와 설치된 로컬 모델이 필요하며, 파일 준비가 안 되면 `voice_not_ready`를 반환한다. 기존 외부 토큰 경로 `/speech/token`은 지원하지 않는다.
 
 비밀번호는 무작위 salt와 scrypt(N=131072, r=8, p=1)로 해시한다. 이 매개변수는 [OWASP의 scrypt 권고](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)를 따른다. 동시에 수행하는 비밀번호 해시는 2개로 제한한다. 세션은 암호학적 난수 32바이트이며 서버에는 SHA-256 해시만 저장한다. SQL은 바인딩 파라미터를 사용한다. 원문·비밀번호·토큰을 서버 로그에 출력하지 않는다.
 

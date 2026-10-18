@@ -1,0 +1,28 @@
+{
+  "createdAt": "2026-10-18T12:56:24.387Z",
+  "sampleKind": "synthetic previously generated speech; no microphone",
+  "results": [
+    {
+      "expectedLanguage": "ko",
+      "text": "유키씨 금요일까지 수정한 일정을 보내주세요.",
+      "language": "ko",
+      "milliseconds": 410,
+      "languageMatched": true
+    },
+    {
+      "expectedLanguage": "en",
+      "text": "Yuki please send the updated schedule by Friday.",
+      "language": "en",
+      "milliseconds": 274,
+      "languageMatched": true
+    },
+    {
+      "expectedLanguage": "ja",
+      "text": "由さん金曜日までに修正した予定を送ってください。",
+      "language": "ja",
+      "milliseconds": 294,
+      "languageMatched": true
+    }
+  ],
+  "temporaryFolders": 0
+}

@@ -1,0 +1,38 @@
+{
+  "createdAt": "2026-10-18T12:57:23.720Z",
+  "scope": "Synthetic audio through member-authenticated HTTP and real local models. No microphone or listening evaluation.",
+  "results": [
+    {
+      "expectedLanguage": "ko",
+      "transcription": {
+        "text": "유키씨 금요일까지 수정한 일정을 보내주세요.",
+        "language": "ko"
+      },
+      "sttMilliseconds": 339,
+      "ttsMilliseconds": 5610,
+      "audioSeconds": 5.28
+    },
+    {
+      "expectedLanguage": "en",
+      "transcription": {
+        "text": "Yuki please send the updated schedule by Friday.",
+        "language": "en"
+      },
+      "sttMilliseconds": 311,
+      "ttsMilliseconds": 3138,
+      "audioSeconds": 3.84
+    },
+    {
+      "expectedLanguage": "ja",
+      "transcription": {
+        "text": "由さん金曜日までに修正した予定を送ってください。",
+        "language": "ja"
+      },
+      "sttMilliseconds": 289,
+      "ttsMilliseconds": 3289,
+      "audioSeconds": 4.48
+    }
+  ],
+  "revokedSessionRejected": true,
+  "temporaryFolders": 0
+}
