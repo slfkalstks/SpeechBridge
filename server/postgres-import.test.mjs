@@ -40,6 +40,12 @@ test('read-only SQLite import preserves IDs, password hashes and sessions; repea
   await accounts.handle('/auth/logout', {}, `Bearer ${session.token}`);
   await importSqliteAccounts({ source, backupDirectory: dir, db });
   await assert.rejects(accounts.authenticate(`Bearer ${session.token}`), { status: 401 });
+  const current=await accounts.handle('/auth/login',{username,password});
+  await accounts.handle('/auth/delete',{username,password,confirm:true},`Bearer ${current.token}`);
+  const afterDeletion=await importSqliteAccounts({source,backupDirectory:dir,db});
+  assert.equal((await db.auth.query('SELECT id FROM users WHERE id=$1',[session.user.id])).rowCount,0,'legacy import must not resurrect deleted members');
+  assert.equal(afterDeletion.skippedDeleted,1);
+  assert.deepEqual(await readFile(source),original);
 });
 
 test('migration collision rolls back the entire import and preserves both originals', async t => {
