@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import pg from 'pg';
 import { migrate } from './migrate.mjs';
 import { createBackup } from './backup.mjs';
+import { activeMigrationTargets } from './target.mjs';
 
 const root = fileURLToPath(new URL('../../.runtime/postgres/', import.meta.url));
 const bin = join(root, 'install/bin');
@@ -79,14 +80,14 @@ try {
           }
         }
         if (cmd === 'init' || cmd === 'migrate') {
-          for (const database of ['speechbridge', 'speechbridge_test']) {
+          for (const database of await activeMigrationTargets()) {
             const pool = new pg.Pool({ ...config, database });
             try {
               await pool.query('REVOKE ALL ON SCHEMA public FROM PUBLIC');
               await migrate(pool);
             } finally { await pool.end(); }
           }
-          console.log('Project production and test schemas ready; credentials kept private.');
+          console.log('Selected project database and test schemas ready; credentials kept private.');
         }
         if (cmd === 'backup') {
           const result = await createBackup();

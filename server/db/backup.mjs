@@ -7,6 +7,7 @@ import { promisify } from 'node:util';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
+import { activeDatabase } from './target.mjs';
 
 const execute = promisify(execFile);
 const root = fileURLToPath(new URL('../../.runtime/postgres/',import.meta.url));
@@ -59,7 +60,8 @@ async function fingerprint(db) {
   return {tables,contents,policies,grants,constraints};
 }
 
-export async function createBackup(database='speechbridge') {
+export async function createBackup(database) {
+  database ??= await activeDatabase();
   if(!['speechbridge','speechbridge_test'].includes(database) && !restoredName.test(database)) throw new Error('Only project databases may be backed up');
   await mkdir(backups,{recursive:true,mode:0o700}); await chmod(backups,0o700);
   const path = join(backups,`${database}-${new Date().toISOString().replaceAll(':','-')}-${randomBytes(6).toString('hex')}.dump`);
@@ -128,7 +130,7 @@ export async function verifyBackup(path) {
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   try {
     const [action,path] = process.argv.slice(2);
-    if(action==='backup') console.log(JSON.stringify(await createBackup(path||'speechbridge')));
+    if(action==='backup') console.log(JSON.stringify(await createBackup(path||undefined)));
     else if(action==='verify' && path) console.log(JSON.stringify(await verifyBackup(path)));
     else if(action==='restore' && path) console.log(JSON.stringify(await restoreBackup(path)));
     else throw new Error('Use backup, verify <project dump>, or restore <project dump>');

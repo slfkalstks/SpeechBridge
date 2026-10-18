@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
-import { activeDatabase, databaseFromConfig, migrationTargets } from './db/target.mjs';
+import { activeDatabase, activeMigrationTargets, databaseFromConfig, migrationTargets } from './db/target.mjs';
 
 const socket=fileURLToPath(new URL('../.runtime/postgres/socket',import.meta.url));
 const config={PGHOST:socket,PGPORT:'5433',PGDATABASE:'speechbridge'};
@@ -12,6 +12,7 @@ test('backup and migration target the selected project database after recovery',
   assert.equal(databaseFromConfig({...config,PGDATABASE:restored}),restored);
   assert.deepEqual(migrationTargets({...config,PGDATABASE:restored}),[restored,'speechbridge_test']);
   assert.match(await activeDatabase(),/^speechbridge(?:_restore_[a-f0-9]{24})?$/);
+  assert.deepEqual(await activeMigrationTargets(),[await activeDatabase(),'speechbridge_test']);
 });
 test('operational configuration cannot target another project or silently fall back',()=>{
   for(const bad of [
