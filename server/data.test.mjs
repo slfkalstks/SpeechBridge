@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { createDatabase } from './db/database.mjs';
 import { createPostgresAccounts } from './db/accounts.mjs';
 import { createUserData } from './db/user-data.mjs';
+import { createServer } from './server.mjs';
 
 process.loadEnvFile(new URL('../.runtime/postgres/test.env', import.meta.url));
 assert.equal(process.env.PGDATABASE, 'speechbridge_test');
@@ -20,7 +21,7 @@ async function fixture(t) {
   const data = createUserData(db);
   t.after(async () => { await db.auth.query('DELETE FROM users WHERE id=$1', [user.id]); await db.close(); });
   const put = (entity, id, value, baseVersion = '0', mutationId = randomUUID()) => data.mutate(user.id, { deviceId: 'test-device', mutationId, entity, id, baseVersion, value });
-  return { db, data, user, put };
+  return { db, data, accounts, username, user, put };
 }
 test('all record fields, settings and drafts round-trip through normalized PostgreSQL records', async t => {
   const { db, data, user, put } = await fixture(t);
@@ -100,4 +101,31 @@ test('invalid fields fail before any partial record or receipt is committed', as
   await assert.rejects(put('settings', 'settings', { appearance: 'INVALID' }), { status: 400 });
   await assert.rejects(put('folder', 'f', { id: 'f', name: '' }), { status: 400 });
   assert.equal((await data.snapshot(user.id, 'test-device')).cursor, '0');
+});
+
+test('record order survives database round-trip independently of item IDs', async t => {
+  const { data, user, put } = await fixture(t);
+  const c = conversation();
+  c.items = [{ ...c.items[0], id: 'z_last_alphabetically' }, { ...c.items[0], id: 'a_first_alphabetically' }];
+  await put('conversation', 'c1', c);
+  assert.deepEqual((await data.snapshot(user.id, 'test-device')).archive.conversations[0].items, c.items);
+});
+
+test('authenticated data API derives ownership from the bearer and rejects anonymous requests', async t => {
+  const { db, accounts, username, user } = await fixture(t);
+  const session = await accounts.handle('/auth/login', { username, password: 'Synthetic-data-password-123!' });
+  const server = createServer({ env: { AUTH_MODE: 'users' }, accounts, database: db, providers: { configured: {} } });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(async () => { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const request = (path, body, token = session.token) => fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) });
+  assert.equal((await request('/data/snapshot', { deviceId: 'test-device' }, null)).status, 401);
+  const saved = await request('/data/mutate', { userId: 'forged-owner', deviceId: 'test-device', mutationId: randomUUID(), entity: 'conversation', id: 'c1', baseVersion: '0', value: conversation() });
+  assert.equal(saved.status, 200);
+  const snapshot = await request('/data/snapshot', { deviceId: 'test-device' });
+  assert.equal(snapshot.status, 200);
+  assert.equal((await snapshot.json()).archive.conversations[0].title, '회의');
+  assert.equal((await db.forUser(user.id, c => c.query('SELECT user_id FROM conversations'))).rows[0].user_id, user.id);
+  const changes = await request('/data/changes', { after: '0' });
+  assert.equal((await changes.json()).changes.length, 1);
 });
