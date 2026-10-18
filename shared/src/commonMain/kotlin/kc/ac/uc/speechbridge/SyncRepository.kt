@@ -23,6 +23,7 @@ interface SyncRemote {
 class SyncRepository(private val secure: CredentialStore, private val remote: SyncRemote) {
     private val json = ArchiveCodec.json
     private val mutex = Mutex()
+    private val uploadMutex = Mutex()
     private var envelope: PendingEnvelope? = null
     private var identity: SyncIdentity? = null
     private var archive = Archive(1, emptyList())
@@ -114,17 +115,20 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
         enqueue(pending + mutation("draft", id, value, pending), user)
         drafts = drafts.toMutableMap().apply { if(value == null) remove(id) else put(id,value) }
     }
-    suspend fun flush() = mutex.withLock {
-        val user = identity ?: return@withLock
-        while (queue(user).isNotEmpty()) {
-            val first = queue(user).first()
+    suspend fun flush() = uploadMutex.withLock upload@{
+        val user = mutex.withLock { identity } ?: return@upload
+        while (true) {
+            val first = mutex.withLock { if(identity == user) queue(user).firstOrNull() else null } ?: break
             // Keep the immutable mutation until ACK. A timeout may follow a successful commit.
+            // Network I/O must never hold the lock needed for saving the next input.
             val receipt = remote.mutate(user, first)
             check(receipt.entity == first.entity && receipt.id == first.id && receipt.version.toLong() == first.baseVersion.toLong() + 1)
-            val remaining = queue(user).drop(1)
-            val nextAccounts = if (remaining.isEmpty()) envelope!!.accounts - key(user) else envelope!!.accounts + (key(user) to remaining)
-            persist(envelope!!.copy(accounts = nextAccounts))
-            versions = versions + ("${first.entity}:${first.id}" to receipt.version)
+            mutex.withLock {
+                val remaining = queue(user).filterNot { it.mutationId == first.mutationId }
+                val nextAccounts = if (remaining.isEmpty()) envelope!!.accounts - key(user) else envelope!!.accounts + (key(user) to remaining)
+                persist(envelope!!.copy(accounts = nextAccounts))
+                if(identity == user) versions = versions + ("${first.entity}:${first.id}" to receipt.version)
+            }
         }
     }
 }

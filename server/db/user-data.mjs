@@ -109,7 +109,7 @@ export function createUserData(db) {
         const params = m.entity === 'settings' ? [user] : m.entity === 'draft' ? [user,m.id,m.deviceId] : [user,m.id];
         const table = entities[m.entity];
         const previous = (await client.query(`SELECT * FROM ${table} WHERE ${where}`, params)).rows[0];
-        if ((previous?.version ?? '0') !== m.baseVersion || previous?.deleted_at) throw conflict();
+        if ((previous?.version ?? '0') !== m.baseVersion || (previous?.deleted_at && (m.entity !== 'draft' || m.value === null))) throw conflict();
         const rev = (BigInt(m.baseVersion) + 1n).toString();
         if (m.value === null) {
           if (!previous) throw conflict();
@@ -123,7 +123,7 @@ export function createUserData(db) {
         else if (m.entity === 'settings') await client.query('INSERT INTO user_settings(user_id,appearance,version) VALUES($1,$2,$3) ON CONFLICT(user_id) DO UPDATE SET appearance=excluded.appearance,version=excluded.version,updated_at=now()', [user,m.value.appearance,rev]);
         else {
           await client.query("INSERT INTO devices(user_id,id,platform) VALUES($1,$2,'test') ON CONFLICT(user_id,id) DO UPDATE SET last_seen=now()", [user,m.deviceId]);
-          await client.query('INSERT INTO conversation_drafts(user_id,device_id,scope_id,payload,version) VALUES($1,$2,$3,$4,$5) ON CONFLICT(user_id,device_id,scope_id) DO UPDATE SET payload=excluded.payload,version=excluded.version,updated_at=now()', [user,m.deviceId,m.id,m.value,rev]);
+          await client.query('INSERT INTO conversation_drafts(user_id,device_id,scope_id,payload,version) VALUES($1,$2,$3,$4,$5) ON CONFLICT(user_id,device_id,scope_id) DO UPDATE SET payload=excluded.payload,version=excluded.version,updated_at=now(),deleted_at=NULL', [user,m.deviceId,m.id,m.value,rev]);
         }
         const cursor = await changed(client,user,m.entity,m.id,rev,m.value===null);
         const result = { entity: m.entity, id: m.id, version: rev, cursor };
