@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createDatabase } from './db/database.mjs';
 import { createPostgresAccounts } from './db/accounts.mjs';
+import { createServer } from './server.mjs';
 
 // This suite requires the isolated project test database, never a production URL.
 process.loadEnvFile(new URL('../.runtime/postgres/test.env', import.meta.url));
@@ -82,4 +83,20 @@ test('migration SQL is versioned with a checksum ledger', async t => {
   assert.match(rows[0].checksum, /^[a-f0-9]{64}$/);
   const source = await readFile(new URL('./db/migrations/001_initial.sql', import.meta.url), 'utf8');
   assert.ok(source.includes('FORCE ROW LEVEL SECURITY'));
+});
+
+test('HTTP accepts asynchronous PostgreSQL authentication without a shared-token fallback', async t => {
+  const { accounts, register } = await fixture(t);
+  const session = await register();
+  const server = createServer({ env: { AUTH_MODE: 'users' }, accounts,
+    providers: { configured: {}, translate: async body => ({ text: body.text, revision: body.revision }) } });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(async () => { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const me = await fetch(base + '/auth/me', { headers: { Authorization: `Bearer ${session.token}` } });
+  assert.deepEqual((await me.json()).user, session.user);
+  const translation = await fetch(base + '/translate', { method: 'POST', headers: { Authorization: `Bearer ${session.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ text: 'hello', revision: 1 }) });
+  assert.equal(translation.status, 200);
+  assert.equal((await translation.json()).text, 'hello');
+  assert.throws(() => createServer({ env: { AUTH_MODE: 'users' } }), /PostgreSQL configuration required/);
 });
