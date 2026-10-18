@@ -35,3 +35,13 @@ test('cutover freezes only the source, reapplies later deletion, revokes session
  // The original shared test DB was never frozen.
  await db.ready();
 });
+
+test('an interrupted cutover can be resumed after the process dies while source is frozen',async t=>{
+ const {spawnSync}=await import('node:child_process');const backups=[],restores=[];
+ t.after(async()=>{for(const name of restores.reverse())await dropRestoredDatabase(name);for(const path of backups){await rm(path);await rm(path+'.json');}});
+ const a=await createBackup('speechbridge_test');backups.push(a.path);const source=await restoreBackup(a.path);restores.push(source.database);
+ const b=await createBackup(source.database);backups.push(b.path);const target=await restoreBackup(b.path);restores.push(target.database);
+ const script=`import {activateRestoredDatabase} from ${JSON.stringify(new URL('./db/cutover.mjs',import.meta.url).href)};await activateRestoredDatabase({source:${JSON.stringify(source.database)},target:${JSON.stringify(target.database)},confirm:${JSON.stringify(source.database)},beforeCommit:()=>process.kill(process.pid,'SIGKILL')});`;
+ const child=spawnSync(process.execPath,['--input-type=module','-e',script],{timeout:10000});assert.equal(child.signal,'SIGKILL');
+ const result=await activateRestoredDatabase({source:source.database,target:target.database,confirm:source.database});assert.equal(result.activated,true);
+});
