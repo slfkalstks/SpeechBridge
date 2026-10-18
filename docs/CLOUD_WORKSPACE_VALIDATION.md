@@ -31,4 +31,18 @@ iPhone 17 Pro / iOS 26.5 시뮬레이터, 프로젝트 회원 API와 PostgreSQL�
 
 ## 후속 검증
 
-네이티브 마이크·재생과 자동 언어 처리, 최초 AI 작업의 서버 재개, 테스트용 HTTPS 연결, DB 백업 복원, Android 네이티브 저장의 추가 연결 검증 및 배포 설정 점검을 전체 목표에서 이어간다. 새로고침·충돌 사본의 초안/선택 상태 등 다중 기기 시나리오도 확대한다.
+네이티브 마이크·재생과 자동 언어 처리는 연결했고 [음성 검증](NATIVE_VOICE_VALIDATION.md)에 범위를 기록했다. DB 백업 복원과 초안 복구 회귀도 아래에 추가했다. 최초 AI 작업의 서버 재개, 테스트용 HTTPS 연결, Android 네이티브 저장의 추가 연결 검증과 배포 설정 점검은 계속 진행한다.
+
+## 초안 복구·기기 등록 추가 검증
+
+- 충돌한 기록의 기기 사본에 초안을 연결하고 active/selected ID도 바꿔 다음 문장이 사본에 입력되도록 했다.
+- 다른 기기에서 대화가 종료·삭제된 경우 남은 초안을 새 대화로 보관한다. 초안은 제출된 발화로 자동 변환하지 않고 입력창에 복원한다. 원래 삭제된 ID는 재생성하지 않는다.
+- 복구 큐가 저장된 뒤 앱을 재시작해도 사본을 중복 생성하지 않는다. 보안 저장소가 잠긴 경우 원래 초안을 유지하고 다시 저장할 수 있다.
+- 설정 새로고침 때 서버 초안과 언어 설정도 다시 적용해 오래된 UI 초안이 서버 내용을 덮어쓰지 않게 했다.
+- 오프라인에 초안만 있고 원래 서버 대화가 없으면 빈 기록으로 진행하지 않고 재연결을 기다린다. 기기의 암호화 대기 내용은 변경하지 않는다.
+- snapshot/mutate에서 Android/iOS 종류와 설치 ID를 실제 DB에 등록한다. 플랫폼 정보를 덧붙여도 기존 mutation ID의 중복 방지 결과는 유지된다.
+- 최신 실제 회원 HTTP 서버에서 가상 계정으로 iOS snapshot·Android mutate 후 DB의 두 플랫폼 값 확인, 로그아웃·계정 정리 완료. 원자료 `.runtime/postgres/device-http-validation.json`.
+
+새 테스트는 `DraftRecoveryTest`, `CloudWorkspaceTest`, `HttpSyncRemoteTest`, `server/data.test.mjs`에 있으며 실제 다중 휴대전화 검증과는 구분한다.
+
+추가 검증 종료 시 서버70개, Android host95개/iOS simulator95개 모두 통과했다. Android Debug APK와 signed Xcode Debug 앱 빌드도 성공했다.

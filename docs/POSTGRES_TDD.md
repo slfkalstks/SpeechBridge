@@ -41,3 +41,13 @@ SQLite backup API는 파일 헤더 카운터를 변경하므로 백업 비교를
 | f09cd28 | 4a80596 | 연결 복구 후 자동 재전송 |
 
 최신 Android/iOS 각각70개, 서버64개 통과. `4d6af20`에서 실제 App과 네이티브 보안 저장소를 연결했다. [실제 UI·DB 확인](CLOUD_WORKSPACE_VALIDATION.md)과 단위 테스트 결과를 구분한다.
+
+## 백업·초안 복구·기기 메타데이터
+
+| RED | GREEN | 보장 |
+|---|---|---|
+| 60fb195 | 499a376 | 새 DB 복원/원본 보존, 데이터·RLS 검증, 세션 부활 방지, 손상 archive 거부·실패 DB 정리 |
+| c0ccbd0 | 233ece5 | 사본 초안 scope·현재 선택, 종료/삭제된 대화 초안 복구·재시작 중복 방지, 새로고침 초안 동기화 |
+| 0a05ee2 | 10b9256 | 실제 기기 플랫폼 등록, 구버전 mutation 재시도 호환, 유효하지 않은 플랫폼 거부 |
+
+서버70개 통과. 로드된 서버 소스 line96.62/branch90.83/function90.83%; backup 모듈 line92.65/branch89.19/function90.91%. 운영 backup도 별도DB복원17개테이블비교와임시DB정리를확인했다. `.runtime/postgres/backup-*.log`, `device-*.log`, `draft-recovery-*.log`, `recovery-final.log`가 로컬 근거다. 새 UI초안복구 테스트를 실제 다중 휴대전화 확인으로 표현하지 않는다.

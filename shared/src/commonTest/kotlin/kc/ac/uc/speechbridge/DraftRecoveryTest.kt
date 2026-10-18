@@ -42,6 +42,30 @@ class DraftRecoveryTest {
         val recovered=repo.open(user).conversations.single()
         assertNotEquals(original.id,recovered.id);assertEquals(draft,repo.currentDrafts()[recovered.id])
     }
+    @Test fun bothConflictingDraftsRemainAccessibleInsteadOfOverwritingServerText() = runTest {
+        val remote=Remote(DataSnapshot(Archive(1,listOf(original)),mapOf("conversation:original" to "1"),"1"))
+        val repo=SyncRepository(MemoryCredentialStore(),remote);repo.open(user);repo.saveDraft(original.id,draft)
+        val serverDraft=JsonObject(draft + ("text" to JsonPrimitive("서버의 다른 초안")))
+        remote.data=remote.data.copy(drafts=mapOf(original.id to serverDraft),versions=remote.data.versions+("draft:original" to "1"))
+        val result=repo.resolveKeepingBoth(user)
+        assertEquals(serverDraft,repo.currentDrafts()[original.id])
+        assertEquals(draft,repo.currentDrafts()[result.copies[original.id]])
+    }
+    @Test fun secureStorageFailureDuringRecoveryCanRetryWithoutDuplicatingTheNewConversation() = runTest {
+        val remote=Remote(DataSnapshot(Archive(1,listOf(original)),mapOf("conversation:original" to "1","draft:original" to "1"),"1",mapOf(original.id to draft)))
+        val secure=object:CredentialStore {
+            var locked=false;var value:String?=null
+            override suspend fun read()=value
+            override suspend fun write(value:String?){if(locked)error("locked");this.value=value}
+        }
+        val repo=SyncRepository(secure,remote);repo.open(user)
+        remote.data=remote.data.copy(archive=Archive(1,listOf(original.copy(ended=true))))
+        secure.locked=true;assertFailsWith<IllegalStateException>{repo.open(user)}
+        secure.locked=false
+        assertEquals(2,repo.open(user).conversations.size)
+        assertEquals(2,SyncRepository(secure,remote).open(user).conversations.size)
+        assertEquals(1,repo.currentDrafts().size)
+    }
     @Test fun offlineDraftWithoutItsServerRecordWaitsForConnectionWithoutLosingPendingData() = runTest {
         val remote=Remote(DataSnapshot(Archive(1,listOf(original)),mapOf("conversation:original" to "1"),"1"))
         val secure=MemoryCredentialStore();val repo=SyncRepository(secure,remote);repo.open(user);repo.saveDraft(original.id,draft)

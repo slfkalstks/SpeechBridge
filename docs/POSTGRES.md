@@ -28,7 +28,25 @@ npm --prefix server run db:stop
 npm --prefix server run test:coverage
 ```
 
-백업은 `.runtime/backups/`에 custom-format dump로 생성한다. 같은 Mac에 있는 백업은 Mac 자체 고장에 대한 복구 수단은 아니다. 마이그레이션 파일은 적용 후 수정하지 않고 새 번호를 추가한다. 체크섬 변경 시 적용을 거부한다.
+백업은 `.runtime/backups/`에 custom-format dump와 같은 이름의 `.dump.json` 검증 명세를 함께 생성한다. 두 파일은 0600, 폴더는 0700 권한이다. 같은 exported snapshot에서 파일을 만들고 테이블 내용의 SHA-256·행 수·소유권·RLS·정책·권한·제약조건을 기록한다. 사용자 원문과 인증정보를 터미널에 출력하지 않는다. 같은 Mac에 있는 백업은 Mac 자체 고장에 대한 복구 수단은 아니다. 마이그레이션 파일은 적용 후 수정하지 않고 새 번호를 추가한다. 체크섬 변경 시 적용을 거부한다.
+
+## 복원 검증과 복구
+
+앱 루트에서 백업 명령이 출력한 파일 경로를 사용한다. dump와 JSON을 함께 보관한다. JSON이 없는 이전 형식의 백업은 이 검증 도구에서 자동 처리하지 않으며 원본 파일을 보존한다.
+
+```sh
+node server/db/backup.mjs verify '.runtime/backups/<백업 파일>.dump'
+node server/db/backup.mjs restore '.runtime/backups/<백업 파일>.dump'
+```
+
+- `verify`: 파일 체크섬 확인 → 새 `speechbridge_restore_<무작위 ID>` DB에 단일 트랜잭션 복원 → 내용·소유권·접근 정책 비교 → 검증 DB 제거.
+- `restore`: 같은 검증 후 복원 DB를 남기고 이름을 반환한다. 기존 운영 DB를 덮어쓰거나 API의 DB 주소를 자동 변경하지 않는다.
+- 복원된 DB의 로그인 세션은 검증 후 모두 폐기한다. 백업 이후 로그아웃했던 토큰이 부활하지 않도록 새 로그인이 필요하다. 계정·비밀번호 해시·사용자 기록은 유지한다.
+- 손상된 파일, 프로젝트 백업 폴더 밖 파일, 다른 프로젝트 DB 이름, 운영 DB를 삭제 대상으로 지정하는 요청은 거부한다. 실패한 복원은 이번에 생성한 DB만 정리한다.
+
+현재 운영 백업을 실제로 복원해 17개 테이블 비교와 검증 DB 정리를 확인했다. 데이터가 있는 별도 테스트에서는 백업 이후 원본 변경과 복원 사본을 구분하고, RLS 격리·재로그인·기존 토큰 거부를 검사했다. 원자료는 로컬 `.runtime/postgres/backup-validation.json`이며 자격정보와 사용자 내용을 포함한 dump/명세는 Git에 넣지 않는다.
+
+운영 전환은 별도 작업이다. API를 중단하고 복원 DB를 선택한 뒤 서버 설정의 `PGDATABASE`를 변경·재시작·로그인/조회 검증해야 한다. 전환 후 백업에는 선택한 DB 이름을 명시한다(`node server/db/backup.mjs backup <복원 DB 이름>`). 현재 `db:migrate`는 기본 운영·테스트 DB를 대상으로 하므로 복원 DB 운영 전환 절차는 최종 운영 점검에서 함께 확인한다. 다른 DB를 자동 삭제하거나 자동 전환하지 않는다.
 
 ## 역할
 
@@ -81,8 +99,8 @@ erDiagram
 
 모든 경로에 개인 bearer 세션이 필요하다. 응답은 `Cache-Control: no-store`다.
 
-- `POST /data/snapshot` `{deviceId}` → archive, 해당 설치의 drafts, versions, cursor
-- `POST /data/mutate` `{deviceId,mutationId,entity,id,baseVersion,value}` → 저장. value=null이면 삭제. entity는 conversation/folder/settings/draft
+- `POST /data/snapshot` `{deviceId,platform}` → archive, 해당 설치의 drafts, versions, cursor
+- `POST /data/mutate` `{deviceId,platform,mutationId,entity,id,baseVersion,value}` → 저장. value=null이면 삭제. entity는 conversation/folder/settings/draft
 - `POST /data/changes` `{after}` → 최대 500개 변경과 다음 cursor
 
 사용자별 카운터 행을 잠근 뒤 변경·영수증·순서를 함께 커밋한다. 같은 요청 ID/내용은 같은 응답을 반환하며 내용이 바뀌면 `mutation_reused`(409)다. 오래된 version은 `version_conflict`(409), 삭제된 엔티티는 늦은 업로드로 복구되지 않는다. 폴더 삭제 시 관련 대화는 보존하고 폴더만 해제하며 version/변경 목록도 함께 갱신한다.
@@ -101,6 +119,8 @@ erDiagram
 
 App은 회원 로그인 뒤 HttpSyncRemote와 SyncRepository로 서버 기록을 불러온다. Android의 별도 Keystore AES-GCM 저장소, iOS의 별도 device-only Keychain 항목에 대기 변경만 보관한다. ACK 후 제거하고, 연결 오류는 15초 간격으로 재시도한다. 저장 자체 실패는 완료로 표시하지 않으며 같은 앱 실행 중 계정별 복구 큐를 유지한다. 기기 저장 실패가 해결되기 전에 앱을 강제 종료하면 메모리에만 남은 내용은 복구할 수 없다.
 
-409 충돌은 자동 덮어쓰지 않는다. 사용자가 ‘모두 보관’을 선택하면 서버 원본과 기기 수정본을 별도 기록으로 보관한다. 삭제 대기 요청은 서버 기록을 남기는 쪽으로 해제한다. 서버 재조회는 설정의 새로고침으로 수행한다.
+기기의 `platform`은 android/ios/test이며 구버전 요청에서는 생략할 수 있다. 생략된 값이 이미 등록된 Android/iOS 정보를 test로 바꾸지 않는다. 플랫폼 메타데이터는 mutation 내용 해시에서 제외해 구버전 미전송 요청의 재시도가 유지된다.
+
+409 충돌은 자동 덮어쓰지 않는다. 사용자가 ‘모두 보관’을 선택하면 서버 원본과 기기 수정본을 별도 기록으로 보관한다. 삭제 대기 요청은 서버 기록을 남기는 쪽으로 해제한다. 사본을 만들 때 초안과 현재 선택도 사본으로 이동한다. 서로 다른 서버·기기 초안은 각각 보존한다. 다른 기기에서 종료·삭제된 대화에 남은 초안은 새 진행 중 대화로 복구하며, 삭제된 ID를 되살리지 않는다. 서버 재조회는 설정의 새로고침으로 수행하고 초안도 함께 갱신한다. 오프라인 재시작 때 초안만 있고 원래 대화가 기기에 없으면 내용은 보존한 채 서버 재연결을 기다린다.
 
 설정의 기존 기록 가져오기는 계정·기록 수를 확인하고 명시적으로 실행한다. 동일 ID의 다른 내용은 거부한다. 서버에서 내용이 일치하는 것을 확인한 후에만 기기 원본을 비우며, 확인 실패 시 원본을 유지한다. 자세한 실행 결과는 [모바일 연결 검증](CLOUD_WORKSPACE_VALIDATION.md)을 참고한다.

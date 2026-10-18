@@ -23,7 +23,7 @@
 
 ## 순서와 완료 기준
 
-- [ ] 1. 프로젝트 전용 PostgreSQL 바이너리·데이터·소켓·로그·백업, 역할 분리, 마이그레이션
+- [x] 1. 프로젝트 전용 PostgreSQL 바이너리·데이터·소켓·로그·백업, 역할 분리, 마이그레이션
 - [x] 2. PostgreSQL 회원/세션, SQLite 안전 이전, 기존 API 계약 회귀
 - [ ] 3. 모든 사용자 데이터 스키마·API, 소유권 격리, 충돌/중복 요청 방지, 복구 가능한 동기화
 - [ ] 4. 기기 암호화 outbox, 계정 전환 격리, 연결 복구, 기존 기록 가져오기, DB 원본 UI
@@ -51,3 +51,5 @@ ECC tdd-workflow의 RED → GREEN → REFACTOR 및 체크포인트를 적용한�
 PostgreSQL 선정 근거: 관계 무결성, 트랜잭션과 행 수준 정책을 함께 사용할 수 있다. 속도 우위를 실측한 주장은 아니다. [공식 행 보안 문서](https://www.postgresql.org/docs/18/ddl-rowsecurity.html), [빌드·설치](https://www.postgresql.org/docs/18/install-make.html), [백업](https://www.postgresql.org/docs/18/backup-dump.html).
 
 2026-10-18 음성 체크포인트: Android/iOS 네이티브 캡처·재생, 권한·취소·백그라운드·장치교체·시간초과·busy 재시도, 자동 언어 방향/기록/번역을 연결했다. Node66, AndroidHost85/iOSSim85, APK/Xcode Debug 성공. 실제 모델+회원+테스트 PostgreSQL의 합성 3언어 전체 흐름 검증 완료; 일본어 이름 오류·한국어 호명의 영어 번역 의미 변화와 긴 지연 사례를 발견했다. NATIVE_VOICE_VALIDATION 및 server/validation/member-voice-flow.json 참조. 실제 마이크/실기기/청취는 아직 미검증. 단계5 구현은 진행됐지만 네이티브 실제 동작 검증은 남아 있다. 단계1 복원, 단계3 AI 작업 DB 복구, 단계4 다중기기 충돌, HTTPS 테스트 연결과 전체배포점검을 계속한다.
+
+2026-10-18 복구·동기화 체크포인트: 운영 백업을 신규검증DB에 복원하여17개테이블/내용해시/소유권/RLS/정책/권한/제약조건일치 및 임시DB정리 완료. 복원시과거로그인세션폐기로토큰부활방지. 운영DB자동전환은하지않음. 단계1완료. 초안충돌시사본scope/선택연결, 다른기기종료·삭제시초안복구, 새로고침초안재조회, 보안저장실패재시도와다중활성대화선택회귀 추가. 기기platform android/ios실제전달, legacy mutation receipt호환 및 실제회원HTTP/DB확인. 최초AI작업DB영속/재시작복구, 테스트HTTPS/설치, 운영전환/마이그레이션점검, 음성정확도·접근성·전체배포점검은계속진행.

@@ -283,6 +283,18 @@ class CloudWorkspaceTest {
             assertEquals("다시 불러온 입력",remote.drafts["student_a"]!!["new"]!!["text"]!!.jsonPrimitive.content)
         } finally {owner.clear();Dispatchers.resetMain()}
     }
+    @Test fun selectingAnActiveConversationFromAnotherDeviceMakesItTheInputTarget() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val owner=ViewModelStore();val account=account();val remote=Remote()
+        val first=Conversation(id="first",title="첫 대화",translate=false,record=true,first=Language.KO,second=Language.EN)
+        remote.archives["student_a"]=Archive(1,listOf(first,first.copy(id="second",title="다른 대화")))
+        val vm=BridgeViewModel(Legacy(),account=account,sync=SyncRepository(MemoryCredentialStore(),remote));owner.put("vm",vm)
+        try {
+            account.authenticate("student_a","Synthetic-password-123!",false);runCurrent()
+            assertEquals("second",vm.state.value.activeId)
+            vm.select("first");assertEquals("first",vm.state.value.activeId);assertEquals("first",vm.state.value.selectedId)
+        }finally{owner.clear();Dispatchers.resetMain()}
+    }
     private fun account() = AccountManager("https://sync.example.invalid",MemoryCredentialStore(),client=HttpClient(MockEngine { request ->
         if(request.url.encodedPath=="/auth/logout") respond("{}")
         else {
