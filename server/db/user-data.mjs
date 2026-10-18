@@ -45,7 +45,7 @@ function validateMutation(m) {
   if (m.entity === 'settings' && (m.id !== 'settings' || !object(m.value) || !['SYSTEM', 'LIGHT', 'DARK'].includes(m.value.appearance))) throw bad();
   if (m.value === null) return;
   if (m.entity === 'conversation') validateConversation(m.value, m.id);
-  if (m.entity === 'folder' && (!object(m.value) || m.value.id !== m.id || !text(m.value.name, 80))) throw bad();
+  if (m.entity === 'folder' && (!object(m.value) || m.value.id !== m.id || !text(m.value.name, 200))) throw bad();
   if (m.entity === 'draft' && (!object(m.value) || !language(m.value.language) || !nullableText(m.value.text) || !language(m.value.first) || !language(m.value.second) || m.value.first === m.value.second)) throw bad();
 }
 
