@@ -70,7 +70,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
                         sync.save(write.archive, write.identity)
                         for (id in sync.currentDrafts().keys + write.drafts.keys) sync.saveDraft(id, write.drafts[id], write.identity)
                     }
-                    if (write.generation == generation) {
+                    if (write.generation == generation && write.identity == identity) {
                         if (write.revision == writeRevision) mutable.update { it.copy(unsaved = false) }
                         sync?.let { repository ->
                             val count = repository.pendingCount()
@@ -80,7 +80,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
                     }
                 } catch (e: CancellationException) { throw e }
                 catch (_: Exception) {
-                    if (write.generation == generation) mutable.update { it.copy(unsaved = true,
+                    if (write.generation == generation && write.identity == identity) mutable.update { it.copy(unsaved = true,
                         message = "저장하지 못했습니다. 화면의 내용은 유지됩니다. 저장을 재시도해 주세요.") }
                 }
             }
@@ -92,9 +92,15 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
                 account.state.map { it.ready to it.user?.id }.distinctUntilChanged().collect { (ready, userId) ->
                     if (!ready) return@collect
                     cloudLoad?.cancel(); upload?.cancel(); invalidate()
+                    // Hide the old workspace immediately, then finish its already queued secure writes.
+                    // Bumping the generation first would discard input received just before expiry.
+                    identity = null
+                    mutable.value = BridgeState(cloudMode = true, accountRequired = true, loaded = userId == null)
+                    drainWrites()
                     generation++
+                    if (account.state.value.user?.id != userId) return@collect
                     identity = userId?.let { SyncIdentity(account.endpoint, it) }
-                    mutable.value = BridgeState(cloudMode = true, accountRequired = userId == null, loaded = userId == null)
+                    mutable.update { it.copy(accountRequired = userId == null) }
                     if (userId == null) sync.closeAccount() else loadCloud()
                 }
             }
@@ -169,10 +175,13 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
             }
         }
     }
-    suspend fun prepareAccountChange(): Boolean {
+    private suspend fun drainWrites() {
         val barrier = CompletableDeferred<Unit>()
         writes.send(WriteRequest.Barrier(barrier))
         barrier.await()
+    }
+    suspend fun prepareAccountChange(): Boolean {
+        drainWrites()
         if (state.value.unsaved) { inform("아직 안전하게 저장하지 못한 내용이 있습니다. 저장을 재시도한 뒤 로그아웃해 주세요."); return false }
         upload?.cancelAndJoin()
         invalidate()
