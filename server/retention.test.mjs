@@ -28,3 +28,14 @@ test('retention refuses symlinks, corrupt metadata and paths outside the project
  await assert.rejects(pruneBackups({directory:dir,apply:true}));
  await assert.rejects(pruneBackups({directory:'/tmp',apply:true}));
 });
+
+test('explicitly registered legacy backup copies follow the same bounded retention without modifying originals',async t=>{
+ const {registerLegacyBackup}=await import('./db/retention.mjs');
+ const dir=await mkdtemp(join(root,'retention-test-'));t.after(()=>rm(dir,{recursive:true,force:true}));
+ const path=join(dir,'accounts-before-postgres-synthetic.sqlite');
+ const {DatabaseSync}=await import('node:sqlite');const db=new DatabaseSync(path);db.exec('CREATE TABLE users(id TEXT)');db.close();
+ const before=await readFile(path);await registerLegacyBackup(path);assert.deepEqual(await readFile(path),before);
+ const manifest=JSON.parse(await readFile(path+'.retention.json','utf8'));assert.equal(manifest.kind,'legacy-copy');
+ const result=await pruneBackups({directory:dir,now:Date.now()+31*86400000,apply:true});assert.equal(result.removed,1);
+ await assert.rejects(readFile(path));
+});
