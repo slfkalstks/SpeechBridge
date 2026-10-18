@@ -94,8 +94,8 @@ export function createUserData(db) {
       if (u.translation != null) await client.query('INSERT INTO translations(user_id,conversation_id,utterance_id,revision,target_language,text) VALUES($1,$2,$3,$4,$5,$6)', [user,c.id,u.id,u.revision,u.language===c.first ? c.second : c.first,u.translation]);
     }
     await client.query('DELETE FROM action_items WHERE user_id=$1 AND conversation_id=$2', [user,c.id]);
-    for (const item of c.items) await client.query(`INSERT INTO action_items(user_id,conversation_id,id,source_id,source_revision,kind,text,owner_text,due_text,reviewed,status,origin,evidence_quote,context_revisions,omitted_by_latest_extraction)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`, [user,c.id,item.id,item.sourceId,item.sourceRevision,item.kind,item.text,item.owner ?? null,item.dueText ?? null,item.reviewed,item.status,item.origin,item.evidenceQuote ?? null,item.contextRevisions,item.omittedByLatestExtraction]);
+    for (const [position,item] of c.items.entries()) await client.query(`INSERT INTO action_items(user_id,conversation_id,id,source_id,source_revision,kind,text,owner_text,due_text,reviewed,status,origin,evidence_quote,context_revisions,omitted_by_latest_extraction,position)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`, [user,c.id,item.id,item.sourceId,item.sourceRevision,item.kind,item.text,item.owner ?? null,item.dueText ?? null,item.reviewed,item.status,item.origin,item.evidenceQuote ?? null,item.contextRevisions,item.omittedByLatestExtraction,position]);
   }
   async function mutate(user, m) {
     validateMutation(m);
@@ -148,7 +148,7 @@ export function createUserData(db) {
       const drafts = await rows('conversation_drafts','AND device_id=$2', [user,deviceId]);
       const utterances = await rows('utterances','ORDER BY position');
       const translations = await rows('translations');
-      const items = await rows('action_items','ORDER BY id');
+      const items = await rows('action_items','ORDER BY position,id');
       const versions = {};
       for (const [entity, list] of [['conversation',conversations],['folder',folders],['draft',drafts]]) for (const r of list) versions[`${entity}:${r.id ?? r.scope_id}`] = r.version;
       if (settings) versions['settings:settings'] = settings.version;

@@ -4,12 +4,14 @@ import { pathToFileURL } from 'node:url';
 import { ApiError, createProviders } from './provider.mjs';
 import { createDatabase } from './db/database.mjs';
 import { createPostgresAccounts } from './db/accounts.mjs';
+import { createUserData } from './db/user-data.mjs';
 
 export function createServer({ env = process.env, providers = createProviders(env), now = Date.now, accounts: suppliedAccounts, database: suppliedDatabase } = {}) {
   const mode = env.AUTH_MODE || "development";
   if (!["users", "development"].includes(mode)) throw new Error("Invalid AUTH_MODE");
-  const database = mode === 'users' && !suppliedAccounts ? suppliedDatabase || createDatabase(env) : null;
+  const database = suppliedDatabase || (mode === 'users' && !suppliedAccounts ? createDatabase(env) : null);
   const accounts = mode === "users" ? suppliedAccounts || createPostgresAccounts({ db: database, now }) : null;
+  const data = database && mode === 'users' ? createUserData(database) : null;
   let active = 0;
   let textActive = 0;
   let voiceActive = false;
@@ -23,6 +25,7 @@ export function createServer({ env = process.env, providers = createProviders(en
   const server = http.createServer(async (req, res) => {
     let acquired = false;
     let admission;
+    let user;
     const controller = new AbortController();
     controllers.add(controller);
     const cancel = () => controller.abort();
@@ -40,9 +43,10 @@ export function createServer({ env = process.env, providers = createProviders(en
         send(res, 200, { user }); return;
       }
       const authRoute = accounts && ['/auth/register', '/auth/login', '/auth/logout'].includes(req.url);
-      if (req.method !== 'POST' || (!authRoute && !['/translate', '/extract', '/organize', '/speech/token', '/speech/transcribe', '/speech/synthesize'].includes(req.url))) throw new ApiError(404, 'not_found', '경로를 찾을 수 없습니다.');
+      const dataRoute = data && ['/data/snapshot', '/data/mutate', '/data/changes'].includes(req.url);
+      if (req.method !== 'POST' || (!authRoute && !dataRoute && !['/translate', '/extract', '/organize', '/speech/token', '/speech/transcribe', '/speech/synthesize'].includes(req.url))) throw new ApiError(404, 'not_found', '경로를 찾을 수 없습니다.');
       if (authRoute) accounts.admit(req.socket.remoteAddress || 'unknown');
-      else if (accounts) accounts.authorize(await accounts.authenticate(req.headers.authorization), req.url);
+      else if (accounts) { user = await accounts.authenticate(req.headers.authorization); accounts.authorize(user, req.url); }
       else {
         if (!providers.configured.auth) throw new ApiError(503, 'auth_not_configured', '서버 접속 인증 설정이 필요합니다.');
         const expected = Buffer.from(`Bearer ${env.APP_ACCESS_TOKEN}`);
@@ -53,7 +57,7 @@ export function createServer({ env = process.env, providers = createProviders(en
       if (now() - windowStart >= 60000) { windowStart = now(); count = 0; }
       if (++count > 60 || active >= 6) throw new ApiError(429, 'busy', '잠시 후 다시 시도해 주세요.');
       active++; acquired = true;
-      const maxBody = authRoute ? 2048 : req.url === '/speech/transcribe' ? 1_300_000 : 256 * 1024;
+      const maxBody = authRoute ? 2048 : dataRoute ? 2 * 1024 * 1024 : req.url === '/speech/transcribe' ? 1_300_000 : 256 * 1024;
       const oversized = () => new ApiError(400, 'payload_too_large', '한 번에 처리할 입력이 너무 큽니다. 나누어 요청해 주세요.');
       if (Number(req.headers['content-length']) > maxBody) { req.resume(); throw oversized(); }
       let length = 0;
@@ -70,6 +74,12 @@ export function createServer({ env = process.env, providers = createProviders(en
       if (authRoute) {
         const result = await accounts.handle(req.url, body, req.headers.authorization, req.socket.remoteAddress || 'unknown');
         if (!res.destroyed) send(res, 200, result); return;
+      }
+      if (dataRoute) {
+        const result = req.url === '/data/mutate' ? await data.mutate(user.id, body)
+          : req.url === '/data/changes' ? await data.changes(user.id, body.after) : await data.snapshot(user.id, body.deviceId);
+        if (!res.destroyed && !controller.signal.aborted) send(res, 200, result);
+        return;
       }
       // Count text work including its bounded provider queue. Voice never queues.
       const isVoice = ['/speech/transcribe', '/speech/synthesize'].includes(req.url);

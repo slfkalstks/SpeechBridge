@@ -57,6 +57,7 @@ export function createPostgresAccounts({ db, now = Date.now }) {
   return {
     authenticate,
     authorize(user, path) {
+      if (['/data/snapshot', '/data/mutate', '/data/changes'].includes(path)) { limit(`data:${user.id}`, 120); return; }
       if (path.startsWith('/speech/')) throw new ApiError(503, 'speech_pending', '음성 기능은 아직 연결 전입니다.');
       if (!capabilities().includes(path.slice(1))) throw new ApiError(403, 'member_required', '회원 로그인 후 사용할 수 있습니다.');
       limit(`use:${user.id}`, 30);
