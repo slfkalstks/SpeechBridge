@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { ApiError } from '../errors.mjs';
+import { enqueueOrganization } from './organization-jobs.mjs';
 
 const bad = () => new ApiError(400, 'invalid_data', '저장할 내용을 확인해 주세요.');
 const conflict = (code = 'version_conflict') => new ApiError(409, code, '다른 변경 사항이 있습니다. 최신 기록을 확인해 주세요.');
@@ -126,7 +127,10 @@ export function createUserData(db) {
             for (const c of affected) await changed(client,user,'conversation',c.id,c.version);
           }
           await client.query(`UPDATE ${table} SET deleted_at=now(),version=version+1 WHERE ${where}`, params);
-        } else if (m.entity === 'conversation') await saveConversation(client,user,m.value,rev,previous);
+        } else if (m.entity === 'conversation') {
+          await saveConversation(client,user,m.value,rev,previous);
+          await enqueueOrganization(client,user,m.value,previous);
+        }
         else if (m.entity === 'folder') await client.query('INSERT INTO work_folders(user_id,id,name,version) VALUES($1,$2,$3,$4) ON CONFLICT(user_id,id) DO UPDATE SET name=excluded.name,version=excluded.version', [user,m.id,m.value.name.trim(),rev]);
         else if (m.entity === 'settings') await client.query('INSERT INTO user_settings(user_id,appearance,version) VALUES($1,$2,$3) ON CONFLICT(user_id) DO UPDATE SET appearance=excluded.appearance,version=excluded.version,updated_at=now()', [user,m.value.appearance,rev]);
         else {
@@ -157,10 +161,12 @@ export function createUserData(db) {
       const utterances = await rows('utterances','ORDER BY position');
       const translations = await rows('translations');
       const items = await rows('action_items','ORDER BY position,id');
+      const jobs = await rows('ai_jobs',"AND kind='organize'");
       const versions = {};
       for (const [entity, list] of [['conversation',conversations],['folder',folders],['draft',drafts]]) for (const r of list) versions[`${entity}:${r.id ?? r.scope_id}`] = r.version;
       if (settings) versions['settings:settings'] = settings.version;
-      return { cursor, versions, drafts: Object.fromEntries(drafts.filter(d=>!d.deleted_at).map(d=>[d.scope_id,d.payload])), archive: {
+      return { cursor, versions, organizationJobs: Object.fromEntries(jobs.map(j=>[j.conversation_id,j.state])),
+        drafts: Object.fromEntries(drafts.filter(d=>!d.deleted_at).map(d=>[d.scope_id,d.payload])), archive: {
         version: 1, appearance: settings?.appearance ?? 'SYSTEM', folders: folders.filter(f=>!f.deleted_at).map(f=>({id:f.id,name:f.name})),
         conversations: conversations.filter(c=>!c.deleted_at).map(c=>({ id:c.id,title:c.title,summary:c.summary,createdAt:c.created_at_text || c.created_at.toISOString(),
           first:c.first_language,second:c.second_language,translate:c.translate,record:true,ended:c.ended,category:c.category,workType:c.work_type,folderId:c.folder_id,
