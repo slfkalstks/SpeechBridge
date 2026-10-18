@@ -25,7 +25,7 @@ export function createPostgresAccounts({ db, now = Date.now }) {
   async function issue(user) {
     return transaction(db.auth, async client => {
       // Serialize per account before pruning/inserting, even across API processes.
-      await client.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [user.id]);
+      if(!(await client.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [user.id])).rowCount)throw fail();
       await client.query('DELETE FROM sessions WHERE user_id=$1 AND expires_at <= $2', [user.id, new Date(now())]);
       await client.query('DELETE FROM sessions WHERE user_id=$1 AND token_hash NOT IN (SELECT token_hash FROM sessions WHERE user_id=$1 ORDER BY issued_order DESC LIMIT 4)', [user.id]);
       const token = randomBytes(32).toString('base64url');
@@ -64,6 +64,28 @@ export function createPostgresAccounts({ db, now = Date.now }) {
     },
     admit(ip) { limit(`auth:${ip}`, 30, 15 * 60000); },
     async handle(path, body, header) {
+      if(path === '/auth/delete') {
+        const {username,password}=credentials(body);
+        if(body.confirm!==true)throw new ApiError(400,'confirmation_required','계정과 기록 삭제를 확인해 주세요.');
+        if(!/^Bearer [A-Za-z0-9_-]{43}$/.test(header || ''))throw fail();
+        const receipt=digest(header.slice(7));
+        // Retrying a lost acknowledgement cannot delete a newly created account.
+        if((await db.auth.query('SELECT 1 FROM account_deletions WHERE receipt_hash=$1 AND username_hash=$2',[receipt,digest(username)])).rowCount)return {deleted:true};
+        const authenticated=await authenticate(header);
+        if(authenticated.username!==username)throw new ApiError(400,'account_mismatch','로그인한 계정의 아이디를 확인해 주세요.');
+        limit(`delete:${authenticated.id}`,5,15*60000);
+        return transaction(db.auth,async client=>{
+          const {rows:[user]}=await client.query('SELECT * FROM users WHERE id=$1 FOR UPDATE',[authenticated.id]);
+          if(!user)throw fail();
+          const hash=await passwordHash(password,user.salt);
+          if(!timingSafeEqual(hash,Buffer.from(user.password_hash,'hex')))throw new ApiError(403,'password_incorrect','현재 비밀번호를 확인해 주세요.');
+          // A concurrent logout/expiry must win before destructive work commits.
+          if(!(await client.query('SELECT 1 FROM sessions WHERE token_hash=$1 AND user_id=$2 AND expires_at>$3 FOR UPDATE',[receipt,user.id,new Date(now())])).rowCount)throw fail();
+          await client.query('INSERT INTO account_deletions(user_id_hash,username_hash,receipt_hash) VALUES($1,$2,$3)',[digest(user.id),digest(username),receipt]);
+          await client.query('DELETE FROM users WHERE id=$1',[user.id]);
+          return {deleted:true};
+        });
+      }
       if (path === '/auth/logout') {
         const user = await authenticate(header);
         await db.auth.query('DELETE FROM sessions WHERE token_hash=$1', [user.hash]);

@@ -51,7 +51,7 @@ export function createServer({ env = process.env, providers = createProviders(en
         const { hash, ...user } = await accounts.authenticate(req.headers.authorization);
         send(res, 200, { user }); return;
       }
-      const authRoute = accounts && ['/auth/register', '/auth/login', '/auth/logout'].includes(req.url);
+      const authRoute = accounts && ['/auth/register', '/auth/login', '/auth/logout', '/auth/delete'].includes(req.url);
       const dataRoute = data && ['/data/snapshot', '/data/mutate', '/data/changes'].includes(req.url);
       if (req.method !== 'POST' || (!authRoute && !dataRoute && !['/translate', '/extract', '/organize', '/speech/token', '/speech/transcribe', '/speech/synthesize'].includes(req.url))) throw new ApiError(404, 'not_found', '경로를 찾을 수 없습니다.');
       if (authRoute) accounts.admit(req.socket.remoteAddress || 'unknown');

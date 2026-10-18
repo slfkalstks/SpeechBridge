@@ -8,6 +8,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { activeDatabase } from './target.mjs';
+import { migrate } from './migrate.mjs';
 
 const execute = promisify(execFile);
 const root = fileURLToPath(new URL('../../.runtime/postgres/',import.meta.url));
@@ -97,6 +98,10 @@ export async function restoreBackup(input) {
   if(dirname(path)!==await realpath(backups) || !path.endsWith('.dump') || !(await stat(path)).isFile()) throw new Error('Backup must be a project archive');
   const manifest = JSON.parse(await readFile(path+'.json','utf8'));
   if(manifest.version!==1 || manifest.sha256!==await hashFile(path)) throw new Error('Backup checksum does not match');
+  if(!['speechbridge','speechbridge_test'].includes(manifest.source) && !restoredName.test(manifest.source))throw new Error('Invalid project backup source');
+  // Fail closed when the live deletion ledger is unavailable. An old archive alone
+  // cannot prove that its users have not since requested erasure.
+  const source=await client(manifest.source);
   const database = 'speechbridge_restore_'+randomBytes(12).toString('hex');
   const admin = await client('postgres');
   let created = false, restored;
@@ -110,15 +115,28 @@ export async function restoreBackup(input) {
     await restored.query("SET LOCAL TIME ZONE 'UTC'");
     const actual = await fingerprint(restored);
     if(!isDeepStrictEqual(actual,manifest.expected)) throw new Error('Restored data or ownership policies do not match the backup');
+    await restored.query('COMMIT');
+    const migrationPool=new pg.Pool(await configuration(database));
+    try {await migrate(migrationPool);}finally{await migrationPool.end();}
+    const ledger=(await source.query('SELECT * FROM account_deletions')).rows;
+    await restored.query('BEGIN');
+    for(const row of ledger)await restored.query('INSERT INTO account_deletions(user_id_hash,username_hash,receipt_hash,deleted_at) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING',
+      [row.user_id_hash,row.username_hash,row.receipt_hash,row.deleted_at]);
+    const deleted=new Set((await restored.query('SELECT user_id_hash FROM account_deletions')).rows.map(row=>row.user_id_hash));
+    let deletedAccountsRemoved=0;
+    for(const user of (await restored.query('SELECT id FROM users')).rows) {
+      if(deleted.has(createHash('sha256').update(user.id).digest('hex')))
+        deletedAccountsRemoved+=(await restored.query('DELETE FROM users WHERE id=$1',[user.id])).rowCount;
+    }
     // An old backup can contain a session revoked after it was created. Force fresh login.
     const revoked = (await restored.query('DELETE FROM sessions')).rowCount;
     await restored.query('COMMIT');
-    return {database,verified:true,tables:actual.tables.length,sessionsRevoked:revoked};
+    return {database,verified:true,tables:actual.tables.length,sessionsRevoked:revoked,deletedAccountsRemoved,activationRequired:true};
   } catch(error) {
     if(restored) { await restored.end(); restored = null; }
     if(created) await admin.query(`DROP DATABASE ${identifier(database)}`);
     throw error;
-  } finally { await restored?.end(); await admin.end(); }
+  } finally { await restored?.end(); await admin.end(); await source.end(); }
 }
 
 export async function verifyBackup(path) {
