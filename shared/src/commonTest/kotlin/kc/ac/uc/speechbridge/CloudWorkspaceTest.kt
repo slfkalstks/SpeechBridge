@@ -24,7 +24,7 @@ class CloudWorkspaceTest {
         val versions = mutableMapOf<String,MutableMap<String,String>>()
         override suspend fun snapshot(identity: SyncIdentity, deviceId: String): DataSnapshot {
             if(offline) error("offline")
-            return DataSnapshot(archives[identity.userId] ?: Archive(1,emptyList()),versions[identity.userId].orEmpty(),"0")
+            return DataSnapshot(archives[identity.userId] ?: Archive(1,emptyList()),versions[identity.userId].orEmpty().toMap(),"0")
         }
         override suspend fun mutate(identity: SyncIdentity, mutation: PendingMutation): MutationReceipt {
             if(offline) error("offline")

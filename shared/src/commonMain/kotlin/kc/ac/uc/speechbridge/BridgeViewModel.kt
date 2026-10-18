@@ -21,6 +21,10 @@ data class BridgeState(
     val syncPending: Int = 0,
     val syncBusy: Boolean = false,
     val syncProblem: String? = null,
+    val syncConflict: Boolean = false,
+    val workspaceBusy: Boolean = false,
+    val legacyCount: Int = 0,
+    val legacyFolders: Int = 0,
     val unsaved: Boolean = false,
     val message: String? = null,
     val connection: Connection = Connection(),
@@ -54,6 +58,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     private var identity: SyncIdentity? = null
     private var upload: Job? = null
     private var cloudLoad: Job? = null
+    private var workspaceOperation: Job? = null
     private var writeRevision = 0L
     private var requestSequence = 0L
     private val requests = mutableMapOf<String, Pair<Long, Job>>()
@@ -100,7 +105,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
             viewModelScope.launch {
                 account.state.map { it.ready to it.user?.id }.distinctUntilChanged().collect { (ready, userId) ->
                     if (!ready) return@collect
-                    cloudLoad?.cancel(); upload?.cancel(); invalidate()
+                    cloudLoad?.cancel(); upload?.cancel(); workspaceOperation?.cancel(); invalidate()
                     // Hide the old workspace immediately, then finish its already queued secure writes.
                     // Bumping the generation first would discard input received just before expiry.
                     identity = null
@@ -157,6 +162,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
                     idleDraft = UtteranceDraft(first, initial?.get("text")?.jsonPrimitive?.content.orEmpty()),
                     inputDrafts = drafts.filterKeys { id -> archive.conversations.any { it.id == id && !it.ended } }
                         .mapValues { (_, value) -> UtteranceDraft(language(value, "language", first), value["text"]?.jsonPrimitive?.content.orEmpty()) }) }
+                inspectLegacy()
                 retrySync()
             } catch (e: CancellationException) { throw e }
             catch (_: Exception) {
@@ -167,15 +173,15 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     }
     fun retrySync() {
         val repository = sync ?: return
-        if (identity == null || !state.value.loaded || upload?.isActive == true) return
+        if (identity == null || !state.value.loaded || state.value.workspaceBusy || upload?.isActive == true) return
         val epoch = generation
         upload = viewModelScope.launch {
             mutable.update { it.copy(syncBusy = true, syncProblem = null) }
-            try { repository.flush() }
+            try { repository.flush(); if(epoch == generation) mutable.update { it.copy(syncConflict = false) } }
             catch (e: CancellationException) { throw e }
             catch (e: Exception) {
-                if (epoch == generation) mutable.update { it.copy(syncProblem =
-                    if (e is BridgeRequestException) e.message else "연결되면 다시 전송할 수 있습니다.") }
+                if (epoch == generation) mutable.update { it.copy(syncConflict = e is BridgeRequestException && e.code in setOf("version_conflict", "mutation_reused"),
+                    syncProblem = if (e is BridgeRequestException) e.message else "연결되면 다시 전송할 수 있습니다.") }
             } finally {
                 if (epoch == generation) {
                     val count = repository.pendingCount()
@@ -184,19 +190,67 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
             }
         }
     }
+    private suspend fun inspectLegacy() {
+        try {
+            val legacy = store.read()?.let(ArchiveCodec::decodeArchive)
+            mutable.update { it.copy(legacyCount = legacy?.conversations?.size ?: 0, legacyFolders = legacy?.folders?.size ?: 0) }
+        } catch (e: CancellationException) { throw e }
+        catch (_: Exception) { inform("기존 기기 기록을 읽지 못했습니다. 원본은 보관되어 있습니다.") }
+    }
+    private fun workspaceOperation(operation: suspend (SyncRepository, SyncIdentity) -> Archive) {
+        val repository = sync ?: return
+        val user = identity ?: return
+        if (state.value.workspaceBusy || !state.value.loaded) return
+        val epoch = generation
+        mutable.update { it.copy(workspaceBusy = true) }
+        invalidate()
+        workspaceOperation = viewModelScope.launch {
+            try {
+                drainWrites()
+                upload?.cancelAndJoin()
+                if (state.value.unsaved) throw BridgeRequestException("secure_storage_failed", "먼저 저장을 재시도해 주세요.")
+                val archive = operation(repository, user)
+                if (epoch != generation) return@launch
+                val pending = repository.pendingCount()
+                mutable.update { it.copy(conversations = archive.conversations, folders = archive.folders, appearance = archive.appearance,
+                    activeId = archive.conversations.lastOrNull { c -> !c.ended }?.id,
+                    selectedId = it.selectedId.takeIf { id -> archive.conversations.any { c -> c.id == id } },
+                    syncPending = pending, syncConflict = false, syncProblem = null) }
+                inspectLegacy()
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) {
+                if (epoch == generation) inform(if(e is BridgeRequestException) e.message.orEmpty() else "완료하지 못했습니다. 기존 기록은 보관되어 있습니다. 연결 상태를 확인하고 다시 시도해 주세요.")
+            } finally {
+                if (epoch == generation) mutable.update { it.copy(workspaceBusy = false) }
+            }
+            if (epoch == generation) retrySync()
+        }
+    }
+    fun importLegacyRecords() = workspaceOperation { repository, user ->
+        val original = store.read()
+        val legacy = original?.let(ArchiveCodec::decodeArchive) ?: Archive(1, emptyList())
+        val result = repository.importArchive(legacy, user)
+        // No file changes before verifying the server copy, and no overwrite of a
+        // source that changed during migration.
+        if (store.read() == original) store.write(ArchiveCodec.encode(emptyList()))
+        result
+    }
+    fun resolveSyncConflict() = workspaceOperation { repository, user -> repository.resolveKeepingBoth(user) }
+    fun refreshRecords() = workspaceOperation { repository, user -> repository.open(user) }
     private suspend fun drainWrites() {
         val barrier = CompletableDeferred<Unit>()
         writes.send(WriteRequest.Barrier(barrier))
         barrier.await()
     }
     suspend fun prepareAccountChange(): Boolean {
+        if (state.value.workspaceBusy) { inform("기록 처리가 끝난 뒤 다시 시도해 주세요."); return false }
         drainWrites()
         if (state.value.unsaved) { inform("아직 안전하게 저장하지 못한 내용이 있습니다. 저장을 재시도한 뒤 로그아웃해 주세요."); return false }
         upload?.cancelAndJoin()
         invalidate()
         return true
     }
-    private fun canEdit() = state.value.loaded && !state.value.accountRequired
+    private fun canEdit() = state.value.loaded && !state.value.accountRequired && !state.value.workspaceBusy
     fun retrySave() = persist()
     private fun persist() {
         if (!canEdit()) return
@@ -233,6 +287,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         if (sync != null) persist()
     }
     fun updateInputDraft(id: String, draft: UtteranceDraft) {
+        if (!canEdit()) return
         val c = state.value.conversations.find { it.id == id && !it.ended } ?: return
         mutable.update { it.copy(inputDrafts = it.inputDrafts + (id to draft.copy(language = c.first))) }
         if (sync != null) persist()
@@ -253,6 +308,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         persist()
     }
     fun end(id: String) {
+        if (!canEdit()) return
         val c = state.value.conversations.find { it.id == id && !it.ended } ?: return
         invalidate()
         mutable.update { it.copy(
@@ -270,6 +326,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         start("${displayDate(kotlin.time.Clock.System.now().toString())} 대화", true, true, d.first, d.second)
     }
     fun setLanguages(id: String, first: Language, second: Language) {
+        if (!canEdit()) return
         if (first == second) return
         val c = state.value.conversations.find { it.id == id && !it.ended } ?: return
         if (c.first == first && c.second == second) return
@@ -299,6 +356,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         persist(); return true
     }
     fun deleteFolder(id: String) {
+        if (!canEdit()) return
         invalidate()
         mutable.update { state -> state.copy(folders = state.folders.filterNot { it.id == id },
             conversations = state.conversations.map { if (it.folderId == id) it.copy(folderId = null, metadataRevision = it.metadataRevision + 1) else it },
@@ -337,6 +395,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         }
     }
     fun delete(id: String) {
+        if (!canEdit()) return
         invalidate()
         mutable.update { it.copy(conversations = it.conversations.filterNot { c -> c.id == id },
             selectedId = it.selectedId.takeUnless { selected -> selected == id },
@@ -353,6 +412,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     fun addUtterance(id: String, language: Language, text: String) = addUtterance(id, "", language, text)
 
     fun addUtterance(id: String, speaker: String, language: Language, text: String) {
+        if (!canEdit()) return
         val c = state.value.conversations.find { it.id == id } ?: return
         if (c.ended || text.isBlank()) return
         val u = Utterance(speaker = speaker.trim(), language = language, originalText = text.trim())

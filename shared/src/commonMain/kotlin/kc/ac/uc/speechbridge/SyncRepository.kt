@@ -137,6 +137,83 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
         try { enqueue(pending + mutation("draft", id, value, pending), user) }
         finally { drafts = drafts.toMutableMap().apply { if(value == null) remove(id) else put(id,value) } }
     }
+    /** Caller confirms ownership first. Colliding content is never silently replaced. */
+    suspend fun importArchive(source: Archive, user: SyncIdentity): Archive {
+        val merged = mutex.withLock {
+            check(identity == user)
+            for (folder in source.folders) {
+                val existing = archive.folders.find { it.id == folder.id || it.name.equals(folder.name, true) }
+                if (existing != null && existing != folder) throw BridgeRequestException("import_conflict", "같은 이름이나 ID의 폴더가 서버에 있습니다. 기존 기록은 그대로 보관했습니다.")
+            }
+            for (record in source.conversations) {
+                val existing = archive.conversations.find { it.id == record.id }
+                if (existing != null && existing != record) throw BridgeRequestException("import_conflict", "같은 기록이 서버에서 변경되었습니다. 덮어쓰지 않고 기기 원본을 보관했습니다.")
+            }
+            archive.copy(conversations = archive.conversations + source.conversations.filter { c -> archive.conversations.none { it.id == c.id } },
+                folders = archive.folders + source.folders.filter { f -> archive.folders.none { it.id == f.id } })
+        }
+        save(merged, user)
+        flush()
+        return mutex.withLock {
+            check(identity == user)
+            val snapshot = remote.snapshot(user, envelope!!.deviceId)
+            check(source.conversations.all { record -> snapshot.archive.conversations.any { it == record } } &&
+                source.folders.all { folder -> snapshot.archive.folders.any { it == folder } }) { "Import verification failed" }
+            check(queue(user).isEmpty())
+            versions = snapshot.versions; archive = snapshot.archive; drafts = snapshot.drafts
+            archive
+        }
+    }
+
+    /** Explicit keep-both choice: server originals remain, local non-deleted edits become copies.
+     * The replacement queue is committed atomically before the old mutations can be discarded. */
+    suspend fun resolveKeepingBoth(user: SyncIdentity): Archive = uploadMutex.withLock {
+        mutex.withLock {
+            check(identity == user)
+            val pending = queue(user)
+            val snapshot = remote.snapshot(user, envelope!!.deviceId)
+            val folders = snapshot.archive.folders.toMutableList()
+            val records = snapshot.archive.conversations.toMutableList()
+            val next = mutableListOf<PendingMutation>()
+            fun add(entity: String, id: String, value: JsonElement?) {
+                next += PendingMutation(envelope!!.deviceId, newId(), entity, id, snapshot.versions["$entity:$id"] ?: "0", value)
+            }
+            val folderIds = mutableMapOf<String, String>()
+            fun keepFolder(id: String): String? {
+                folderIds[id]?.let { return it }
+                val local = archive.folders.find { it.id == id } ?: return null
+                val existing = folders.find { it.name.equals(local.name, true) }
+                if (existing != null) { folderIds[id] = existing.id; return existing.id }
+                val copy = local.copy(id = newId())
+                folders += copy; folderIds[id] = copy.id
+                add("folder", copy.id, json.encodeToJsonElement(copy))
+                return copy.id
+            }
+            pending.filter { it.entity == "folder" }.map { it.id }.distinct().forEach { keepFolder(it) }
+            for (id in pending.filter { it.entity == "conversation" }.map { it.id }.distinct()) {
+                val local = archive.conversations.find { it.id == id } ?: continue
+                if (records.any { it == local }) continue
+                val copy = local.copy(id = newId(), title = local.title.take(190) + " (이 기기 사본)",
+                    folderId = local.folderId?.let { keepFolder(it) })
+                records += copy
+                add("conversation", copy.id, json.encodeToJsonElement(copy))
+            }
+            val appearance = if (pending.any { it.entity == "settings" }) archive.appearance else snapshot.archive.appearance
+            if (appearance != snapshot.archive.appearance) add("settings", "settings", buildJsonObject { put("appearance", appearance.name) })
+            val nextDrafts = snapshot.drafts.toMutableMap()
+            for (id in pending.filter { it.entity == "draft" }.map { it.id }.distinct()) {
+                val value = drafts[id]
+                if (value != snapshot.drafts[id]) add("draft", id, value)
+                if (value == null) nextDrafts.remove(id) else nextDrafts[id] = value
+            }
+            val accounts = if (next.isEmpty()) envelope!!.accounts - key(user) else envelope!!.accounts + (key(user) to next)
+            persist(envelope!!.copy(accounts = accounts))
+            volatileQueues.remove(key(user))
+            versions = snapshot.versions; drafts = nextDrafts
+            archive = snapshot.archive.copy(conversations = records, folders = folders, appearance = appearance)
+            archive
+        }
+    }
     fun close() { remote.close() }
     suspend fun flush() = uploadMutex.withLock upload@{
         val user = mutex.withLock { identity } ?: return@upload
