@@ -225,6 +225,21 @@ class CloudWorkspaceTest {
             assertFalse(vm.state.value.syncConflict); assertEquals(0,vm.state.value.syncPending)
         } finally { owner.clear(); Dispatchers.resetMain() }
     }
+    @Test fun connectionRecoveryAutomaticallyUploadsDurablePendingInput() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val owner=ViewModelStore(); val account=account(); val remote=Remote()
+        val vm=BridgeViewModel(Legacy(),account=account,sync=SyncRepository(MemoryCredentialStore(),remote)); owner.put("vm",vm)
+        try {
+            account.authenticate("student_a","Synthetic-password-123!",false); runCurrent()
+            remote.offline=true
+            vm.start("자동 복구",false,true,Language.KO,Language.EN); runCurrent()
+            assertTrue(vm.state.value.syncPending>0)
+            remote.offline=false
+            advanceTimeBy(15_001); runCurrent()
+            assertEquals(0,vm.state.value.syncPending)
+            assertEquals("자동 복구",remote.archives["student_a"]!!.conversations.single().title)
+        } finally { owner.clear(); Dispatchers.resetMain() }
+    }
     private fun account() = AccountManager("https://sync.example.invalid",MemoryCredentialStore(),client=HttpClient(MockEngine { request ->
         if(request.url.encodedPath=="/auth/logout") respond("{}")
         else {
