@@ -26,12 +26,15 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
     private val mutex = Mutex()
     private val uploadMutex = Mutex()
     private var envelope: PendingEnvelope? = null
+    // Failed secure writes remain in this process only, isolated by account. Never upload
+    // them until a subsequent secure commit succeeds. The UI keeps its unsaved warning.
+    private val volatileQueues = mutableMapOf<String, List<PendingMutation>>()
     private var identity: SyncIdentity? = null
     private var archive = Archive(1, emptyList())
     private var versions = emptyMap<String, String>()
     private var drafts = emptyMap<String, JsonObject>()
     private fun key(identity: SyncIdentity) = json.encodeToString(identity)
-    private fun queue(identity: SyncIdentity) = envelope!!.accounts[key(identity)].orEmpty()
+    private fun queue(identity: SyncIdentity) = volatileQueues[key(identity)] ?: envelope!!.accounts[key(identity)].orEmpty()
     private suspend fun persist(next: PendingEnvelope) {
         secure.write(json.encodeToString(next))
         envelope = next // State only advances after durable secure storage succeeds.
@@ -61,6 +64,7 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
     suspend fun open(next: SyncIdentity): Archive = mutex.withLock {
         require(next.origin.isNotBlank() && next.userId.isNotBlank())
         load()
+        volatileQueues[key(next)]?.let { enqueue(it, next) }
         // Clear the prior account before any I/O; an error must not reveal its memory.
         identity = null; archive = Archive(1, emptyList()); versions = emptyMap(); drafts = emptyMap()
         val pending = queue(next)
@@ -93,7 +97,14 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
         return PendingMutation(envelope!!.deviceId, newId(), entity, id, base, value)
     }
     private suspend fun enqueue(next: List<PendingMutation>, user: SyncIdentity) {
-        persist(envelope!!.copy(accounts = envelope!!.accounts + (key(user) to next)))
+        val accounts = if (next.isEmpty()) envelope!!.accounts - key(user) else envelope!!.accounts + (key(user) to next)
+        try {
+            persist(envelope!!.copy(accounts = accounts))
+            volatileQueues.remove(key(user))
+        } catch (e: Exception) {
+            volatileQueues[key(user)] = next
+            throw e
+        }
     }
     suspend fun save(next: Archive, expectedIdentity: SyncIdentity? = null) = mutex.withLock {
         val user = identity ?: throw BridgeRequestException("login_required", "로그인 후 기록을 저장할 수 있습니다.")
@@ -107,30 +118,42 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
         for (conversation in archive.conversations) if (next.conversations.none { it.id == conversation.id }) add("conversation", conversation.id, null)
         for (folder in archive.folders) if (next.folders.none { it.id == folder.id }) add("folder", folder.id, null)
         if (archive.appearance != next.appearance) add("settings", "settings", buildJsonObject { put("appearance", next.appearance.name) })
-        if (pending.size != queue(user).size) enqueue(pending, user)
-        archive = next
+        try {
+            if (pending.size != queue(user).size || key(user) in volatileQueues) enqueue(pending, user)
+        } finally {
+            // Effective in-memory state includes the failed write, so a later undo is
+            // represented too. Only enqueue's successful secure commit marks it durable.
+            archive = next
+        }
     }
     suspend fun saveDraft(id: String, value: JsonObject?, expectedIdentity: SyncIdentity? = null) = mutex.withLock {
         val user = identity ?: throw BridgeRequestException("login_required", "로그인 후 입력해 주세요.")
         check(expectedIdentity == null || user == expectedIdentity) { "Account changed" }
-        if (drafts[id] == value) return@withLock
+        if (drafts[id] == value) {
+            volatileQueues[key(user)]?.let { enqueue(it, user) }
+            return@withLock
+        }
         val pending = queue(user)
-        enqueue(pending + mutation("draft", id, value, pending), user)
-        drafts = drafts.toMutableMap().apply { if(value == null) remove(id) else put(id,value) }
+        try { enqueue(pending + mutation("draft", id, value, pending), user) }
+        finally { drafts = drafts.toMutableMap().apply { if(value == null) remove(id) else put(id,value) } }
     }
     fun close() { remote.close() }
     suspend fun flush() = uploadMutex.withLock upload@{
         val user = mutex.withLock { identity } ?: return@upload
         while (true) {
-            val first = mutex.withLock { if(identity == user) queue(user).firstOrNull() else null } ?: break
+            val first = mutex.withLock {
+                if(identity != user) null else {
+                    volatileQueues[key(user)]?.let { enqueue(it, user) }
+                    queue(user).firstOrNull()
+                }
+            } ?: break
             // Keep the immutable mutation until ACK. A timeout may follow a successful commit.
             // Network I/O must never hold the lock needed for saving the next input.
             val receipt = remote.mutate(user, first)
             check(receipt.entity == first.entity && receipt.id == first.id && receipt.version.toLong() == first.baseVersion.toLong() + 1)
             mutex.withLock {
                 val remaining = queue(user).filterNot { it.mutationId == first.mutationId }
-                val nextAccounts = if (remaining.isEmpty()) envelope!!.accounts - key(user) else envelope!!.accounts + (key(user) to remaining)
-                persist(envelope!!.copy(accounts = nextAccounts))
+                enqueue(remaining, user)
                 if(identity == user) versions = versions + ("${first.entity}:${first.id}" to receipt.version)
             }
         }
