@@ -33,6 +33,14 @@ test('cutover freezes only the source, reapplies later deletion, revokes session
  await assert.rejects(old.auth.query('SELECT 1'));
  const adminRecovery=await openAdmin(source.database);await adminRecovery.end();
  assert.equal((await activateRestoredDatabase({source:source.database,target:target.database,confirm:source.database})).alreadyActive,true);
+ // A target retired by a later cutover must never be reopened by retrying an old command.
+ const manager=await openAdmin();const targetAdmin=await openAdmin(target.database);
+ try {
+  await targetAdmin.query('UPDATE restore_activation SET retired_to=$1',['speechbridge_restore_000000000000000000000000']);
+  await manager.query(`REVOKE CONNECT ON DATABASE "${target.database}" FROM PUBLIC,speechbridge_auth,speechbridge_app`);
+  await assert.rejects(activateRestoredDatabase({source:source.database,target:target.database,confirm:source.database}));
+  assert.equal((await manager.query("SELECT has_database_privilege('speechbridge_auth',$1,'CONNECT') AS connected",[target.database])).rows[0].connected,false);
+ }finally{await manager.end();await targetAdmin.end();}
  // The original shared test DB was never frozen.
  await db.ready();
 });
