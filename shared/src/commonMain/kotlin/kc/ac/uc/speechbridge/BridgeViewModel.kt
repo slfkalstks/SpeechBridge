@@ -44,7 +44,7 @@ data class BridgeState(
     val selected get() = conversations.firstOrNull { it.id == selectedId }
 }
 
-class BridgeViewModel(private val store: SessionStore, private val api: BridgeApi = HttpBridgeApi(), val account: AccountManager? = null, private val sync: SyncRepository? = null) : ViewModel() {
+class BridgeViewModel(private val store: SessionStore, private val api: BridgeApi = HttpBridgeApi(), val account: AccountManager? = null, private val sync: SyncRepository? = null, audioDevice: AudioDevice = UnavailableAudioDevice(), voiceApi: VoiceApi = UnavailableVoiceApi()) : ViewModel() {
     private val mutable = MutableStateFlow(BridgeState(cloudMode = sync != null, accountRequired = sync != null))
     val state = mutable.asStateFlow()
     private data class Write(val revision: Long, val generation: Long, val identity: SyncIdentity?,
@@ -62,6 +62,37 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     private var writeRevision = 0L
     private var requestSequence = 0L
     private val requests = mutableMapOf<String, Pair<Long, Job>>()
+    val voice = VoiceController(viewModelScope, audioDevice, voiceApi, ::recordTranscript)
+    fun startVoice() {
+        if (!canEdit() || state.value.page != Page.TALK || state.value.selected?.ended == true) return
+        voice.start()
+    }
+    fun cancelVoice() = voice.cancel()
+    fun speak(id: String, utteranceId: String) {
+        if (!canEdit()) return
+        val c = state.value.conversations.find { it.id == id } ?: return
+        val u = c.utterances.find { it.id == utteranceId && it.translationRevision == it.revision } ?: return
+        val text = u.translation ?: return
+        if (voice.state.value.playingKey == u.id) voice.cancel() else voice.speak(text, c.target(u.language), u.id)
+    }
+    private fun recordTranscript(result: Transcription) {
+        if (!canEdit() || state.value.page != Page.TALK || state.value.selected?.ended == true) return
+        val detected = Language.entries.firstOrNull { it.code == result.language } ?: return
+        val oldDraft = state.value.activeId?.let { state.value.inputDrafts[it] } ?: state.value.idleDraft
+        if (state.value.activeId == null) {
+            val pair = state.value.startDraft
+            val target = if (detected == pair.second) pair.first else pair.second
+            updateStartDraft(pair.copy(first = detected, second = target))
+            startConversation()
+        }
+        val id = state.value.activeId ?: return
+        val c = state.value.conversations.first { it.id == id }
+        val target = if (detected == c.second) c.first else c.second
+        setLanguages(id, detected, target)
+        addUtterance(id, detected, result.text)
+        // Speech must not consume text the user has not submitted.
+        if (oldDraft.text.isNotEmpty()) updateInputDraft(id, oldDraft)
+    }
 
     init {
         viewModelScope.launch {
@@ -283,9 +314,10 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         if (!canEdit()) return
         mutable.update { it.copy(appearance = appearance) }; persist()
     }
-    fun navigate(page: Page) { mutable.update { it.copy(page = page) } }
+    fun navigate(page: Page) { voice.cancel(); mutable.update { it.copy(page = page) } }
     fun updateStartDraft(draft: StartDraft) {
         if (!canEdit() || draft.first == draft.second) return
+        voice.cancel()
         mutable.update { it.copy(startDraft = draft, idleDraft = it.idleDraft.copy(language = draft.first)) }
         if (sync != null) persist()
     }
@@ -305,7 +337,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     fun searchTasks(query: String) { mutable.update { it.copy(taskQuery = query) } }
     fun filterTasks(filter: TaskFilter) { mutable.update { it.copy(taskFilter = filter) } }
     fun dismissMessage() { mutable.update { it.copy(message = null) } }
-    fun select(id: String) { mutable.update { it.copy(selectedId = id, page = Page.TALK) } }
+    fun select(id: String) { voice.cancel(); mutable.update { it.copy(selectedId = id, page = Page.TALK) } }
 
     fun start(title: String, translate: Boolean, record: Boolean, first: Language, second: Language) {
         if (!canEdit() || state.value.activeId != null) return
@@ -338,6 +370,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         if (first == second) return
         val c = state.value.conversations.find { it.id == id && !it.ended } ?: return
         if (c.first == first && c.second == second) return
+        voice.cancel()
         val next = c.copy(first = first, second = second)
         val changed = c.utterances.filter { c.target(it.language) != next.target(it.language) }.map { it.id }.toSet()
         val keys = changed.map { "translate:$it" } + "extract:$id"
@@ -431,6 +464,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         if (c.translate) translate(id, u.id)
     }
     fun editUtterance(id: String, utteranceId: String, text: String) {
+        voice.cancel()
         if (text.isBlank()) return
         invalidate()
         change(id) { it.editUtterance(utteranceId, text) }
@@ -525,6 +559,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         mutable.update { it.copy(busy = it.busy - key, requestErrors = it.requestErrors + (key to "요청을 취소했습니다. 다시 요청할 수 있습니다."), message = "요청을 취소했습니다. 원문은 유지됩니다.") }
     }
     private fun invalidate() {
+        voice.cancel()
         requests.values.forEach { it.second.cancel() }
         requests.clear()
         mutable.update { it.copy(busy = emptySet(), requestErrors = emptyMap()) }
@@ -556,5 +591,5 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     private fun requestFailed(key: String, message: String) {
         mutable.update { it.copy(requestErrors = it.requestErrors + (key to message), message = message) }
     }
-    override fun onCleared() { invalidate(); writes.close(); api.close(); account?.close(); sync?.close() }
+    override fun onCleared() { invalidate(); voice.close(); writes.close(); api.close(); account?.close(); sync?.close() }
 }

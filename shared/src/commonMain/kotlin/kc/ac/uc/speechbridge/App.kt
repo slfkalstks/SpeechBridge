@@ -16,17 +16,21 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun App(store: SessionStore? = null, developerTools: Boolean = false, credentialStore: CredentialStore = MemoryCredentialStore(), pendingStore: CredentialStore = MemoryCredentialStore(), developerUrl: String = "http://localhost:8787") {
+fun App(store: SessionStore? = null, audioDevice: AudioDevice = UnavailableAudioDevice(), developerTools: Boolean = false, credentialStore: CredentialStore = MemoryCredentialStore(), pendingStore: CredentialStore = MemoryCredentialStore(), developerUrl: String = "http://localhost:8787") {
     val actualStore = remember(store) { store ?: MemorySessionStore() }
     val vm = viewModel {
         val account = AccountManager(SERVICE_URL.ifBlank { if(developerTools) developerUrl else "" }, credentialStore, developerTools)
-        BridgeViewModel(actualStore, HttpBridgeApi(developerMode = developerTools, account = account), account, SyncRepository(pendingStore, HttpSyncRemote(account)))
+        BridgeViewModel(actualStore, HttpBridgeApi(developerMode = developerTools, account = account), account, SyncRepository(pendingStore, HttpSyncRemote(account)), audioDevice, HttpVoiceApi(account))
     }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { vm.cancelVoice() }
     LaunchedEffect(vm) { vm.account?.restore() }
     val state by vm.state.collectAsStateWithLifecycle()
+    val voice by vm.voice.state.collectAsStateWithLifecycle()
     val historyScroll = remember { LazyListState() }
     val taskScroll = remember { LazyListState() }
     var previousPage by remember { mutableStateOf(Page.TALK) }
@@ -34,6 +38,9 @@ fun App(store: SessionStore? = null, developerTools: Boolean = false, credential
     val selectedTab = if(state.page == Page.TALK && state.selected?.ended == true) Page.HISTORY else state.page
     fun navigate(page: Page) { if(page == Page.TALK) vm.select(state.activeId ?: "") else vm.navigate(page) }
     val snackbar = remember { SnackbarHostState() }
+    LaunchedEffect(voice.message) {
+        voice.message?.let { snackbar.showSnackbar(it, actionLabel = "닫기", duration = SnackbarDuration.Short) }
+    }
     LaunchedEffect(state.message) {
         snackbar.currentSnackbarData?.dismiss()
         state.message?.let {

@@ -40,6 +40,9 @@ fun serviceErrorMessage(code: String, status: Int): String = when (code) {
     "context_too_large", "payload_too_large" -> "처리할 내용이 너무 깁니다. 대화를 나누어 요청해 주세요."
     "incomplete_output", "invalid_model_output", "upstream_failed" -> "AI 결과를 확인하지 못했습니다. 원문을 확인한 뒤 다시 시도해 주세요."
     "model_timeout" -> "AI 응답 대기 시간이 지났습니다. 다시 시도해 주세요."
+    "language_not_detected" -> "언어를 확인하지 못했어요. 한국어·영어·일본어 중 한 언어로 다시 말해 주세요."
+    "no_speech" -> "말소리를 확인하지 못했어요. 마이크를 가까이 두고 다시 말해 주세요."
+    "speech_timeout" -> "음성 처리 시간이 초과되었습니다. 짧게 나누어 다시 말해 주세요."
     "speech_pending" -> "음성 기능은 아직 연결 전입니다."
     else -> when (status) {
         400 -> "입력 형식을 확인해 주세요."

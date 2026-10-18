@@ -123,7 +123,7 @@ object BridgeNightPalette {
         color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
 }
 
-internal enum class Symbol { MIC, RECORDS, TASKS, SETTINGS, MORE, DOWN, BACK, SWAP, KEYBOARD, SEND, SEARCH, CLOSE, FOLDER, SUN, MOON, SYSTEM }
+internal enum class Symbol { STOP, SPEAKER, MIC, RECORDS, TASKS, SETTINGS, MORE, DOWN, BACK, SWAP, KEYBOARD, SEND, SEARCH, CLOSE, FOLDER, SUN, MOON, SYSTEM }
 
 @Composable internal fun BridgeIcon(page: Page) = AppSymbol(when(page) {
     Page.TALK -> Symbol.MIC; Page.HISTORY -> Symbol.RECORDS; Page.TASKS -> Symbol.TASKS; Page.SETTINGS -> Symbol.SETTINGS
@@ -138,6 +138,13 @@ internal enum class Symbol { MIC, RECORDS, TASKS, SETTINGS, MORE, DOWN, BACK, SW
         fun box(x: Float, y: Float, w: Float, h: Float, radius: Float = 3f) =
             drawRoundRect(ink, Offset(x*s,y*s), Size(w*s,h*s), CornerRadius(radius*s), style = Stroke(1.8f*s))
         when(symbol) {
+            Symbol.STOP -> drawRoundRect(ink, Offset(6*s,6*s), Size(12*s,12*s), CornerRadius(2*s))
+            Symbol.SPEAKER -> {
+                val speaker = Path().apply { moveTo(3*s,9*s); lineTo(7*s,9*s); lineTo(12*s,4*s); lineTo(12*s,20*s); lineTo(7*s,15*s); lineTo(3*s,15*s); close() }
+                drawPath(speaker,ink,style = Stroke(1.8f*s, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+                drawArc(ink,-55f,110f,false,Offset(10*s,7*s),Size(9*s,10*s),style = Stroke(1.8f*s,cap = StrokeCap.Round))
+                drawArc(ink,-55f,110f,false,Offset(8*s,3*s),Size(15*s,18*s),style = Stroke(1.8f*s,cap = StrokeCap.Round))
+            }
             Symbol.MIC -> {
                 box(8f,2f,8f,13f,4f)
                 drawArc(ink, 0f, 180f, false, Offset(5*s,6*s), Size(14*s,13*s), style = Stroke(1.8f*s, cap = StrokeCap.Round))

@@ -92,44 +92,53 @@ import androidx.compose.ui.unit.dp
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable private fun VoiceControl(compact: Boolean = false, onKeyboard: () -> Unit) {
-    var help by remember { mutableStateOf(false) }
+@Composable private fun VoiceControl(vm: BridgeViewModel, compact: Boolean = false, onKeyboard: () -> Unit) {
+    val voice by vm.voice.state.collectAsState()
+    val recording = voice.phase == VoicePhase.RECORDING
+    val waiting = voice.phase in setOf(VoicePhase.PERMISSION, VoicePhase.TRANSCRIBING)
+    val busy = recording || waiting
+    val label = when(voice.phase) {
+        VoicePhase.RECORDING -> "말하기 완료"
+        VoicePhase.PERMISSION -> "마이크 권한 확인 중"
+        VoicePhase.TRANSCRIBING -> "음성을 글로 바꾸는 중"
+        else -> "눌러서 말하기"
+    }
+    val hint = when(voice.phase) {
+        VoicePhase.RECORDING -> "${voice.seconds}초 · 최대 30초"
+        VoicePhase.TRANSCRIBING -> "언어를 감지하고 자동으로 기록합니다"
+        VoicePhase.PERMISSION -> "기기의 권한 요청을 확인해 주세요"
+        else -> "한국어 · English · 日本語 자동 감지"
+    }
     val microphone: @Composable () -> Unit = {
-        FilledIconButton(onClick = { help = true }, modifier = Modifier.size(if(compact) 64.dp else 136.dp)
-            .semantics { contentDescription = "음성 입력 준비 안내" }, shape = RoundedCornerShape(if(compact) 24.dp else 44.dp)) {
-            AppSymbol(Symbol.MIC, Modifier.size(if(compact) 28.dp else 48.dp))
+        FilledIconButton(onClick = { if(recording) vm.voice.finish() else if(waiting) vm.cancelVoice() else vm.startVoice() },
+            modifier = Modifier.size(if(compact) 64.dp else 128.dp).semantics {
+                contentDescription = if(waiting) "음성 처리 취소" else label
+            }, shape = RoundedCornerShape(if(compact) 24.dp else 44.dp)) {
+            if(waiting) CircularProgressIndicator(Modifier.size(28.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+            else AppSymbol(if(recording) Symbol.STOP else Symbol.MIC, Modifier.size(if(compact) 28.dp else 48.dp))
         }
+    }
+    val description: @Composable () -> Unit = {
+        Text(label, style = if(compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineSmall)
+        Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if(recording) LinearProgressIndicator(progress = { voice.level }, modifier = Modifier.widthIn(max = 240.dp).fillMaxWidth()
+            .semantics { contentDescription = "마이크 입력 크기" })
+    }
+    val secondary: @Composable () -> Unit = {
+        if(busy) TextButton(onClick = vm::cancelVoice) { Text("취소") }
+        else IconButton(onClick = { vm.cancelVoice(); onKeyboard() }, modifier = Modifier.size(48.dp)
+            .semantics { contentDescription = "키보드로 입력" }) { AppSymbol(Symbol.KEYBOARD) }
     }
     if(compact) Surface(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
         shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface) {
-        Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             microphone()
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("음성 입력", style = MaterialTheme.typography.titleMedium)
-                Text("마이크 연결 준비 중", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            IconButton(onClick = onKeyboard, modifier = Modifier.size(48.dp).semantics { contentDescription = "키보드로 입력" }) { AppSymbol(Symbol.KEYBOARD) }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) { description() }
+            secondary()
         }
-    } else Column(Modifier.fillMaxWidth().padding(vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        microphone()
-        Spacer(Modifier.height(28.dp))
-        Text("음성으로 대화", style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(8.dp))
-        Text("마이크 연결 준비 중", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(24.dp))
-        TextButton(onClick = onKeyboard, modifier = Modifier.heightIn(min = 48.dp)) {
-            AppSymbol(Symbol.KEYBOARD, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text("키보드로 입력")
-        }
-    }
-    if(help) ModalBottomSheet(onDismissRequest = { help = false }, containerColor = MaterialTheme.colorScheme.surface) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)) {
-            Heading("음성 입력 준비 중")
-            Text("마이크 연결은 추후 제공됩니다. 연결되면 말하는 언어를 감지해 번역하고 대화를 기록합니다.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Button(onClick = { help = false; onKeyboard() }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("키보드로 입력") }
-            TextButton(onClick = { help = false }, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text("닫기") }
-        }
+    } else Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        microphone(); Spacer(Modifier.height(8.dp)); description(); secondary()
     }
 }
 
@@ -167,7 +176,7 @@ import androidx.compose.ui.unit.dp
         }
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = if(compact) 0.dp else 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            if(!keyboard) VoiceControl(compact = compact, onKeyboard = { keyboard = true })
+            if(!keyboard) VoiceControl(vm, compact = compact, onKeyboard = { keyboard = true })
         }
         if(keyboard) Composer(draft, { vm.updateIdleDraft(it) }, { sent ->
             vm.startConversation(); vm.state.value.activeId?.let { vm.addUtterance(it, sent.language, sent.text) }
@@ -179,6 +188,7 @@ import androidx.compose.ui.unit.dp
 private data class ItemEditor(val sourceId: String, val existing: ActionItem? = null)
 
 @Composable internal fun ConversationScreen(state: BridgeState, vm: BridgeViewModel) {
+    val voice by vm.voice.state.collectAsState()
     val c = state.selected ?: state.conversations.find { it.id == state.activeId }
     if(c == null) { StartConversation(state, vm); return }
     var section by remember(c.id) { mutableIntStateOf(if(c.ended) 1 else 0) }
@@ -198,7 +208,7 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
                 if(c.ended) TextButton(onClick = { classify = true }) { Text(c.classificationLabel(state.folders), maxLines = 2); Spacer(Modifier.width(8.dp)); AppSymbol(Symbol.DOWN, Modifier.size(16.dp)) }
                 else LanguageBar(c.first, c.second) { a, b -> vm.setLanguages(c.id, a, b) }
             }
-            if(!c.ended) FilledTonalButton(onClick = { finish = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text("종료") }
+            if(!c.ended) FilledTonalButton(onClick = { vm.cancelVoice(); finish = true }, enabled = voice.phase !in setOf(VoicePhase.PERMISSION, VoicePhase.RECORDING, VoicePhase.TRANSCRIBING), modifier = Modifier.heightIn(min = 48.dp)) { Text("종료") }
             else MoreMenu("기록 더보기") { close ->
                 DropdownMenuItem(text = { Text("제목·분류 수정") }, onClick = { close(); classify = true })
                 DropdownMenuItem(text = { Text(if(state.activeId == null) "새 대화" else "진행 중인 대화") }, onClick = { close(); vm.select(state.activeId ?: "") })
@@ -215,7 +225,7 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
         LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = scroll, contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             if(section == 0) {
                 if(c.utterances.isEmpty()) item { EmptyState("대화를 기다리고 있어요", "입력한 내용은 자동으로 저장됩니다.") }
-                items(c.utterances, key = { it.id }) { u -> UtteranceCard(c, u, state, { sourceEdit = u }, { vm.translate(c.id, u.id) },
+                items(c.utterances, key = { it.id }) { u -> UtteranceCard(c, u, state, voice, { vm.speak(c.id, u.id) }, { vm.cancelVoice(); sourceEdit = u }, { vm.translate(c.id, u.id) },
                     { vm.cancelRequest("translate:${u.id}") }, { itemEdit = ItemEditor(u.id) }) }
             } else {
                 item {
@@ -246,7 +256,7 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
         }
         if(!c.ended) {
             if(keyboard) key(c.id) { Composer(draft, { vm.updateInputDraft(c.id, it) }, { vm.addUtterance(c.id, it.language, it.text) }, { keyboard = false }) }
-            else VoiceControl(compact = true, onKeyboard = { keyboard = true })
+            else VoiceControl(vm, compact = true, onKeyboard = { keyboard = true })
         }
     }
     if(summaryEdit) SummaryEditDialog(c.summary ?: "", { summaryEdit = false }) { vm.editSummary(c.id, it); summaryEdit = false }
@@ -267,7 +277,7 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
     }
 }
 
-@Composable private fun UtteranceCard(c: Conversation, u: Utterance, state: BridgeState, edit: () -> Unit,
+@Composable private fun UtteranceCard(c: Conversation, u: Utterance, state: BridgeState, voice: VoiceState, speak: () -> Unit, edit: () -> Unit,
     translate: () -> Unit, cancel: () -> Unit, addItem: () -> Unit) {
     val busy = "translate:${u.id}" in state.busy
     Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surface) {
@@ -287,7 +297,14 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
             if(c.translate) Surface(color = MaterialTheme.colorScheme.secondaryContainer) {
                 Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val result = u.translation.takeIf { u.translationRevision == u.revision }
-                    Text("번역", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("번역", Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                        if(result != null) IconButton(onClick = speak,
+                            enabled = voice.phase !in setOf(VoicePhase.PERMISSION, VoicePhase.RECORDING, VoicePhase.TRANSCRIBING),
+                            modifier = Modifier.semantics { contentDescription = if(voice.playingKey == u.id) "번역 읽기 중지" else "번역 소리로 듣기" }) {
+                            AppSymbol(if(voice.playingKey == u.id) Symbol.STOP else Symbol.SPEAKER)
+                        }
+                    }
                     if(result != null) SelectionContainer { Text(result, style = MaterialTheme.typography.bodyLarge) }
                     else if(busy) Text("번역 중…", style = MaterialTheme.typography.bodyMedium)
                     else TextButton(onClick = translate, contentPadding = PaddingValues(0.dp)) { Text("번역 재시도") }
