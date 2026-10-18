@@ -1,0 +1,15 @@
+{
+  "createdAt": "2026-10-18T13:46:32.451Z",
+  "scope": "Synthetic typed conversation; member HTTP, real PostgreSQL test DB and installed local text model. No microphone or physical device test.",
+  "pendingSurvivedServerRecreation": true,
+  "milliseconds": 7533,
+  "result": {
+    "title": "금요일 출시 확정",
+    "summary": "팀 회의를 통해 금요일 출시가 확정되었음이 언급되었다.",
+    "category": "WORK",
+    "workType": "MEETING"
+  },
+  "jobCount": 1,
+  "attempts": 1,
+  "manualEditPreserved": true
+}

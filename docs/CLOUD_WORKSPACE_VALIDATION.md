@@ -31,7 +31,7 @@ iPhone 17 Pro / iOS 26.5 시뮬레이터, 프로젝트 회원 API와 PostgreSQL�
 
 ## 후속 검증
 
-네이티브 마이크·재생과 자동 언어 처리는 연결했고 [음성 검증](NATIVE_VOICE_VALIDATION.md)에 범위를 기록했다. DB 백업 복원과 초안 복구 회귀도 아래에 추가했다. 최초 AI 작업의 서버 재개, 테스트용 HTTPS 연결, Android 네이티브 저장의 추가 연결 검증과 배포 설정 점검은 계속 진행한다.
+네이티브 마이크·재생과 자동 언어 처리는 연결했고 [음성 검증](NATIVE_VOICE_VALIDATION.md)에 범위를 기록했다. DB 백업 복원·초안 복구·최초 AI 작업의 서버 재개 검증도 아래에 추가했다. 테스트용 HTTPS 연결, Android 네이티브 저장의 추가 연결 검증과 배포 설정 점검은 계속 진행한다.
 
 ## 초안 복구·기기 등록 추가 검증
 
@@ -46,3 +46,14 @@ iPhone 17 Pro / iOS 26.5 시뮬레이터, 프로젝트 회원 API와 PostgreSQL�
 새 테스트는 `DraftRecoveryTest`, `CloudWorkspaceTest`, `HttpSyncRemoteTest`, `server/data.test.mjs`에 있으며 실제 다중 휴대전화 검증과는 구분한다.
 
 추가 검증 종료 시 서버70개, Android host95개/iOS simulator95개 모두 통과했다. Android Debug APK와 signed Xcode Debug 앱 빌드도 성공했다.
+
+## 서버 AI 작업과 실제 화면 추가 검증
+
+2026-10-18. Migration006을 적용하고 회원 API를 재시작했다. 최신 signed Debug 앱을 기존 iPhone17Pro 시뮬레이터에 설치했다.
+
+1. 가상 계정에 합성 문장 한 개가 있는 진행 중 대화를 준비했다. 기존 기기 기록은 가져오지 않았다.
+2. 앱에서 로그인→대화 종료→확인. 화면의 ‘제목, 분류와 요약 작성 중’, ‘대화를 요약하고 있어요…’를 확인했다.
+3. 별도 새로고침 없이 제목 ‘금요일 출시 확정’, 분류 ‘업무 · 회의’, 요약이 표시됐다. DB에서도 작업 succeeded/attempts1과 같은 결과를 확인했다.
+4. 설정에서 ‘서버 저장 완료’를 확인하고 로그아웃했다. 서버 세션 0개 확인 후 이번 가상 계정만 제거했다.
+
+로컬 근거는 `.runtime/postgres/jobs-ui.json`이다. 합성 텍스트의 UI·DB 흐름이며 실제 마이크나 실제 휴대전화 검증이 아니다. 최신 자동화 회귀는 서버83개, Android/iOS 각각99개 통과. 로그아웃 후에도 이미 DB에 접수된 자동 정리는 계속된다는 안내를 반영했다.

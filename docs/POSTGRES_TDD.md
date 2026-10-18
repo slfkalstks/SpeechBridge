@@ -51,3 +51,17 @@ SQLite backup API는 파일 헤더 카운터를 변경하므로 백업 비교를
 | 0a05ee2 | 10b9256 | 실제 기기 플랫폼 등록, 구버전 mutation 재시도 호환, 유효하지 않은 플랫폼 거부 |
 
 서버70개 통과. 로드된 서버 소스 line96.62/branch90.83/function90.83%; backup 모듈 line92.65/branch89.19/function90.91%. 운영 backup도 별도DB복원17개테이블비교와임시DB정리를확인했다. `.runtime/postgres/backup-*.log`, `device-*.log`, `draft-recovery-*.log`, `recovery-final.log`가 로컬 근거다. 새 UI초안복구 테스트를 실제 다중 휴대전화 확인으로 표현하지 않는다.
+
+## 최초 AI 작업 영속화와 앱 자동 반영
+
+| RED | GREEN | 보장 |
+|---|---|---|
+| 12fb077 | 3d6d793 | 종료와 작업 생성의 원자성, 중복 방지, RLS, 사용자 수정·삭제 보호, 임대 만료 재획득·늦은 완료 거부, 제한된 재시도 |
+| 36eeeeb | 3f78db8 | 작업 순차 실행, 음성과 연산 자원 공유, 종료 시 작업 반환, 시간초과·DB 장애 후 계속 처리 |
+| 86d3870 | ec686e4 | 앱의 중복 AI 요청 제거, 서버 결과 자동 반영, 조회 대기 중 안전한 로컬 저장·계정 전환·사용자 편집 보호 |
+
+Node 83개 모두 통과, 로드된 소스 line96.98/branch91.43/function91.80%. 새 작업 repository line99.11/branch98.18/function95.24%, worker line100/branch91.18/function90%. Android host99개/iOS simulator99개 모두 통과, 실패·건너뜀 0. Android Debug APK와 signed Xcode Debug 앱 빌드 성공. 원자료 `.runtime/postgres/jobs-*.log`, `worker-*.log`. Kotlin 커버리지를 측정한 수치는 아니다.
+
+합성 텍스트를 실제 회원 HTTP→테스트 PostgreSQL에 저장한 뒤 서버 인스턴스를 재생성해 로컬 모델 정리 완료·작업 1개·후속 수동 제목 보존을 확인했다. 결과 [organization-jobs.json](../server/validation/organization-jobs.json)의 약7.5초는 단일 사례이며 일반 성능 지표가 아니다. 별도로 실제 iOS 시뮬레이터에서 종료·처리 중 표시·완료 자동 반영을 관찰했다.
+
+운영 DB 선택 보완: `11b6d75` RED → `164ba9d` GREEN. 백업·마이그레이션이 프로젝트 서버 설정의 기본/복원 DB를 따르고 다른 소켓·포트·DB를 거부한다. 현재 선택 DB의 마이그레이션 재실행 확인. 최종 Node85개 통과, loaded line97.02/branch91.43/function91.95%; target 모듈 line100/branch90.91/function100%. `.runtime/postgres/target-*.log`. 실제 운영 DB 전환을 수행했다는 뜻은 아니다.

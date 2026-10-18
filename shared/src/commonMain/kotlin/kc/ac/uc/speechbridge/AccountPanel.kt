@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
         else TextButton(onClick = { confirmLogout = true }, enabled = !state.busy) { Text("로그아웃") }
     }
     if(confirmLogout) AlertDialog(onDismissRequest = { confirmLogout = false }, title = { Text("로그아웃할까요?") },
-        text = { Text("서버 기록은 내 계정에 보관됩니다. 전송 대기 내용은 같은 계정으로 다시 로그인하면 이어서 저장됩니다. 진행 중인 AI 요청은 취소됩니다.") },
+        text = { Text("서버 기록은 내 계정에 보관됩니다. 전송 대기 내용은 같은 계정으로 다시 로그인하면 이어서 저장됩니다. 이 기기의 AI 요청은 취소되며, 저장한 대화의 자동 정리는 계속됩니다.") },
         confirmButton = { TextButton(onClick = { confirmLogout = false; scope.launch { if(changing()) account.logout() } }) { Text("로그아웃") } },
         dismissButton = { TextButton(onClick = { confirmLogout = false }) { Text("취소") } })
     if(open) {
