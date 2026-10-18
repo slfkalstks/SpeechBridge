@@ -20,11 +20,12 @@ class CloudWorkspaceTest {
         var offline = false
         val sent = mutableListOf<SyncIdentity>()
         val draftValues = mutableListOf<JsonObject>()
+        val drafts = mutableMapOf<String,MutableMap<String,JsonObject>>()
         val archives = mutableMapOf<String,Archive>()
         val versions = mutableMapOf<String,MutableMap<String,String>>()
         override suspend fun snapshot(identity: SyncIdentity, deviceId: String): DataSnapshot {
             if(offline) error("offline")
-            return DataSnapshot(archives[identity.userId] ?: Archive(1,emptyList()),versions[identity.userId].orEmpty().toMap(),"0")
+            return DataSnapshot(archives[identity.userId] ?: Archive(1,emptyList()),versions[identity.userId].orEmpty().toMap(),"0",drafts[identity.userId].orEmpty().toMap())
         }
         override suspend fun mutate(identity: SyncIdentity, mutation: PendingMutation): MutationReceipt {
             if(offline) error("offline")
@@ -41,6 +42,10 @@ class CloudWorkspaceTest {
             if(mutation.entity == "conversation") {
                 val old = archives[identity.userId] ?: Archive(1,emptyList())
                 archives[identity.userId] = old.copy(conversations = old.conversations.filterNot { it.id==mutation.id } + listOfNotNull(mutation.value?.let { ArchiveCodec.json.decodeFromJsonElement<Conversation>(it) }))
+            }
+            if(mutation.entity == "draft") {
+                val values = drafts.getOrPut(identity.userId) { mutableMapOf() }
+                if(mutation.value == null) values.remove(mutation.id) else values[mutation.id]=mutation.value.jsonObject
             }
             return MutationReceipt(mutation.entity,mutation.id,rev,rev)
         }
@@ -239,6 +244,44 @@ class CloudWorkspaceTest {
             assertEquals(0,vm.state.value.syncPending)
             assertEquals("자동 복구",remote.archives["student_a"]!!.conversations.single().title)
         } finally { owner.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun keepingBothSelectsTheLocalCopyAndMovesItsDraftBeforeAnotherEdit() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val owner=ViewModelStore();val account=account();val remote=Remote()
+        val original=Conversation(id="active",title="진행 중",translate=false,record=true,first=Language.KO,second=Language.EN)
+        remote.archives["student_a"]=Archive(1,listOf(original));remote.versions["student_a"]=mutableMapOf("conversation:active" to "1")
+        val vm=BridgeViewModel(Legacy(),account=account,sync=SyncRepository(MemoryCredentialStore(),remote));owner.put("vm",vm)
+        try {
+            account.authenticate("student_a","Synthetic-password-123!",false);runCurrent()
+            remote.offline=true
+            vm.addUtterance("active",Language.KO,"내 문장");vm.updateInputDraft("active",UtteranceDraft(text="작성 중인 초안"));runCurrent()
+            remote.archives["student_a"]=Archive(1,listOf(original.copy(title="서버 종료",ended=true)))
+            remote.versions["student_a"]!!["conversation:active"]="2";remote.offline=false
+            vm.retrySync();runCurrent();assertTrue(vm.state.value.syncConflict)
+            vm.resolveSyncConflict();runCurrent()
+            val copy=vm.state.value.conversations.single {it.id!="active"}
+            assertEquals(copy.id,vm.state.value.activeId);assertEquals(copy.id,vm.state.value.selectedId)
+            assertEquals("작성 중인 초안",vm.state.value.inputDrafts[copy.id]?.text)
+            assertNull(vm.state.value.inputDrafts["active"])
+            vm.addUtterance(copy.id,Language.KO,"다음 문장");runCurrent()
+            assertEquals(2,remote.archives["student_a"]!!.conversations.single {it.id==copy.id}.utterances.size)
+        } finally {owner.clear();Dispatchers.resetMain()}
+    }
+    @Test fun refreshLoadsTheLatestServerDraftInsteadOfOverwritingItWithStaleUiText() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val owner=ViewModelStore();val account=account();val remote=Remote()
+        val vm=BridgeViewModel(Legacy(),account=account,sync=SyncRepository(MemoryCredentialStore(),remote));owner.put("vm",vm)
+        try {
+            account.authenticate("student_a","Synthetic-password-123!",false);runCurrent()
+            vm.updateIdleDraft(UtteranceDraft(text="이전 입력"));runCurrent()
+            remote.drafts["student_a"]!!["new"]=buildJsonObject {put("text","다시 불러온 입력");put("language","JA");put("first","JA");put("second","KO")}
+            remote.versions["student_a"]!!["draft:new"]="2"
+            vm.refreshRecords();runCurrent()
+            assertEquals("다시 불러온 입력",vm.state.value.idleDraft.text)
+            assertEquals(Language.JA,vm.state.value.startDraft.first)
+            vm.setAppearance(Appearance.DARK);runCurrent()
+            assertEquals("다시 불러온 입력",remote.drafts["student_a"]!!["new"]!!["text"]!!.jsonPrimitive.content)
+        } finally {owner.clear();Dispatchers.resetMain()}
     }
     private fun account() = AccountManager("https://sync.example.invalid",MemoryCredentialStore(),client=HttpClient(MockEngine { request ->
         if(request.url.encodedPath=="/auth/logout") respond("{}")
