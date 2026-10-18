@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import pg from 'pg';
 import { migrate } from './migrate.mjs';
+import { createBackup } from './backup.mjs';
 
 const root = fileURLToPath(new URL('../../.runtime/postgres/', import.meta.url));
 const bin = join(root, 'install/bin');
@@ -88,13 +89,8 @@ try {
           console.log('Project production and test schemas ready; credentials kept private.');
         }
         if (cmd === 'backup') {
-          const backups = fileURLToPath(new URL('../../.runtime/backups/', import.meta.url));
-          await mkdir(backups, { recursive: true, mode: 0o700 });
-          const name = `speechbridge-${new Date().toISOString().replaceAll(':', '-')}.dump`;
-          const path = join(backups, name);
-          execFileSync(join(bin, 'pg_dump'), ['-h', socket, '-p', '5433', '-U', 'speechbridge_admin', '-d', 'speechbridge', '-Fc', '-f', path], { stdio: 'pipe', env: { ...process.env, PGPASSWORD: secrets.admin } });
-          await chmod(path, 0o600);
-          console.log(`Project backup created: .runtime/backups/${name}`);
+          const result = await createBackup();
+          console.log(`Project backup and verification manifest created: ${result.path}`);
         }
       } finally { await admin.end(); }
     }

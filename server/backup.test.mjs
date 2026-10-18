@@ -5,7 +5,7 @@ import { copyFile, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { createDatabase } from './db/database.mjs';
 import { createPostgresAccounts } from './db/accounts.mjs';
 import { createUserData } from './db/user-data.mjs';
-import { createBackup, restoreBackup, dropRestoredDatabase } from './db/backup.mjs';
+import { createBackup, restoreBackup, dropRestoredDatabase, verifyBackup } from './db/backup.mjs';
 
 process.loadEnvFile(new URL('../.runtime/postgres/test.env',import.meta.url));
 assert.equal(process.env.PGDATABASE,'speechbridge_test');
@@ -63,4 +63,20 @@ test('backup tools reject foreign DB names, existing production targets and chan
   await copyFile(backup.path+'.json',copy+'.json');
   await writeFile(copy,Buffer.concat([await readFile(backup.path),Buffer.from('corrupt')]),{mode:0o600});
   await assert.rejects(restoreBackup(copy),/checksum/i);
+});
+
+test('verification removes its fresh database and failed content checks also clean up', async t => {
+  const db = createDatabase(process.env);
+  const backup = await createBackup('speechbridge_test');
+  t.after(async()=>{await db.close();await rm(backup.path);await rm(backup.path+'.json');});
+  const names = async()=> (await db.auth.query("SELECT datname FROM pg_database WHERE datname LIKE 'speechbridge_restore_%' ORDER BY datname")).rows;
+  const before = await names();
+  const result = await verifyBackup(backup.path);
+  assert.equal(result.verified,true);assert.equal(result.temporaryDatabaseRemoved,true);
+  assert.deepEqual(await names(),before);
+  const manifest = JSON.parse(await readFile(backup.path+'.json','utf8'));
+  manifest.expected.contents.users.sha256='incorrect';
+  await writeFile(backup.path+'.json',JSON.stringify(manifest));
+  await assert.rejects(restoreBackup(backup.path),/do not match/);
+  assert.deepEqual(await names(),before);
 });
