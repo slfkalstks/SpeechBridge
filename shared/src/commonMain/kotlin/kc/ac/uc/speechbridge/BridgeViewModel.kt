@@ -67,8 +67,17 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
                 try {
                     if (sync == null) store.write(ArchiveCodec.encode(write.archive.conversations, write.archive.folders, write.archive.appearance))
                     else {
-                        sync.save(write.archive, write.identity)
-                        for (id in sync.currentDrafts().keys + write.drafts.keys) sync.saveDraft(id, write.drafts[id], write.identity)
+                        // Preserve each component in the account's retry queue even when an
+                        // earlier component could not reach secure storage.
+                        var failure: Exception? = null
+                        suspend fun attempt(block: suspend () -> Unit) {
+                            try { block() }
+                            catch (e: CancellationException) { throw e }
+                            catch (e: Exception) { failure = e }
+                        }
+                        attempt { sync.save(write.archive, write.identity) }
+                        for (id in sync.currentDrafts().keys + write.drafts.keys) attempt { sync.saveDraft(id, write.drafts[id], write.identity) }
+                        failure?.let { throw it }
                     }
                     if (write.generation == generation && write.identity == identity) {
                         if (write.revision == writeRevision) mutable.update { it.copy(unsaved = false) }
@@ -137,7 +146,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
                 val pending = repository.pendingCount()
                 if (epoch != generation) return@launch
                 fun language(value: JsonObject?, name: String, fallback: Language) =
-                    Language.entries.firstOrNull { it.code == value?.get(name)?.jsonPrimitive?.content } ?: fallback
+                    Language.entries.firstOrNull { it.name == value?.get(name)?.jsonPrimitive?.content } ?: fallback
                 val initial = drafts["new"]
                 val first = language(initial, "first", Language.KO)
                 val second = language(initial, "second", Language.EN)
@@ -194,7 +203,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         val current = state.value
         val drafts = if (sync == null) emptyMap() else buildMap {
             fun draft(text: String, first: Language, second: Language) = buildJsonObject {
-                put("text", text); put("language", first.code); put("first", first.code); put("second", second.code)
+                put("text", text); put("language", first.name); put("first", first.name); put("second", second.name)
             }
             if (current.idleDraft.text.isNotEmpty() || current.startDraft.first != Language.KO || current.startDraft.second != Language.EN)
                 put("new", draft(current.idleDraft.text, current.startDraft.first, current.startDraft.second))
