@@ -95,6 +95,28 @@ class CloudWorkspaceTest {
             assertTrue(vm.state.value.conversations.isEmpty())
         } finally { owner.clear(); Dispatchers.resetMain() }
     }
+    @Test fun sessionEndingDuringSecureWriteDoesNotDropTheFollowingInput() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val owner = ViewModelStore(); val account = account(); val remote = Remote()
+        val backing = MemoryCredentialStore()
+        var gate: CompletableDeferred<Unit>? = null
+        val secure = object : CredentialStore {
+            override suspend fun read() = backing.read()
+            override suspend fun write(value: String?) { gate?.await(); backing.write(value) }
+        }
+        val vm = BridgeViewModel(Legacy(), account=account, sync=SyncRepository(secure,remote)); owner.put("vm",vm)
+        try {
+            account.authenticate("student_a","Synthetic-password-123!",false); runCurrent()
+            remote.offline = true; gate = CompletableDeferred()
+            vm.start("쓰기 중 만료",false,true,Language.KO,Language.EN); runCurrent()
+            vm.addUtterance(vm.state.value.activeId!!,Language.KO,"마지막 입력도 보존해야 합니다.")
+            account.expired("synthetic-student_a"); runCurrent()
+            assertTrue(vm.state.value.conversations.isEmpty())
+            gate!!.complete(Unit); runCurrent()
+            assertTrue(backing.read()!!.contains("마지막 입력도 보존해야 합니다."))
+            assertTrue(vm.state.value.accountRequired)
+        } finally { owner.clear(); Dispatchers.resetMain() }
+    }
     private fun account() = AccountManager("https://sync.example.invalid",MemoryCredentialStore(),client=HttpClient(MockEngine { request ->
         if(request.url.encodedPath=="/auth/logout") respond("{}")
         else {
