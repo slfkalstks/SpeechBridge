@@ -12,7 +12,7 @@ data class SyncWorkspace(val archive: Archive, val copies: Map<String, String> =
     val id: String, val baseVersion: String, val value: JsonElement?)
 @Serializable data class MutationReceipt(val entity: String, val id: String, val version: String, val cursor: String)
 @Serializable data class DataSnapshot(val archive: Archive, val versions: Map<String, String>, val cursor: String,
-    val drafts: Map<String, JsonObject> = emptyMap())
+    val drafts: Map<String, JsonObject> = emptyMap(), val organizationJobs: Map<String,String> = emptyMap())
 interface SyncRemote {
     suspend fun snapshot(identity: SyncIdentity, deviceId: String): DataSnapshot
     suspend fun mutate(identity: SyncIdentity, mutation: PendingMutation): MutationReceipt
@@ -34,6 +34,7 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
     private var archive = Archive(1, emptyList())
     private var versions = emptyMap<String, String>()
     private var drafts = emptyMap<String, JsonObject>()
+    private var organizationJobs = emptyMap<String,String>()
     private fun key(identity: SyncIdentity) = json.encodeToString(identity)
     private fun queue(identity: SyncIdentity) = volatileQueues[key(identity)] ?: envelope!!.accounts[key(identity)].orEmpty()
     private suspend fun persist(next: PendingEnvelope) {
@@ -67,7 +68,7 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
         load()
         volatileQueues[key(next)]?.let { enqueue(it, next) }
         // Clear the prior account before any I/O; an error must not reveal its memory.
-        identity = null; archive = Archive(1, emptyList()); versions = emptyMap(); drafts = emptyMap()
+        identity = null; archive = Archive(1, emptyList()); versions = emptyMap(); drafts = emptyMap(); organizationJobs = emptyMap()
         val pending = queue(next)
         var online = true
         val snapshot = try { remote.snapshot(next, envelope!!.deviceId) }
@@ -81,6 +82,7 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
         }
         require(snapshot.archive.version == 1)
         versions = snapshot.versions
+        organizationJobs = snapshot.organizationJobs
         drafts = snapshot.drafts.toMutableMap().apply {
             pending.filter { it.entity == "draft" }.forEach { if(it.value == null) remove(it.id) else put(it.id, it.value.jsonObject) }
         }
@@ -114,10 +116,29 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
         return Conversation(title="복구한 입력",translate=true,record=true,first=first,second=second)
     }
     suspend fun closeAccount() = mutex.withLock {
-        identity = null; archive = Archive(1, emptyList()); versions = emptyMap(); drafts = emptyMap()
+        identity = null; archive = Archive(1, emptyList()); versions = emptyMap(); drafts = emptyMap(); organizationJobs = emptyMap()
     }
     suspend fun pendingCount(): Int = mutex.withLock { identity?.let { queue(it).size } ?: 0 }
     suspend fun currentDrafts(): Map<String, JsonObject> = mutex.withLock { drafts.toMap() }
+    suspend fun currentOrganizationJobs(): Map<String,String> = mutex.withLock { organizationJobs.toMap() }
+
+    /** A background read never holds up secure writes or applies over newer UI input. */
+    suspend fun refreshIfIdle(user:SyncIdentity, accept:()->Boolean):DataSnapshot? {
+        val baseline = mutex.withLock {
+            if(identity != user || queue(user).isNotEmpty() || !accept()) return null
+            Triple(archive,versions,drafts) to envelope!!.deviceId
+        }
+        val snapshot = remote.snapshot(user,baseline.second)
+        require(snapshot.archive.version == 1)
+        return mutex.withLock {
+            if(identity != user || queue(user).isNotEmpty() || !accept() || Triple(archive,versions,drafts) != baseline.first) return@withLock null
+            // Detached drafts need open()'s durable recovery, never a silent background replacement.
+            if(snapshot.drafts.any { (id,value) -> id != "new" && value["text"]?.jsonPrimitive?.content.orEmpty().isNotEmpty() &&
+                    snapshot.archive.conversations.none { it.id == id && !it.ended } }) return@withLock null
+            archive=snapshot.archive;versions=snapshot.versions;drafts=snapshot.drafts;organizationJobs=snapshot.organizationJobs
+            snapshot
+        }
+    }
 
     private fun mutation(entity: String, id: String, value: JsonElement?, pending: List<PendingMutation>): PendingMutation {
         val prior = pending.lastOrNull { it.entity == entity && it.id == id }
@@ -265,7 +286,7 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
             val accounts = if (next.isEmpty()) envelope!!.accounts - key(user) else envelope!!.accounts + (key(user) to next)
             persist(envelope!!.copy(accounts = accounts))
             volatileQueues.remove(key(user))
-            versions = snapshot.versions; drafts = nextDrafts
+            versions = snapshot.versions; drafts = nextDrafts; organizationJobs = snapshot.organizationJobs
             archive = snapshot.archive.copy(conversations = records, folders = folders, appearance = appearance)
             SyncWorkspace(archive,copies)
         }

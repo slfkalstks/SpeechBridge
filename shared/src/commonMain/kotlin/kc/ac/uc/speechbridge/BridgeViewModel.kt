@@ -31,6 +31,7 @@ data class BridgeState(
     val health: Health? = null,
     val busy: Set<String> = emptySet(),
     val requestErrors: Map<String, String> = emptyMap(),
+    val organizationJobs: Map<String,String> = emptyMap(),
     val startDraft: StartDraft = StartDraft(),
     val idleDraft: UtteranceDraft = UtteranceDraft(),
     val inputDrafts: Map<String, UtteranceDraft> = emptyMap(),
@@ -155,6 +156,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
                     if (identity == null || state.value.workspaceBusy || state.value.unsaved || state.value.syncConflict) continue
                     if (!state.value.loaded && state.value.loadFailed) loadCloud()
                     else if (state.value.syncPending > 0) retrySync()
+                    else if (state.value.organizationJobs.values.any { it == "pending" || it == "running" }) pollOrganization()
                 }
             }
         }
@@ -203,9 +205,10 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
             try {
                 val archive = repository.open(user)
                 val drafts = repository.currentDrafts()
+                val jobs = repository.currentOrganizationJobs()
                 val pending = repository.pendingCount()
                 if (epoch != generation) return@launch
-                mutable.update { restoredWorkspace(it, archive, drafts).copy(syncPending = pending) }
+                mutable.update { restoredWorkspace(it, archive, drafts).copy(syncPending = pending, organizationJobs = jobs) }
                 inspectLegacy()
                 retrySync()
             } catch (e: CancellationException) { throw e }
@@ -214,6 +217,20 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
                     message = "서버 기록을 불러오지 못했습니다. 연결을 확인하고 다시 시도해 주세요. 전송 대기 내용은 보존됩니다.") }
             }
         }
+    }
+    private suspend fun pollOrganization() {
+        val repository=sync ?: return
+        val user=identity ?: return
+        val epoch=generation
+        val revision=writeRevision
+        fun eligible() = epoch == generation && identity == user && writeRevision == revision &&
+            !state.value.unsaved && !state.value.workspaceBusy && !state.value.syncBusy &&
+            state.value.busy.isEmpty() && voice.state.value.phase in setOf(VoicePhase.IDLE,VoicePhase.ERROR)
+        try {
+            val result=repository.refreshIfIdle(user,::eligible) ?: return
+            mutable.update { restoredWorkspace(it,result.archive,result.drafts).copy(organizationJobs=result.organizationJobs) }
+        } catch(e:CancellationException) { throw e }
+        catch(_:Exception) { /* A background read never discards memory or spams notifications. */ }
     }
     fun retrySync() {
         val repository = sync ?: return
@@ -255,10 +272,11 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
                 if (state.value.unsaved) throw BridgeRequestException("secure_storage_failed", "먼저 저장을 재시도해 주세요.")
                 val result = operation(repository, user)
                 val drafts = repository.currentDrafts()
+                val jobs = repository.currentOrganizationJobs()
                 if (epoch != generation) return@launch
                 val pending = repository.pendingCount()
                 mutable.update { restoredWorkspace(it,result.archive,drafts,result.copies).copy(
-                    syncPending = pending, syncConflict = false, syncProblem = null) }
+                    syncPending = pending, syncConflict = false, syncProblem = null, organizationJobs = jobs) }
                 inspectLegacy()
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
@@ -364,7 +382,10 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
             inputDrafts = it.inputDrafts - id,
         ) }
         if (c.record) persist()
-        if (c.utterances.isNotEmpty()) organize(id)
+        if (c.utterances.isNotEmpty()) {
+            if(sync == null) organize(id)
+            else if(!c.organizationAttempted && !c.organized) mutable.update { it.copy(organizationJobs = it.organizationJobs + (id to "pending")) }
+        }
     }
     fun startConversation() {
         val d = state.value.startDraft

@@ -215,7 +215,7 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
             }
         }
         if(c.ended) {
-            val organizing = "organize:${c.id}" in state.busy
+            val organizing = "organize:${c.id}" in state.busy || state.organizationJobs[c.id] in setOf("pending","running")
             if(organizing) LinearProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = "제목, 분류와 요약 작성 중" })
             PrimaryTabRow(section, containerColor = MaterialTheme.colorScheme.background, divider = {}) {
                 Tab(section == 0, { section = 0 }, text = { Text("대화") })
@@ -234,8 +234,9 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
                             Text("대화 요약", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                             TextButton(onClick = { summaryEdit = true }) { Text(if(c.summary == null) "직접 작성" else "수정") }
                         }
-                        SelectionContainer { Text(c.summary ?: if("organize:${c.id}" in state.busy) "대화를 요약하고 있어요…" else "아직 요약이 없어요. 직접 작성할 수 있습니다.") }
-                        if(state.requestErrors.containsKey("organize:${c.id}")) Text("자동 정리를 완료하지 못했어요. 제목·분류·요약을 직접 편집해 주세요.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        SelectionContainer { Text(c.summary ?: if("organize:${c.id}" in state.busy || state.organizationJobs[c.id] in setOf("pending","running"))
+                            (if(state.syncPending > 0) "서버에 저장되면 자동으로 요약합니다." else "대화를 요약하고 있어요…") else "아직 요약이 없어요. 직접 작성할 수 있습니다.") }
+                        if(state.requestErrors.containsKey("organize:${c.id}") || state.organizationJobs[c.id] == "failed") Text("자동 정리를 완료하지 못했어요. 제목·분류·요약을 직접 편집해 주세요.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 item {
