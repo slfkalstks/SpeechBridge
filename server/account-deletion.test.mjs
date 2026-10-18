@@ -38,7 +38,8 @@ test('deletion requires current password, authenticated identity and explicit co
   assert.equal((await data.snapshot(session.user.id,'verify')).archive.conversations.length,3);
   assert.deepEqual(await accounts.handle('/auth/delete',body,header),{deleted:true});
   assert.deepEqual(await accounts.handle('/auth/delete',body,header),{deleted:true},'lost acknowledgement may be retried');
-  for(const token of [session.token,second.token])await assert.rejects(accounts.authenticate(`Bearer ${token}`),{status:401});
+  for(const token of [session.token,second.token])await assert.rejects(accounts.authenticate(`Bearer ${token}`),{status:401,code:'account_deleted'});
+  await assert.rejects(accounts.authenticate('Bearer '+'z'.repeat(43)),{status:401,code:'unauthorized'});
   await assert.rejects(accounts.handle('/auth/login',{username:session.user.username,password}),{status:401});
   assert.equal((await accounts.authenticate(`Bearer ${other.token}`)).id,other.user.id);
   for(const table of tables)
