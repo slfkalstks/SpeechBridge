@@ -6,6 +6,8 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.json.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
 import kotlin.io.encoding.Base64
 
 class HttpVoiceApi(private val account: AccountManager, private val client: HttpClient = HttpClient {
@@ -14,17 +16,25 @@ class HttpVoiceApi(private val account: AccountManager, private val client: Http
 }) : VoiceApi {
     private suspend fun request(path: String, body: JsonObject): HttpResponse {
         val connection = account.connection()
-        val response = client.post(validatedBaseUrl(connection.url) + path) {
-            bearerAuth(connection.token)
-            contentType(ContentType.Application.Json)
-            setBody(body.toString())
+        return withTimeout(95_000) {
+            var attempts = 0
+            while(true) {
+                val response = client.post(validatedBaseUrl(connection.url) + path) {
+                    bearerAuth(connection.token)
+                    contentType(ContentType.Application.Json)
+                    setBody(body.toString())
+                }
+                if(response.status.value in 200..299) return@withTimeout response
+                if(response.status.value == 401) account.expired(connection.token)
+                val code = runCatching { ArchiveCodec.json.decodeFromString<ErrorResponse>(response.bodyAsText()).error.code }.getOrDefault("unknown")
+                if(response.status.value == 429 && code == "busy" && attempts++ < 60) {
+                    // Keep this recording and its original session together while text inference finishes.
+                    // Cancellation exits the delay; a later login must never receive the old audio.
+                    delay(1_000)
+                } else throw BridgeRequestException(code, serviceErrorMessage(code, response.status.value))
+            }
+            @Suppress("UNREACHABLE_CODE") error("Unreachable")
         }
-        if(response.status.value !in 200..299) {
-            if(response.status.value == 401) account.expired(connection.token)
-            val code = runCatching { ArchiveCodec.json.decodeFromString<ErrorResponse>(response.bodyAsText()).error.code }.getOrDefault("unknown")
-            throw BridgeRequestException(code, serviceErrorMessage(code, response.status.value))
-        }
-        return response
     }
     override suspend fun transcribe(wav: ByteArray, language: String): Transcription {
         PcmWave.decode(wav, 16000)
