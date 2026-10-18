@@ -2,12 +2,14 @@ import http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { ApiError, createProviders } from './provider.mjs';
-import { createAccounts } from './auth.mjs';
+import { createDatabase } from './db/database.mjs';
+import { createPostgresAccounts } from './db/accounts.mjs';
 
-export function createServer({ env = process.env, providers = createProviders(env), now = Date.now, accounts: suppliedAccounts } = {}) {
+export function createServer({ env = process.env, providers = createProviders(env), now = Date.now, accounts: suppliedAccounts, database: suppliedDatabase } = {}) {
   const mode = env.AUTH_MODE || "development";
   if (!["users", "development"].includes(mode)) throw new Error("Invalid AUTH_MODE");
-  const accounts = mode === "users" ? suppliedAccounts || createAccounts({ path: env.AUTH_DB_PATH, now }) : null;
+  const database = mode === 'users' && !suppliedAccounts ? suppliedDatabase || createDatabase(env) : null;
+  const accounts = mode === "users" ? suppliedAccounts || createPostgresAccounts({ db: database, now }) : null;
   let active = 0;
   let textActive = 0;
   let voiceActive = false;
@@ -34,13 +36,13 @@ export function createServer({ env = process.env, providers = createProviders(en
         if (!res.destroyed) send(res, 200, health); return;
       }
       if (accounts && req.method === 'GET' && req.url === '/auth/me') {
-        const { hash, ...user } = accounts.authenticate(req.headers.authorization);
+        const { hash, ...user } = await accounts.authenticate(req.headers.authorization);
         send(res, 200, { user }); return;
       }
       const authRoute = accounts && ['/auth/register', '/auth/login', '/auth/logout'].includes(req.url);
       if (req.method !== 'POST' || (!authRoute && !['/translate', '/extract', '/organize', '/speech/token', '/speech/transcribe', '/speech/synthesize'].includes(req.url))) throw new ApiError(404, 'not_found', '경로를 찾을 수 없습니다.');
       if (authRoute) accounts.admit(req.socket.remoteAddress || 'unknown');
-      else if (accounts) accounts.authorize(accounts.authenticate(req.headers.authorization), req.url);
+      else if (accounts) accounts.authorize(await accounts.authenticate(req.headers.authorization), req.url);
       else {
         if (!providers.configured.auth) throw new ApiError(503, 'auth_not_configured', '서버 접속 인증 설정이 필요합니다.');
         const expected = Buffer.from(`Bearer ${env.APP_ACCESS_TOKEN}`);
@@ -104,7 +106,8 @@ export function createServer({ env = process.env, providers = createProviders(en
   server.requestTimeout = 15000;
   server.headersTimeout = 10000;
   server.cancelActiveRequests = () => { for (const controller of controllers) controller.abort(); };
-  server.once('close', () => { if (!suppliedAccounts) accounts?.close(); });
+  server.ready = async () => { await database?.ready(); };
+  server.once('close', () => { if (database && !suppliedDatabase) void database.close().catch(() => {}); });
   return server;
 }
 
@@ -113,6 +116,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const env = { ...process.env, AUTH_MODE: process.env.AUTH_MODE || 'users' };
   if (!['127.0.0.1', 'localhost', '::1'].includes(env.HOST || '127.0.0.1')) throw new Error('Bind the Mac API to loopback and expose it through an HTTPS proxy');
   const server = createServer({ env });
+  await server.ready();
   const port = Number(process.env.PORT || 8787);
   const host = process.env.HOST || '127.0.0.1';
   server.listen(port, host, () => console.log(`SpeechBridge server listening on ${host}:${port}`));
