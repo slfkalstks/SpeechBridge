@@ -5,8 +5,10 @@ import { ApiError, createProviders } from './provider.mjs';
 import { createDatabase } from './db/database.mjs';
 import { createPostgresAccounts } from './db/accounts.mjs';
 import { createUserData } from './db/user-data.mjs';
+import { createOrganizationJobs } from './db/organization-jobs.mjs';
+import { createOrganizationWorker } from './organization-worker.mjs';
 
-export function createServer({ env = process.env, providers = createProviders(env), now = Date.now, accounts: suppliedAccounts, database: suppliedDatabase } = {}) {
+export function createServer({ env = process.env, providers = createProviders(env), now = Date.now, accounts: suppliedAccounts, database: suppliedDatabase, organizationJobs: suppliedJobs } = {}) {
   const mode = env.AUTH_MODE || "development";
   if (!["users", "development"].includes(mode)) throw new Error("Invalid AUTH_MODE");
   const database = suppliedDatabase || (mode === 'users' && !suppliedAccounts ? createDatabase(env) : null);
@@ -15,6 +17,13 @@ export function createServer({ env = process.env, providers = createProviders(en
   let active = 0;
   let textActive = 0;
   let voiceActive = false;
+  const jobs=suppliedJobs || (data ? createOrganizationJobs(database) : null);
+  const worker=jobs && createOrganizationWorker({jobs,organize:(input,context)=>providers.organize(input,context),
+    acquire:()=>{
+      if(voiceActive || textActive>0) return null;
+      textActive++;
+      return ()=>{textActive--;};
+    }});
   const controllers = new Set();
   let windowStart = now();
   let count = 0;
@@ -115,9 +124,15 @@ export function createServer({ env = process.env, providers = createProviders(en
   });
   server.requestTimeout = 15000;
   server.headersTimeout = 10000;
-  server.cancelActiveRequests = () => { for (const controller of controllers) controller.abort(); };
-  server.ready = async () => { await database?.ready(); };
-  server.once('close', () => { if (database && !suppliedDatabase) void database.close().catch(() => {}); });
+  server.stopOrganizationWorker = async () => { await worker?.stop(); };
+  server.cancelActiveRequests = () => { for (const controller of controllers) controller.abort(); void worker?.stop(); };
+  server.ready = async () => {
+    await database?.ready();
+    if(server.listening) worker?.start(); else server.once('listening',()=>worker?.start());
+  };
+  server.once('close', () => {
+    void (async()=>{await worker?.stop();if(database && !suppliedDatabase) await database.close();})().catch(()=>{});
+  });
   return server;
 }
 
