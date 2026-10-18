@@ -45,6 +45,16 @@ class HttpVoiceApiTest {
         assertFalse(error.message!!.contains("private detail")); assertNull(account.state.value.user)
         api.close(); account.close()
     }
+    @Test fun busyInferenceRetriesTheSameRecordingWithTheSameSession() = runTest {
+        val account = account(); var calls = 0
+        val api = HttpVoiceApi(account,HttpClient(MockEngine { request ->
+            assertEquals("Bearer synthetic-voice-token",request.headers[HttpHeaders.Authorization]); calls++
+            if(calls == 1) respond("""{"error":{"code":"busy"}}""",HttpStatusCode.TooManyRequests)
+            else respond("""{"text":"다시 말할 필요 없는 문장","language":"ko"}""")
+        }))
+        assertEquals("다시 말할 필요 없는 문장",api.transcribe(PcmWave.encode(ShortArray(1600){1000},16000)).text)
+        assertEquals(2,calls);api.close();account.close()
+    }
     @Test fun invalidAudioAndOverlongSpeechAreRejectedBeforeNetwork() = runTest {
         val account = account()
         val api = HttpVoiceApi(account, HttpClient(MockEngine { error("Must not send") }))
