@@ -35,7 +35,7 @@ export function validateWav(audio, rate = 16000, rejectSilence = true) {
 }
 
 export function validateTranscription(body) {
-  if (!languages.has(body?.language)) throw new ApiError(400, 'invalid_language', '한국어·영어·일본어만 지원합니다.');
+  if (body?.language !== 'auto' && !languages.has(body?.language)) throw new ApiError(400, 'invalid_language', '한국어·영어·일본어 또는 자동 감지를 선택해 주세요.');
   const encoded = body.audioBase64;
   if (typeof encoded !== 'string' || encoded.length > Math.ceil(STT_MAX_BYTES / 3) * 4 ||
       !encoded.length || encoded.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) throw bad();
@@ -172,7 +172,13 @@ export function createVoiceProvider({
         try { result = JSON.parse(stdout); } catch { throw failed(); }
         if (typeof result.text !== 'string' || result.text.length > 16000) throw failed();
         if (!result.text.trim()) throw new ApiError(400, 'empty_audio', '인식한 음성이 없습니다. 다시 녹음해 주세요.');
-        return { text: result.text.trim(), language };
+        let detected = language;
+        if (language === 'auto') {
+          const tags = Array.isArray(result.languages) ? [...new Set(result.languages.map(value => typeof value === 'string' ? value.toLowerCase().split('-')[0] : ''))] : [];
+          if (tags.length !== 1 || !languages.has(tags[0])) throw new ApiError(422, 'language_not_detected', '지원 언어를 확인하지 못했습니다. 한 언어로 다시 말해 주세요.');
+          detected = tags[0];
+        }
+        return { text: result.text.trim(), language: detected };
       });
     },
     async synthesize(body, context) {

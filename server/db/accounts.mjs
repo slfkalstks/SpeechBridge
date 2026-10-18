@@ -7,7 +7,7 @@ const derive = promisify(scrypt);
 const digest = token => createHash('sha256').update(token).digest('hex');
 const lifetime = 7 * 24 * 60 * 60 * 1000;
 const fail = () => new ApiError(401, 'unauthorized', '로그인이 필요합니다.');
-export const capabilities = () => ['translate', 'organize', 'extract'];
+export const capabilities = () => ['translate', 'organize', 'extract', 'speech/transcribe', 'speech/synthesize'];
 
 export function createPostgresAccounts({ db, now = Date.now }) {
   let hashing = 0;
@@ -58,7 +58,7 @@ export function createPostgresAccounts({ db, now = Date.now }) {
     authenticate,
     authorize(user, path) {
       if (['/data/snapshot', '/data/mutate', '/data/changes'].includes(path)) { limit(`data:${user.id}`, 120); return; }
-      if (path.startsWith('/speech/')) throw new ApiError(503, 'speech_pending', '음성 기능은 아직 연결 전입니다.');
+      if (path === '/speech/token') throw new ApiError(503, 'speech_pending', '음성 기능은 아직 연결 전입니다.');
       if (!capabilities().includes(path.slice(1))) throw new ApiError(403, 'member_required', '회원 로그인 후 사용할 수 있습니다.');
       limit(`use:${user.id}`, 30);
     },
