@@ -40,7 +40,10 @@ export function createDatabase(env) {
     async ready() {
       // A restore is a historical snapshot. Deletions can arrive after it was
       // copied; never serve it merely because someone edits PGDATABASE.
-      if(/^speechbridge_restore_/.test(env.PGDATABASE))throw new Error('Restored database activation requires cutover reconciliation');
+      if(/^speechbridge_restore_/.test(env.PGDATABASE)) {
+        const {rows:[state]}=await auth.query('SELECT a.activated,d.datallowconn FROM restore_activation a JOIN pg_database d ON d.datname=a.source_database WHERE a.singleton');
+        if(!state?.activated || state.datallowconn!==false)throw new Error('Restored database activation requires cutover reconciliation');
+      }
       await auth.query('SELECT 1 FROM schema_migrations LIMIT 1');
     },
     async close() { await Promise.all([auth.end(), data.end()]); },

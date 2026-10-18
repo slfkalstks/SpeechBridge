@@ -26,7 +26,8 @@
     "demo:start": "node demo.mjs start",
     "demo:check": "node demo.mjs check",
     "demo:build": "sh ../scripts/demo-build.sh",
-    "db:retention": "node db/retention.mjs"
+    "db:retention": "node db/retention.mjs",
+    "db:activate": "node db/cutover.mjs"
   },
   "engines": {
     "node": ">=22.16.0 <26"

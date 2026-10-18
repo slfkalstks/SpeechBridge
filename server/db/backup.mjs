@@ -121,6 +121,8 @@ export async function restoreBackup(input) {
     await source.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
     const ledger=(await source.query('SELECT * FROM account_deletions')).rows;
     await restored.query('BEGIN');
+    await restored.query('DELETE FROM restore_activation');
+    await restored.query('INSERT INTO restore_activation(source_database) VALUES($1)',[manifest.source]);
     for(const row of ledger)await restored.query('INSERT INTO account_deletions(user_id_hash,username_hash,receipt_hash,deleted_at) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING',
       [row.user_id_hash,row.username_hash,row.receipt_hash,row.deleted_at]);
     for(const row of (await source.query('SELECT token_hash,user_id_hash FROM account_deletion_sessions')).rows)
