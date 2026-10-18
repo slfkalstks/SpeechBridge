@@ -111,6 +111,16 @@ test('record order survives database round-trip independently of item IDs', asyn
   assert.deepEqual((await data.snapshot(user.id, 'test-device')).archive.conversations[0].items, c.items);
 });
 
+test('a cleared draft can be used again at its next version, while stale replays still conflict', async t => {
+  const { data, user, put } = await fixture(t);
+  const value = { language: 'KO', first: 'KO', second: 'EN', text: '초안' };
+  await put('draft', 'new', value);
+  await put('draft', 'new', null, '1');
+  await assert.rejects(put('draft', 'new', value, '1'), { status: 409 });
+  await put('draft', 'new', { ...value, text: '다음 발화' }, '2');
+  assert.equal((await data.snapshot(user.id, 'test-device')).drafts.new.text, '다음 발화');
+});
+
 test('authenticated data API derives ownership from the bearer and rejects anonymous requests', async t => {
   const { db, accounts, username, user } = await fixture(t);
   const session = await accounts.handle('/auth/login', { username, password: 'Synthetic-data-password-123!' });

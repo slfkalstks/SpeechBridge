@@ -1,6 +1,9 @@
 package kc.ac.uc.speechbridge
 
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.serialization.json.*
 import kotlin.test.*
 
@@ -100,5 +103,22 @@ class SyncRepositoryTest {
         assertEquals(1, repo.pendingCount())
         assertTrue(secure.read()!!.contains("아직 전송 전"))
         assertFalse(secure.read()!!.contains("서버 전용 기록"))
+    }
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Test fun slowUploadDoesNotBlockDurableStorageOfTheNextUtterance() = runTest {
+        val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>(); val base = Remote()
+        val remote = object : SyncRemote by base {
+            override suspend fun mutate(identity: SyncIdentity, mutation: PendingMutation): MutationReceipt {
+                entered.complete(Unit); release.await(); return base.mutate(identity, mutation)
+            }
+        }
+        val repo = SyncRepository(MemoryCredentialStore(), remote)
+        repo.open(identity); repo.save(archive("첫 입력"))
+        val upload = async { repo.flush() }; entered.await()
+        val next = async { repo.save(archive("다음 입력")) }; runCurrent()
+        try { assertTrue(next.isCompleted, "네트워크 대기 중에도 다음 입력은 기기에 먼저 저장되어야 합니다.") }
+        finally { release.complete(Unit) }
+        next.await(); upload.await()
+        assertEquals("다음 입력", base.saved.conversations.single().title)
     }
 }
