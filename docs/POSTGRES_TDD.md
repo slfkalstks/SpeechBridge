@@ -79,3 +79,14 @@ Node 83개 모두 통과, 로드된 소스 line96.98/branch91.43/function91.80%.
 최종 Node93개 통과. 로드된 소스 line91.45/branch90.50/function88.37%; CLI 전체 실행 경로 커버리지는 아니다. AndroidHost99/iOSSim100개 통과, APK·signed Xcode Debug 빌드 성공. TLS 테스트6개, native trust 테스트1개 포함. iOS 독립 테스트 실행은 Security 서비스 오류를 반환해 booted simulator 실행으로 바꿨고 동일 테스트가 통과했다. 검사 우회·skip은 하지 않았다.
 
 `Demo.command` 실제 실행 및 프로젝트 API/HTTPS 정상 종료 후 자동 재시작 검증. APK 공개 DER 일치·개인 키/PEM 미포함 확인. Release 보호 작업은 localTls=true에서 의도대로 실패했다. 실제 iOS UI에서 HTTPS 로그인→DB 기록→대화 종료→자동 제목/분류/요약→결정 후보→할 일 목록 확인. 이는 실제 휴대전화·마이크 품질이나 전체 Release 빌드 검증은 아니다. 로컬 근거는 `.runtime/tls/{mobile-final,xcode,final-coverage,release-rejected}.log`, `.runtime/demo/{readiness.json,launch-validation.log,restart-validation.log}`.
+
+
+## 계정 삭제와 계정 부활 방지
+
+| RED | GREEN | 보장 |
+|---|---|---|
+| 01f799a | 74f988a | 현재 비밀번호·세션·명시 확인, 계정별 cascade, 응답 유실 재시도, 최신 삭제 이력을 백업 복원에 반영 |
+| 2878a88 | 389a4c0 | 복원 후 추가 삭제를 반영하기 전 복원 DB의 API 시작 차단 |
+| ba815f6 | bac1918 | 예전 SQLite 재가져오기가 삭제한 계정·세션을 다시 만들지 않음 |
+
+추가 회귀 2c2e6e2: 13개 사용자 테이블에 실제 가상 데이터를 넣은 뒤 삭제 확인, 로그인과 삭제·로그아웃과 삭제 경합. 최종 서버98개 통과, loaded line91.58/branch90.31/function89.22%. `.runtime/postgres/deletion-*.log`에 RED/GREEN 결과. 앱 삭제 화면·기기 대기함·웹 경로·백업 보존본 정리는 아직 미구현이며 이 서버 테스트로 전체 계정 삭제 완료를 주장하지 않는다. 기존 시연 계정·사용자 기록은 삭제하지 않았다.

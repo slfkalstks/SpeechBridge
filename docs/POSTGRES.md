@@ -41,12 +41,12 @@ node server/db/backup.mjs restore '.runtime/backups/<백업 파일>.dump'
 
 - `verify`: 파일 체크섬 확인 → 새 `speechbridge_restore_<무작위 ID>` DB에 단일 트랜잭션 복원 → 내용·소유권·접근 정책 비교 → 검증 DB 제거.
 - `restore`: 같은 검증 후 복원 DB를 남기고 이름을 반환한다. 기존 운영 DB를 덮어쓰거나 API의 DB 주소를 자동 변경하지 않는다.
-- 복원된 DB의 로그인 세션은 검증 후 모두 폐기한다. 백업 이후 로그아웃했던 토큰이 부활하지 않도록 새 로그인이 필요하다. 계정·비밀번호 해시·사용자 기록은 유지한다.
+- 복원된 DB의 로그인 세션은 검증 후 모두 폐기한다. 원본 DB의 최신 삭제 영수증도 반영하여 삭제된 계정과 기록을 사본에서 제거한다. 나머지 계정·비밀번호 해시·사용자 기록은 유지한다. 원본 삭제 이력을 읽을 수 없으면 복원하지 않는다.
 - 손상된 파일, 프로젝트 백업 폴더 밖 파일, 다른 프로젝트 DB 이름, 운영 DB를 삭제 대상으로 지정하는 요청은 거부한다. 실패한 복원은 이번에 생성한 DB만 정리한다.
 
 현재 운영 백업을 실제로 복원해 17개 테이블 비교와 검증 DB 정리를 확인했다. 데이터가 있는 별도 테스트에서는 백업 이후 원본 변경과 복원 사본을 구분하고, RLS 격리·재로그인·기존 토큰 거부를 검사했다. 원자료는 로컬 `.runtime/postgres/backup-validation.json`이며 자격정보와 사용자 내용을 포함한 dump/명세는 Git에 넣지 않는다.
 
-운영 전환은 별도 작업이다. API를 중단하고 복원 DB를 선택한 뒤 `.runtime/postgres/server.env`의 `PGDATABASE`를 변경하고 `npm --prefix server run db:migrate` 후 재시작·로그인/조회를 확인한다. 백업 기본값과 마이그레이션은 이 파일에서 선택한 DB를 따르며, 마이그레이션에는 별도 테스트 DB도 포함한다. 프로젝트의 고정 Unix 소켓·포트와 기본/복원 DB 이름만 허용하고, 설정이 잘못되면 임의의 DB로 대체하지 않는다. 명시적 백업도 가능하다(`node server/db/backup.mjs backup <복원 DB 이름>`). 실제 운영 DB 전환은 하지 않았으며, 다른 DB를 자동 삭제하거나 자동 전환하지 않는다.
+운영 전환은 별도 작업이다. **현재는 `PGDATABASE`만 바꿔 복원 DB를 서비스할 수 없다.** 복원 이후 발생한 삭제 요청이 누락되지 않도록 API 시작 단계에서 복원 DB를 차단한다. 쓰기를 중단하고 마지막 삭제 이력을 반영하는 명시적 전환 절차를 구현해야 한다. [계정 삭제·복원 보호](ACCOUNT_DELETION.md)를 참고한다. 백업·마이그레이션 도구는 프로젝트의 고정 소켓·포트와 기본/복원 DB 이름만 허용한다. 실제 운영 DB 전환은 수행하지 않았다.
 
 ## 역할
 
@@ -75,6 +75,7 @@ node server/db/backup.mjs restore '.runtime/backups/<백업 파일>.dump'
 | sync_heads / sync_changes | 사용자별 커밋 순서·변경 엔티티·version·삭제 표시 |
 | sync_receipts | 사용자+설치+요청 ID별 요청 해시·응답 |
 | legacy_account_imports | 이미 이전한 계정 ID. 폐기된 세션의 재복원 방지 |
+| account_deletions | 삭제 계정·아이디·요청 토큰 해시와 시각. 백업/이전 원본을 통한 계정 부활 방지 |
 | schema_migrations | 버전·SQL 체크섬·적용 시각 |
 
 ```mermaid
