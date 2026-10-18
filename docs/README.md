@@ -1,7 +1,8 @@
 # SpeechBridge 문서
 
 - [바로 시연하기: 실행·설치 파일·5분 진행 순서](DEMO.md).
-- [계정 삭제 API·복원 보호·남은 앱 연결](ACCOUNT_DELETION.md).
+- [직접 앱 시연 검증 결과](DEMO_UI_VALIDATION.md).
+- [계정 삭제·기기 정리·복원 보호와 남은 작업](ACCOUNT_DELETION.md).
 
 - [네이티브 음성 연결·검증·바로 실행할 테스트](NATIVE_VOICE_VALIDATION.md).
 
