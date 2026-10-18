@@ -92,6 +92,35 @@ class SyncRepositoryTest {
         secure.fail = false
         repo.save(archive()); assertEquals(1, repo.pendingCount())
     }
+    @Test fun failedSecureWriteCanBeRecoveredOnlyByItsAccountAfterUnlock() = runTest {
+        val secure = object : CredentialStore {
+            var data: String? = null; var locked = false
+            override suspend fun read() = data
+            override suspend fun write(value: String?) { if (locked) error("locked"); data = value }
+        }
+        val remote = Remote(); val repo = SyncRepository(secure, remote)
+        repo.open(identity); secure.locked = true
+        assertFailsWith<IllegalStateException> { repo.save(archive("복구할 입력")) }
+        repo.closeAccount(); secure.locked = false
+        repo.open(identity.copy(userId="account_b")); repo.flush()
+        assertTrue(remote.sent.isEmpty())
+        assertEquals("복구할 입력",repo.open(identity).conversations.single().title)
+        repo.flush(); assertEquals("복구할 입력",remote.saved.conversations.single().title)
+    }
+    @Test fun undoDuringStorageFailureDoesNotResurrectTheEarlierEdit() = runTest {
+        val secure = object : CredentialStore {
+            var data: String? = null; var locked = false
+            override suspend fun read() = data
+            override suspend fun write(value: String?) { if (locked) error("locked"); data = value }
+        }
+        val remote = Remote().apply { saved=archive("원래 제목"); version=1 }
+        val repo = SyncRepository(secure,remote); repo.open(identity); secure.locked=true
+        assertFailsWith<IllegalStateException> { repo.save(archive("임시 제목")) }
+        assertFailsWith<IllegalStateException> { repo.save(archive("원래 제목")) }
+        secure.locked=false; repo.closeAccount()
+        assertEquals("원래 제목",repo.open(identity).conversations.single().title)
+        repo.flush(); assertEquals("원래 제목",remote.saved.conversations.single().title)
+    }
     @Test fun draftsAreQueuedAndUnchangedServerHistoryIsNeverCopiedToPendingStorage() = runTest {
         val remote = Remote().apply { saved = archive("서버 전용 기록"); version = 1 }
         val secure = MemoryCredentialStore(); val repo = SyncRepository(secure, remote)
