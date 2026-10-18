@@ -166,8 +166,8 @@ import androidx.compose.ui.unit.dp
 }
 
 @Composable private fun StartConversation(state: BridgeState, vm: BridgeViewModel) {
-    var keyboard by remember { mutableStateOf(false) }
     val draft = state.idleDraft
+    var keyboard by remember { mutableStateOf(draft.text.isNotEmpty()) }
     BoxWithConstraints(Modifier.fillMaxSize().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 760.dp)) {
     val compact = maxHeight < 460.dp || LocalDensity.current.fontScale > 1.5f
     Column(Modifier.fillMaxSize()) {
@@ -194,14 +194,14 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
     var section by remember(c.id) { mutableIntStateOf(if(c.ended) 1 else 0) }
     LaunchedEffect(c.ended) { if(c.ended) section = 1 }
     var summaryEdit by remember(c.id) { mutableStateOf(false) }
-    var keyboard by remember(c.id) { mutableStateOf(false) }
+    val draft = state.inputDrafts[c.id] ?: UtteranceDraft(language = c.first)
+    var keyboard by remember(c.id) { mutableStateOf(draft.text.isNotEmpty()) }
     var sourceEdit by remember(c.id) { mutableStateOf<Utterance?>(null) }
     var itemEdit by remember(c.id) { mutableStateOf<ItemEditor?>(null) }
     var review by remember(c.id) { mutableStateOf<ActionItem?>(null) }
     var classify by remember(c.id) { mutableStateOf(false) }
     var finish by remember(c.id) { mutableStateOf(false) }
     val scroll = remember(c.id, section) { LazyListState() }
-    val draft = state.inputDrafts[c.id] ?: UtteranceDraft(language = c.first)
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) {

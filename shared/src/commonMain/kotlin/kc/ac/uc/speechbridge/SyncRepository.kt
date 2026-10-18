@@ -6,6 +6,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
+data class SyncWorkspace(val archive: Archive, val copies: Map<String, String> = emptyMap())
 @Serializable data class SyncIdentity(val origin: String, val userId: String)
 @Serializable data class PendingMutation(val deviceId: String, val mutationId: String, val entity: String,
     val id: String, val baseVersion: String, val value: JsonElement?)
@@ -68,11 +69,13 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
         // Clear the prior account before any I/O; an error must not reveal its memory.
         identity = null; archive = Archive(1, emptyList()); versions = emptyMap(); drafts = emptyMap()
         val pending = queue(next)
+        var online = true
         val snapshot = try { remote.snapshot(next, envelope!!.deviceId) }
         catch (e: CancellationException) { throw e }
         catch (e: Exception) {
             if (e is BridgeRequestException && e.code in setOf("unauthorized", "login_required")) throw e
             if (pending.isEmpty()) throw e
+            online = false
             // Offline restart recovers only pending data, not a permanent history cache.
             DataSnapshot(Archive(1, emptyList()), pending.associate { "${it.entity}:${it.id}" to it.baseVersion }, "0")
         }
@@ -82,8 +85,33 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
             pending.filter { it.entity == "draft" }.forEach { if(it.value == null) remove(it.id) else put(it.id, it.value.jsonObject) }
         }
         archive = overlay(snapshot.archive, pending)
+        val detached = drafts.filter { (id,value) -> id != "new" && value["text"]?.jsonPrimitive?.content.orEmpty().isNotEmpty() &&
+            archive.conversations.none { it.id == id && !it.ended } }
+        if (!online && detached.isNotEmpty()) throw BridgeRequestException("offline_draft_context",
+            "작성 중인 내용은 보관되어 있습니다. 서버에 연결하면 원래 대화와 함께 다시 불러옵니다.")
+        if (detached.isNotEmpty()) {
+            val recovered = archive.conversations.toMutableList()
+            val nextDrafts = drafts.toMutableMap()
+            val nextPending = pending.toMutableList()
+            fun add(entity:String,id:String,value:JsonElement?) { nextPending += mutation(entity,id,value,nextPending) }
+            for ((scope,value) in detached) {
+                val record = draftConversation(value)
+                recovered += record
+                add("conversation",record.id,json.encodeToJsonElement(record))
+                add("draft",record.id,value); add("draft",scope,null)
+                nextDrafts.remove(scope); nextDrafts[record.id] = value
+            }
+            enqueue(nextPending,next)
+            archive = archive.copy(conversations = recovered); drafts = nextDrafts
+        }
         identity = next
         archive
+    }
+    private fun draftConversation(value:JsonObject):Conversation {
+        fun language(key:String,fallback:Language) = Language.entries.firstOrNull { it.name == value[key]?.jsonPrimitive?.content } ?: fallback
+        val first = language("first",Language.KO)
+        val second = language("second",Language.EN).takeIf { it != first } ?: if(first == Language.KO) Language.EN else Language.KO
+        return Conversation(title="복구한 입력",translate=true,record=true,first=first,second=second)
     }
     suspend fun closeAccount() = mutex.withLock {
         identity = null; archive = Archive(1, emptyList()); versions = emptyMap(); drafts = emptyMap()
@@ -167,7 +195,7 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
 
     /** Explicit keep-both choice: server originals remain, local non-deleted edits become copies.
      * The replacement queue is committed atomically before the old mutations can be discarded. */
-    suspend fun resolveKeepingBoth(user: SyncIdentity): Archive = uploadMutex.withLock {
+    suspend fun resolveKeepingBoth(user: SyncIdentity): SyncWorkspace = uploadMutex.withLock {
         mutex.withLock {
             check(identity == user)
             val pending = queue(user)
@@ -178,6 +206,7 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
             fun add(entity: String, id: String, value: JsonElement?) {
                 next += PendingMutation(envelope!!.deviceId, newId(), entity, id, snapshot.versions["$entity:$id"] ?: "0", value)
             }
+            val copies = mutableMapOf<String,String>()
             val folderIds = mutableMapOf<String, String>()
             fun keepFolder(id: String): String? {
                 folderIds[id]?.let { return it }
@@ -195,23 +224,50 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
                 if (records.any { it == local }) continue
                 val copy = local.copy(id = newId(), title = local.title.take(190) + " (이 기기 사본)",
                     folderId = local.folderId?.let { keepFolder(it) })
-                records += copy
+                records += copy; copies[id] = copy.id
                 add("conversation", copy.id, json.encodeToJsonElement(copy))
             }
             val appearance = if (pending.any { it.entity == "settings" }) archive.appearance else snapshot.archive.appearance
             if (appearance != snapshot.archive.appearance) add("settings", "settings", buildJsonObject { put("appearance", appearance.name) })
             val nextDrafts = snapshot.drafts.toMutableMap()
-            for (id in pending.filter { it.entity == "draft" }.map { it.id }.distinct()) {
+            fun recover(value:JsonObject):String {
+                val record = draftConversation(value)
+                records += record; add("conversation",record.id,json.encodeToJsonElement(record))
+                add("draft",record.id,value); nextDrafts[record.id] = value
+                return record.id
+            }
+            val localScopes = pending.filter { it.entity == "draft" }.map { it.id }.toSet() + copies.keys.filter { drafts[it] != null }
+            for (id in localScopes) {
                 val value = drafts[id]
-                if (value != snapshot.drafts[id]) add("draft", id, value)
-                if (value == null) nextDrafts.remove(id) else nextDrafts[id] = value
+                val serverDraft = snapshot.drafts[id]
+                val target = copies[id] ?: id
+                if (value != null && target == id && serverDraft != null && value != serverDraft) {
+                    // Both drafts survive; the local one becomes a separate active conversation.
+                    copies[id] = recover(value)
+                } else if (target != id && value != null) {
+                    add("draft",target,value); nextDrafts[target] = value
+                    if (serverDraft == value) { add("draft",id,null); nextDrafts.remove(id) }
+                } else {
+                    if (value != serverDraft) add("draft",id,value)
+                    if (value == null) nextDrafts.remove(id) else nextDrafts[id] = value
+                }
+            }
+            // A remote end/delete must not hide an otherwise intact device draft.
+            for ((id,value) in nextDrafts.toMap()) {
+                if (id == "new" || value["text"]?.jsonPrimitive?.content.orEmpty().isEmpty() || records.any { it.id == id && !it.ended }) continue
+                val recovered = recover(value)
+                if (id !in copies) copies[id] = recovered
+                // Coalesce this operation's replacement mutation for the original draft.
+                next.removeAll { it.entity == "draft" && it.id == id }
+                if (snapshot.drafts[id] != null) add("draft",id,null)
+                nextDrafts.remove(id)
             }
             val accounts = if (next.isEmpty()) envelope!!.accounts - key(user) else envelope!!.accounts + (key(user) to next)
             persist(envelope!!.copy(accounts = accounts))
             volatileQueues.remove(key(user))
             versions = snapshot.versions; drafts = nextDrafts
             archive = snapshot.archive.copy(conversations = records, folders = folders, appearance = appearance)
-            archive
+            SyncWorkspace(archive,copies)
         }
     }
     fun close() { remote.close() }
