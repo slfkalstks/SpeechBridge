@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
+import kotlinx.serialization.json.*
 
 enum class Page(val label: String) { TALK("대화"), HISTORY("기록"), TASKS("할 일"), SETTINGS("설정") }
 data class BridgeState(
@@ -15,6 +16,11 @@ data class BridgeState(
     val activeId: String? = null,
     val loaded: Boolean = false,
     val loadFailed: Boolean = false,
+    val accountRequired: Boolean = false,
+    val cloudMode: Boolean = false,
+    val syncPending: Int = 0,
+    val syncBusy: Boolean = false,
+    val syncProblem: String? = null,
     val unsaved: Boolean = false,
     val message: String? = null,
     val connection: Connection = Connection(),
@@ -34,30 +40,69 @@ data class BridgeState(
     val selected get() = conversations.firstOrNull { it.id == selectedId }
 }
 
-class BridgeViewModel(private val store: SessionStore, private val api: BridgeApi = HttpBridgeApi(), val account: AccountManager? = null) : ViewModel() {
-    private val mutable = MutableStateFlow(BridgeState())
+class BridgeViewModel(private val store: SessionStore, private val api: BridgeApi = HttpBridgeApi(), val account: AccountManager? = null, private val sync: SyncRepository? = null) : ViewModel() {
+    private val mutable = MutableStateFlow(BridgeState(cloudMode = sync != null, accountRequired = sync != null))
     val state = mutable.asStateFlow()
-    private val writes = Channel<Pair<Long, String>>(Channel.CONFLATED)
+    private data class Write(val revision: Long, val generation: Long, val identity: SyncIdentity?,
+        val archive: Archive, val drafts: Map<String, JsonObject>)
+    private sealed interface WriteRequest {
+        data class Save(val value: Write) : WriteRequest
+        data class Barrier(val done: CompletableDeferred<Unit>) : WriteRequest
+    }
+    private val writes = Channel<WriteRequest>(Channel.UNLIMITED)
+    private var generation = 0L
+    private var identity: SyncIdentity? = null
+    private var upload: Job? = null
+    private var cloudLoad: Job? = null
     private var writeRevision = 0L
     private var requestSequence = 0L
     private val requests = mutableMapOf<String, Pair<Long, Job>>()
 
     init {
         viewModelScope.launch {
-            for ((revision, text) in writes) {
+            for (request in writes) {
+                if (request is WriteRequest.Barrier) { request.done.complete(Unit); continue }
+                val write = (request as WriteRequest.Save).value
+                if (write.generation != generation) continue
                 try {
-                    store.write(text)
-                    if (revision == writeRevision) mutable.update { it.copy(unsaved = false) }
+                    if (sync == null) store.write(ArchiveCodec.encode(write.archive.conversations, write.archive.folders, write.archive.appearance))
+                    else {
+                        sync.save(write.archive, write.identity)
+                        for (id in sync.currentDrafts().keys + write.drafts.keys) sync.saveDraft(id, write.drafts[id], write.identity)
+                    }
+                    if (write.generation == generation) {
+                        if (write.revision == writeRevision) mutable.update { it.copy(unsaved = false) }
+                        sync?.let { repository ->
+                            val count = repository.pendingCount()
+                            mutable.update { it.copy(syncPending = count) }
+                            retrySync()
+                        }
+                    }
                 } catch (e: CancellationException) { throw e }
                 catch (_: Exception) {
-                    mutable.update { it.copy(unsaved = true, message = "저장하지 못했습니다. 화면의 내용은 유지됩니다. 저장을 재시도해 주세요.") }
+                    if (write.generation == generation) mutable.update { it.copy(unsaved = true,
+                        message = "저장하지 못했습니다. 화면의 내용은 유지됩니다. 저장을 재시도해 주세요.") }
                 }
             }
         }
-        reload()
+        if (sync == null) reload()
+        else {
+            requireNotNull(account)
+            viewModelScope.launch {
+                account.state.map { it.ready to it.user?.id }.distinctUntilChanged().collect { (ready, userId) ->
+                    if (!ready) return@collect
+                    cloudLoad?.cancel(); upload?.cancel(); invalidate()
+                    generation++
+                    identity = userId?.let { SyncIdentity(account.endpoint, it) }
+                    mutable.value = BridgeState(cloudMode = true, accountRequired = userId == null, loaded = userId == null)
+                    if (userId == null) sync.closeAccount() else loadCloud()
+                }
+            }
+        }
     }
 
     fun reload() {
+        if (sync != null) { loadCloud(); return }
         if (state.value.loaded) return
         viewModelScope.launch {
             mutable.update { it.copy(loadFailed = false) }
@@ -73,26 +118,106 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         }
     }
 
+    private fun loadCloud() {
+        val repository = sync ?: return
+        val user = identity ?: return
+        if (cloudLoad?.isActive == true) return
+        val epoch = generation
+        cloudLoad = viewModelScope.launch {
+            mutable.update { it.copy(loadFailed = false) }
+            try {
+                val archive = repository.open(user)
+                val drafts = repository.currentDrafts()
+                val pending = repository.pendingCount()
+                if (epoch != generation) return@launch
+                fun language(value: JsonObject?, name: String, fallback: Language) =
+                    Language.entries.firstOrNull { it.code == value?.get(name)?.jsonPrimitive?.content } ?: fallback
+                val initial = drafts["new"]
+                val first = language(initial, "first", Language.KO)
+                val second = language(initial, "second", Language.EN)
+                val active = archive.conversations.lastOrNull { !it.ended }?.id
+                mutable.update { it.copy(loaded = true, conversations = archive.conversations, folders = archive.folders,
+                    appearance = archive.appearance, activeId = active, selectedId = active, syncPending = pending,
+                    startDraft = StartDraft(first = first, second = second),
+                    idleDraft = UtteranceDraft(first, initial?.get("text")?.jsonPrimitive?.content.orEmpty()),
+                    inputDrafts = drafts.filterKeys { id -> archive.conversations.any { it.id == id && !it.ended } }
+                        .mapValues { (_, value) -> UtteranceDraft(language(value, "language", first), value["text"]?.jsonPrimitive?.content.orEmpty()) }) }
+                retrySync()
+            } catch (e: CancellationException) { throw e }
+            catch (_: Exception) {
+                if (epoch == generation) mutable.update { it.copy(loadFailed = true,
+                    message = "서버 기록을 불러오지 못했습니다. 연결을 확인하고 다시 시도해 주세요. 전송 대기 내용은 보존됩니다.") }
+            }
+        }
+    }
+    fun retrySync() {
+        val repository = sync ?: return
+        if (identity == null || !state.value.loaded || upload?.isActive == true) return
+        val epoch = generation
+        upload = viewModelScope.launch {
+            mutable.update { it.copy(syncBusy = true, syncProblem = null) }
+            try { repository.flush() }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) {
+                if (epoch == generation) mutable.update { it.copy(syncProblem =
+                    if (e is BridgeRequestException) e.message else "연결되면 다시 전송할 수 있습니다.") }
+            } finally {
+                if (epoch == generation) {
+                    val count = repository.pendingCount()
+                    mutable.update { it.copy(syncBusy = false, syncPending = count) }
+                }
+            }
+        }
+    }
+    suspend fun prepareAccountChange(): Boolean {
+        val barrier = CompletableDeferred<Unit>()
+        writes.send(WriteRequest.Barrier(barrier))
+        barrier.await()
+        if (state.value.unsaved) { inform("아직 안전하게 저장하지 못한 내용이 있습니다. 저장을 재시도한 뒤 로그아웃해 주세요."); return false }
+        upload?.cancelAndJoin()
+        invalidate()
+        return true
+    }
+    private fun canEdit() = state.value.loaded && !state.value.accountRequired
     fun retrySave() = persist()
     private fun persist() {
-        if (!state.value.loaded) return
+        if (!canEdit()) return
+        val current = state.value
+        val drafts = if (sync == null) emptyMap() else buildMap {
+            fun draft(text: String, first: Language, second: Language) = buildJsonObject {
+                put("text", text); put("language", first.code); put("first", first.code); put("second", second.code)
+            }
+            if (current.idleDraft.text.isNotEmpty() || current.startDraft.first != Language.KO || current.startDraft.second != Language.EN)
+                put("new", draft(current.idleDraft.text, current.startDraft.first, current.startDraft.second))
+            for ((id, input) in current.inputDrafts) {
+                val conversation = current.conversations.find { it.id == id && !it.ended } ?: continue
+                if (input.text.isNotEmpty()) put(id, draft(input.text, conversation.first, conversation.second))
+            }
+        }
         writeRevision++
         mutable.update { it.copy(unsaved = true) }
-        writes.trySend(writeRevision to ArchiveCodec.encode(state.value.conversations, state.value.folders, state.value.appearance))
+        writes.trySend(WriteRequest.Save(Write(writeRevision, generation, identity,
+            Archive(1, current.conversations.filter { it.record }, current.folders, current.appearance), drafts)))
     }
     fun setAppearance(appearance: Appearance) {
-        if (!state.value.loaded) return
+        if (!canEdit()) return
         mutable.update { it.copy(appearance = appearance) }; persist()
     }
     fun navigate(page: Page) { mutable.update { it.copy(page = page) } }
     fun updateStartDraft(draft: StartDraft) {
-        if (draft.first == draft.second) return
+        if (!canEdit() || draft.first == draft.second) return
         mutable.update { it.copy(startDraft = draft, idleDraft = it.idleDraft.copy(language = draft.first)) }
+        if (sync != null) persist()
     }
-    fun updateIdleDraft(draft: UtteranceDraft) { mutable.update { it.copy(idleDraft = draft.copy(language = it.startDraft.first)) } }
+    fun updateIdleDraft(draft: UtteranceDraft) {
+        if (!canEdit()) return
+        mutable.update { it.copy(idleDraft = draft.copy(language = it.startDraft.first)) }
+        if (sync != null) persist()
+    }
     fun updateInputDraft(id: String, draft: UtteranceDraft) {
         val c = state.value.conversations.find { it.id == id && !it.ended } ?: return
         mutable.update { it.copy(inputDrafts = it.inputDrafts + (id to draft.copy(language = c.first))) }
+        if (sync != null) persist()
     }
     fun updateConnectionDraft(draft: Connection) { mutable.update { it.copy(connectionDraft = draft) } }
     fun searchHistory(query: String) { mutable.update { it.copy(historyQuery = query) } }
@@ -102,7 +227,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     fun select(id: String) { mutable.update { it.copy(selectedId = id, page = Page.TALK) } }
 
     fun start(title: String, translate: Boolean, record: Boolean, first: Language, second: Language) {
-        if (!state.value.loaded || state.value.activeId != null) return
+        if (!canEdit() || state.value.activeId != null) return
         if (translate && first == second) { inform("번역할 두 언어를 다르게 선택해 주세요."); return }
         val c = Conversation(title = title.trim().ifBlank { "새 대화" }, translate = translate, record = true, first = first, second = second)
         mutable.update { it.copy(conversations = it.conversations.filter { c -> c.record } + c,
@@ -147,7 +272,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     fun filterCategory(filter: CategoryFilter) { mutable.update { it.copy(categoryFilter = filter) } }
     fun saveFolder(name: String, id: String? = null): Boolean {
         val clean = name.trim()
-        if (!state.value.loaded || (clean.isBlank() || clean.length > 200)) return false
+        if (!canEdit() || (clean.isBlank() || clean.length > 200)) return false
         if (state.value.folders.any { it.id != id && it.name.equals(clean, true) }) { inform("같은 이름의 폴더가 있습니다."); return false }
         if (id != null && state.value.folders.none { it.id == id }) return false
         invalidate()
@@ -201,7 +326,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         persist()
     }
     private fun change(id: String, transform: (Conversation) -> Conversation) {
-        if (!state.value.loaded) return
+        if (!canEdit()) return
         val c = state.value.conversations.firstOrNull { it.id == id } ?: return
         val next = transform(c)
         mutable.update { it.copy(conversations = it.conversations.map { old -> if (old.id == id) next else old }) }
@@ -216,6 +341,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         change(id) { it.copy(utterances = it.utterances + u,
             items = it.items.map { item -> if (item.origin == Origin.SERVICE) item.copy(reviewed = false) else item }) }
         mutable.update { it.copy(inputDrafts = it.inputDrafts - id) }
+        if (sync != null) persist()
         if (c.translate) translate(id, u.id)
     }
     fun editUtterance(id: String, utteranceId: String, text: String) {
@@ -345,5 +471,5 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     private fun requestFailed(key: String, message: String) {
         mutable.update { it.copy(requestErrors = it.requestErrors + (key to message), message = message) }
     }
-    override fun onCleared() { invalidate(); writes.close(); api.close(); account?.close() }
+    override fun onCleared() { invalidate(); writes.close(); api.close(); account?.close(); sync?.close() }
 }

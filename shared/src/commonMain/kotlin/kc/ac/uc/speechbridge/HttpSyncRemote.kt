@@ -30,5 +30,5 @@ class HttpSyncRemote(private val account: AccountManager, private val client: Ht
         "/data/snapshot", buildJsonObject { put("deviceId",deviceId) }.toString())
     override suspend fun mutate(identity: SyncIdentity, mutation: PendingMutation): MutationReceipt =
         request(identity,"/data/mutate",json.encodeToString(mutation))
-    fun close() { client.close() }
+    override fun close() { client.close() }
 }

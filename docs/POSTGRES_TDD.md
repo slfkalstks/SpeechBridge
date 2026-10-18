@@ -14,7 +14,7 @@
 
 SQLite backup API는 파일 헤더 카운터를 변경하므로 백업 비교를 users/sessions 행 비교로 수정했다. 원본 파일이 그대로인지 확인하는 byte 검사는 유지했다. 운영 계정 파일은 회원 0개/세션 0개였고 원본을 보존했다. 데이터가 있는 이전은 별도의 가상 계정 테스트로 검증했다.
 
-프로젝트 PostgreSQL 18.6 빌드·체크섬·전용 소켓·마이그레이션 001~004·custom-format 백업 생성 확인. 백업 복원, 모바일 동기화, 음성·실기기 준비, PPT는 전체 계획에서 계속 진행한다.
+프로젝트 PostgreSQL 18.6 빌드·체크섬·전용 소켓·마이그레이션 001~004·custom-format 백업 생성 확인. 백업 복원, 모바일 동기화, 음성·실기기 준비는 전체 계획에서 계속 진행한다. 발표자료는 최신 목표 변경에 따라 보류했다.
 
 ## 모바일 전송 대기와 후속 검증
 
@@ -25,3 +25,5 @@ SQLite backup API는 파일 헤더 카운터를 변경하므로 백업 비교를
 최신 서버 coverage는 line 97.05%, branch 90.39%, function 90.69%. `.runtime/postgres/draft-green.log`, `outbox-concurrency-green.log`, `http-sync-green.log` 참조. Kotlin 테스트 실행 성공을 Kotlin 커버리지 측정으로 표현하지 않는다.
 
 빌드 캐시는 기존 전역 캐시를 읽어 APFS 복사한 `.runtime/gradle-home`, `.runtime/konan`을 사용한다. 경로 이동으로 발생한 KLIB 중복은 새 경로를 명시하고 configuration cache를 끄는 것으로 해결했다. 전역 캐시를 삭제하거나 수정하지 않았다. iOS 테스트는 Simulator 서비스 접근 권한을 받아 실행했다.
+
+- `bcae15b` RED → 계정별 ViewModel 저장 연결: 로그인 전 기록 차단, 기존 기기 기록 자동 배정 금지, 오프라인 변경·초안의 대기 저장, 로그아웃과 다른 계정의 업로드 격리 3개 테스트. Android/iOS 각각 61개 통과. `.runtime/postgres/workspace-red.log`, `workspace-green.log`, `workspace-ios-green.log`. 아직 실제 App 진입점에는 활성화하지 않았으며 기존 기록 가져오기·충돌 처리 UI와 플랫폼 보안 저장소 연결이 남아 있다.

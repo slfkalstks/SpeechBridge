@@ -15,6 +15,7 @@ import kotlinx.serialization.json.*
 interface SyncRemote {
     suspend fun snapshot(identity: SyncIdentity, deviceId: String): DataSnapshot
     suspend fun mutate(identity: SyncIdentity, mutation: PendingMutation): MutationReceipt
+    fun close() {}
 }
 @Serializable private data class PendingEnvelope(val version: Int = 1, val deviceId: String = newId(),
     val accounts: Map<String, List<PendingMutation>> = emptyMap())
@@ -94,8 +95,9 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
     private suspend fun enqueue(next: List<PendingMutation>, user: SyncIdentity) {
         persist(envelope!!.copy(accounts = envelope!!.accounts + (key(user) to next)))
     }
-    suspend fun save(next: Archive) = mutex.withLock {
+    suspend fun save(next: Archive, expectedIdentity: SyncIdentity? = null) = mutex.withLock {
         val user = identity ?: throw BridgeRequestException("login_required", "로그인 후 기록을 저장할 수 있습니다.")
+        check(expectedIdentity == null || user == expectedIdentity) { "Account changed" }
         require(next.version == 1)
         val pending = queue(user).toMutableList()
         fun add(entity: String, id: String, value: JsonElement?) { pending += mutation(entity, id, value, pending) }
@@ -108,13 +110,15 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
         if (pending.size != queue(user).size) enqueue(pending, user)
         archive = next
     }
-    suspend fun saveDraft(id: String, value: JsonObject?) = mutex.withLock {
+    suspend fun saveDraft(id: String, value: JsonObject?, expectedIdentity: SyncIdentity? = null) = mutex.withLock {
         val user = identity ?: throw BridgeRequestException("login_required", "로그인 후 입력해 주세요.")
+        check(expectedIdentity == null || user == expectedIdentity) { "Account changed" }
         if (drafts[id] == value) return@withLock
         val pending = queue(user)
         enqueue(pending + mutation("draft", id, value, pending), user)
         drafts = drafts.toMutableMap().apply { if(value == null) remove(id) else put(id,value) }
     }
+    fun close() { remote.close() }
     suspend fun flush() = uploadMutex.withLock upload@{
         val user = mutex.withLock { identity } ?: return@upload
         while (true) {
