@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, rm, stat } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, stat, symlink, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import http from 'node:http';
 import https from 'node:https';
 import { X509Certificate } from 'node:crypto';
-import { prepareLocalTls, privateAddress } from './local-tls.mjs';
+import { prepareLocalTls, privateAddress, localAddress } from './local-tls.mjs';
 import { createTlsProxy } from './tls-proxy.mjs';
 
 const parent=fileURLToPath(new URL('../.runtime/tls-tests/',import.meta.url));
@@ -80,4 +80,25 @@ test('proxy rejects cross-origin request targets, oversized requests and fails s
   assert.equal((await request(proxy.address().port,{ca:f.ca,method:'POST',headers:{'Content-Length':2*1024*1024+1}})).status,413);
   const unavailable=await request(proxy.address().port,{ca:f.ca});assert.equal(unavailable.status,503);
   assert.equal(JSON.parse(unavailable.body).error.code,'server_unavailable');
+});
+test('setup refuses symlink escapes before creating files and serializes concurrent certificate preparation',async t=>{
+  const f=await fixture(t);
+  const outside=await mkdtemp(fileURLToPath(new URL('../build/tls-boundary-',import.meta.url)));
+  t.after(()=>rm(outside,{recursive:true,force:true}));
+  await symlink(outside,join(f.root,'link'));
+  await assert.rejects(prepareLocalTls({root:join(f.root,'link','nested'),host:'127.0.0.1'}),/project/);
+  await assert.rejects(stat(join(outside,'nested')),{code:'ENOENT'});
+  const root=join(f.root,'concurrent');
+  const results=await Promise.allSettled([prepareLocalTls({root,host:'127.0.0.1'}),prepareLocalTls({root,host:'127.0.0.1'})]);
+  assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
+  assert.match(results.find(r=>r.status==='rejected').reason.message,/already preparing/);
+  assert.equal((await prepareLocalTls({root,host:'127.0.0.1'})).host,'127.0.0.1');
+});
+test('CA corruption never silently rotates trust; LAN selection is private and deterministic',async t=>{
+  const f=await fixture(t),key=await readFile(join(f.root,'ca.key'));
+  await writeFile(join(f.root,'ca.der'),Buffer.from('corrupted'));
+  await assert.rejects(prepareLocalTls({root:f.root,host:'127.0.0.1'}),/disagree/);
+  assert.deepEqual(await readFile(join(f.root,'ca.key')),key);
+  assert.equal(localAddress({en1:[{family:'IPv4',internal:false,address:'10.0.0.2'}],en0:[{family:'IPv4',internal:false,address:'192.168.0.2'}]}),'192.168.0.2');
+  assert.throws(()=>localAddress({en0:[{family:'IPv4',internal:false,address:'8.8.8.8'}]}),/No private LAN/);
 });
