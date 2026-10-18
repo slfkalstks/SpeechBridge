@@ -62,6 +62,23 @@ class VoiceControllerTest {
         assertEquals(2,device.captures)
         voice.cancel()
     }
+    @Test fun stalledCaptureReturnsRecoverableErrorInsteadOfRemainingInRecording() = runTest {
+        val voice = VoiceController(backgroundScope,Device(audio()),Api(),{})
+        voice.start(); runCurrent(); advanceTimeBy(32_001); runCurrent()
+        assertEquals(VoicePhase.ERROR,voice.state.value.phase)
+        assertEquals("audio_timeout",voice.state.value.errorCode)
+    }
+    @Test fun activityRecreationReplacesNativeDeviceAndRejectsItsLatePermission() = runTest {
+        val granted = CompletableDeferred<Boolean>()
+        val old = Device(audio()).apply { permission = { withContext(NonCancellable) { granted.await() } } }
+        val next = Device(audio())
+        val results = mutableListOf<Transcription>()
+        val voice = VoiceController(backgroundScope,old,Api(),{ results += it })
+        voice.start(); runCurrent(); voice.attachDevice(next)
+        voice.start(); runCurrent(); granted.complete(true); runCurrent()
+        assertEquals(0,old.captures); assertEquals(1,next.captures)
+        voice.finish(); runCurrent(); assertEquals(1,results.size)
+    }
     @Test fun longTranslationsAreReadInBoundedChunksWithoutSplittingSurrogates()=runTest {
         val text="긴 번역 😀 ".repeat(70)
         val chunks=voiceChunks(text)
