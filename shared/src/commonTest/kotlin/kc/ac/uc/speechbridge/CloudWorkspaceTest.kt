@@ -12,8 +12,9 @@ import kotlin.test.*
 class CloudWorkspaceTest {
     private class Legacy : SessionStore {
         var writes = 0
-        override suspend fun read() = ArchiveCodec.encode(listOf(Conversation(id="legacy",title="기존 기기 기록",translate=false,record=true,first=Language.KO,second=Language.EN)))
-        override suspend fun write(text: String) { writes++ }
+        var raw = ArchiveCodec.encode(listOf(Conversation(id="legacy",title="기존 기기 기록",translate=false,record=true,first=Language.KO,second=Language.EN,ended=true)))
+        override suspend fun read() = raw
+        override suspend fun write(text: String) { writes++; raw=text }
     }
     private class Remote : SyncRemote {
         var offline = false
@@ -33,6 +34,8 @@ class CloudWorkspaceTest {
                 draftValues += value
             }
             sent += identity
+            if ((versions[identity.userId]?.get("${mutation.entity}:${mutation.id}") ?: "0") != mutation.baseVersion)
+                throw BridgeRequestException("version_conflict","conflict")
             val rev = (mutation.baseVersion.toLong()+1).toString()
             versions.getOrPut(identity.userId) { mutableMapOf() }["${mutation.entity}:${mutation.id}"] = rev
             if(mutation.entity == "conversation") {
@@ -168,6 +171,58 @@ class CloudWorkspaceTest {
             assertEquals("아직 발화 전",vm.state.value.inputDrafts[id]?.text)
             assertEquals(0,vm.state.value.syncPending)
             assertEquals("JA",remote.draftValues.last()["first"]?.jsonPrimitive?.content)
+        } finally { owner.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun legacyImportIsExplicitAndOnlyClearsTheSourceAfterServerVerification() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val owner=ViewModelStore(); val account=account(); val remote=Remote(); val legacy=Legacy()
+        val vm=BridgeViewModel(legacy,account=account,sync=SyncRepository(MemoryCredentialStore(),remote)); owner.put("vm",vm)
+        try {
+            account.authenticate("student_a","Synthetic-password-123!",false); runCurrent()
+            assertEquals(1,vm.state.value.legacyCount); assertTrue(remote.sent.isEmpty())
+            remote.offline=true; vm.importLegacyRecords(); runCurrent()
+            assertEquals(0,legacy.writes)
+            remote.offline=false; vm.importLegacyRecords(); runCurrent()
+            assertEquals("기존 기기 기록",remote.archives["student_a"]!!.conversations.single().title)
+            assertTrue(ArchiveCodec.decodeArchive(legacy.raw).conversations.isEmpty())
+            assertEquals(0,vm.state.value.legacyCount)
+            vm.importLegacyRecords(); runCurrent()
+            assertEquals(1,remote.archives["student_a"]!!.conversations.size)
+        } finally { owner.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun legacyImportCannotReplaceADifferentServerRecordWithTheSameId() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val owner=ViewModelStore(); val account=account(); val remote=Remote(); val legacy=Legacy()
+        val original=ArchiveCodec.decodeArchive(legacy.raw).conversations.single().copy(title="서버에서 수정한 내용")
+        remote.archives["student_a"]=Archive(1,listOf(original))
+        remote.versions["student_a"]=mutableMapOf("conversation:legacy" to "2")
+        val vm=BridgeViewModel(legacy,account=account,sync=SyncRepository(MemoryCredentialStore(),remote)); owner.put("vm",vm)
+        try {
+            account.authenticate("student_a","Synthetic-password-123!",false); runCurrent()
+            vm.importLegacyRecords(); runCurrent()
+            assertEquals(0,legacy.writes); assertTrue(remote.sent.isEmpty())
+            assertEquals(original,remote.archives["student_a"]!!.conversations.single())
+            assertNotNull(vm.state.value.message)
+        } finally { owner.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun explicitConflictResolutionPreservesServerAndLocalVersionsSeparately() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val owner=ViewModelStore(); val account=account(); val remote=Remote()
+        val original=Conversation(id="conflict",title="원래 제목",translate=false,record=true,first=Language.KO,second=Language.EN,ended=true)
+        remote.archives["student_a"]=Archive(1,listOf(original)); remote.versions["student_a"]=mutableMapOf("conversation:conflict" to "1")
+        val vm=BridgeViewModel(Legacy(),account=account,sync=SyncRepository(MemoryCredentialStore(),remote)); owner.put("vm",vm)
+        try {
+            account.authenticate("student_a","Synthetic-password-123!",false); runCurrent()
+            remote.archives["student_a"]=Archive(1,listOf(original.copy(title="다른 기기의 제목",metadataRevision=1)))
+            remote.versions["student_a"]!!["conversation:conflict"]="2"
+            vm.classify("conflict","내가 쓴 제목",Category.DAILY,null,null); runCurrent()
+            assertTrue(vm.state.value.syncConflict)
+            vm.resolveSyncConflict(); runCurrent()
+            val records=remote.archives["student_a"]!!.conversations
+            assertEquals(2,records.size)
+            assertEquals("다른 기기의 제목",records.single { it.id=="conflict" }.title)
+            assertTrue(records.single { it.id!="conflict" }.title.startsWith("내가 쓴 제목"))
+            assertFalse(vm.state.value.syncConflict); assertEquals(0,vm.state.value.syncPending)
         } finally { owner.clear(); Dispatchers.resetMain() }
     }
     private fun account() = AccountManager("https://sync.example.invalid",MemoryCredentialStore(),client=HttpClient(MockEngine { request ->
