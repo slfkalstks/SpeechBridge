@@ -1,5 +1,7 @@
 # SpeechBridge 문서
 
+- [PostgreSQL 서버·스키마·동기화 계약](POSTGRES.md) / [TDD 근거](POSTGRES_TDD.md) / [DB·음성·발표자료 진행표](../plans/postgres-voice-release.md).
+
 - [회원 서버 실행·자동 연결·배포 설정](ACCOUNT_SERVER.md) / [인증 검증](ACCOUNT_VALIDATION.md).
 - [최신 언어·설정·요약 검증](LANGUAGE_SETTINGS_VALIDATION.md): 현재 구현과 검증 범위.
 - [최신 리디자인 검증](REDESIGN_VALIDATION.md) / [참고 디자인 조사](UI_REFERENCE_RESEARCH.md).
