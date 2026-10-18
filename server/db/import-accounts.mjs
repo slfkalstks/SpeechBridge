@@ -1,6 +1,6 @@
 import { DatabaseSync, backup } from 'node:sqlite';
 import { mkdir, chmod } from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { createDatabase, transaction } from './database.mjs';
@@ -23,10 +23,16 @@ export async function importSqliteAccounts({ source, backupDirectory, db }) {
     sessions = snapshot.prepare('SELECT hash,user_id,expires FROM sessions ORDER BY expires,hash').all();
   } finally { snapshot.close(); }
   if (users.some(u => u.role !== 'member')) throw Error('Unsupported legacy account role');
+  let skippedDeleted=0;
   await transaction(db.auth, async client => {
     await client.query('SELECT pg_advisory_xact_lock(83917403)');
     for (const user of users) {
       const { rows } = await client.query('SELECT id,username,salt,password_hash FROM users WHERE id=$1 OR username=$2 FOR UPDATE', [user.id, user.username]);
+      // Check after the row lock: a concurrent erasure may have committed while
+      // this SELECT waited. Never recreate its credentials from the old source.
+      if((await client.query('SELECT 1 FROM account_deletions WHERE user_id_hash=$1',[createHash('sha256').update(user.id).digest('hex')])).rowCount) {
+        skippedDeleted++;continue;
+      }
       if (rows.length && (rows.length !== 1 || ['id', 'username', 'salt', 'password_hash'].some(k => rows[0][k] !== user[k]))) throw Error('Account migration collision; originals preserved');
       if (!rows.length) await client.query('INSERT INTO users(id,username,salt,password_hash) VALUES($1,$2,$3,$4)', [user.id, user.username, user.salt, user.password_hash]);
       const claimed = await client.query('INSERT INTO legacy_account_imports(user_id) VALUES($1) ON CONFLICT DO NOTHING RETURNING user_id', [user.id]);
@@ -38,7 +44,7 @@ export async function importSqliteAccounts({ source, backupDirectory, db }) {
       }
     }
   });
-  return { users: users.length, sessions: sessions.length, backup: backupPath };
+  return { users: users.length, sessions: sessions.length, skippedDeleted, backup: backupPath };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -47,7 +53,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const result = await importSqliteAccounts({ db,
       source: fileURLToPath(new URL('../../.runtime/accounts.sqlite', import.meta.url)),
       backupDirectory: fileURLToPath(new URL('../../.runtime/backups/', import.meta.url)) });
-    console.log(`Account import verified: ${result.users} users, ${result.sessions} source sessions; original preserved.`);
+    console.log(`Account import verified: ${result.users} source users, ${result.sessions} source sessions, ${result.skippedDeleted} deleted accounts skipped; original preserved.`);
   } catch { console.error('Account import stopped; originals preserved. Inspect configuration and account collisions.'); process.exitCode = 1; }
   finally { await db.close(); }
 }
