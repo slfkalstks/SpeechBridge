@@ -1,0 +1,54 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
+import { mkdtemp, rm, readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { createAccounts } from './auth.mjs';
+import { createDatabase } from './db/database.mjs';
+import { createPostgresAccounts } from './db/accounts.mjs';
+import { importSqliteAccounts } from './db/import-accounts.mjs';
+
+process.loadEnvFile(new URL('../.runtime/postgres/test.env', import.meta.url));
+assert.equal(process.env.PGDATABASE, 'speechbridge_test');
+test('read-only SQLite import preserves IDs, password hashes and sessions; repeat import is idempotent', async t => {
+  const dir = await mkdtemp(fileURLToPath(new URL('../.runtime/postgres/import-test-', import.meta.url)));
+  const source = join(dir, 'old.sqlite');
+  const username = `i_${randomUUID().replaceAll('-', '').slice(0, 20)}`;
+  const password = 'Synthetic-import-password-123!';
+  const old = createAccounts({ path: source });
+  const session = await old.handle('/auth/register', { username, password });
+  old.close();
+  const original = await readFile(source);
+  const db = createDatabase(process.env);
+  t.after(async () => { await db.auth.query('DELETE FROM users WHERE id=$1', [session.user.id]); await db.close(); await rm(dir, { recursive: true, force: true }); });
+  const imported = await importSqliteAccounts({ source, backupDirectory: dir, db });
+  assert.deepEqual({ users: imported.users, sessions: imported.sessions }, { users: 1, sessions: 1 });
+  assert.deepEqual(await readFile(source), original);
+  assert.deepEqual(await readFile(imported.backup), original);
+  const accounts = createPostgresAccounts({ db });
+  assert.equal((await accounts.authenticate(`Bearer ${session.token}`)).id, session.user.id);
+  assert.equal((await accounts.handle('/auth/login', { username, password })).user.id, session.user.id);
+  await importSqliteAccounts({ source, backupDirectory: dir, db });
+  assert.equal((await db.auth.query('SELECT count(*)::int AS n FROM users WHERE id=$1', [session.user.id])).rows[0].n, 1);
+  await accounts.handle('/auth/logout', {}, `Bearer ${session.token}`);
+  await importSqliteAccounts({ source, backupDirectory: dir, db });
+  await assert.rejects(accounts.authenticate(`Bearer ${session.token}`), { status: 401 });
+});
+
+test('migration collision rolls back the entire import and preserves both originals', async t => {
+  const dir = await mkdtemp(fileURLToPath(new URL('../.runtime/postgres/import-test-', import.meta.url)));
+  const source = join(dir, 'old.sqlite');
+  const username = `i_${randomUUID().replaceAll('-', '').slice(0, 20)}`;
+  const password = 'Synthetic-import-password-123!';
+  const old = createAccounts({ path: source });
+  const first = await old.handle('/auth/register', { username: username + 'a', password });
+  await old.handle('/auth/register', { username, password }); old.close();
+  const db = createDatabase(process.env);
+  const accounts = createPostgresAccounts({ db });
+  const existing = await accounts.handle('/auth/register', { username, password });
+  t.after(async () => { await db.auth.query('DELETE FROM users WHERE username LIKE $1', [username + '%']); await db.close(); await rm(dir, { recursive: true, force: true }); });
+  await assert.rejects(importSqliteAccounts({ source, backupDirectory: dir, db }), /collision/i);
+  assert.equal((await db.auth.query('SELECT id FROM users WHERE id=$1', [first.user.id])).rowCount, 0);
+  assert.equal((await accounts.authenticate(`Bearer ${existing.token}`)).id, existing.user.id);
+});
