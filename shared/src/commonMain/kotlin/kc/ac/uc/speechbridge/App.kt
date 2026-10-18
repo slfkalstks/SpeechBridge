@@ -27,6 +27,10 @@ fun App(store: SessionStore? = null, audioDevice: AudioDevice = UnavailableAudio
         val account = AccountManager(SERVICE_URL.ifBlank { if(developerTools) developerUrl else "" }, credentialStore, developerTools)
         BridgeViewModel(actualStore, HttpBridgeApi(developerMode = developerTools, account = account), account, SyncRepository(pendingStore, HttpSyncRemote(account)), audioDevice, HttpVoiceApi(account))
     }
+    DisposableEffect(vm, audioDevice) {
+        vm.voice.attachDevice(audioDevice)
+        onDispose { vm.cancelVoice() }
+    }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { vm.cancelVoice() }
     LaunchedEffect(vm) { vm.account?.restore() }
     val state by vm.state.collectAsStateWithLifecycle()

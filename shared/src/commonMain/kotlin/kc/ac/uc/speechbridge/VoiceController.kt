@@ -31,7 +31,7 @@ data class VoiceState(val phase: VoicePhase = VoicePhase.IDLE, val level: Float 
     val playingKey: String? = null, val errorCode: String? = null, val message: String? = null)
 
 /** Owns one foreground capture or playback. Generation guards include late permission callbacks. */
-class VoiceController(private val scope: CoroutineScope, private val device: AudioDevice, private val api: VoiceApi,
+class VoiceController(private val scope: CoroutineScope, private var device: AudioDevice, private val api: VoiceApi,
     private val onTranscript: (Transcription) -> Unit) {
     private val mutable = MutableStateFlow(VoiceState())
     val state = mutable.asStateFlow()
@@ -47,6 +47,9 @@ class VoiceController(private val scope: CoroutineScope, private val device: Aud
                 previous?.join()
                 ensureActive()
                 operation(epoch)
+            } catch (e: TimeoutCancellationException) {
+                if (generation == epoch) mutable.value = VoiceState(VoicePhase.ERROR, errorCode = "audio_timeout",
+                    message = "음성 처리 시간이 초과되었습니다. 다시 시도해 주세요.")
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 if (generation == epoch) mutable.value = VoiceState(VoicePhase.ERROR,
@@ -96,7 +99,11 @@ class VoiceController(private val scope: CoroutineScope, private val device: Aud
             if(epoch == generation) mutable.value = VoiceState()
         }
     }
-    fun cancel() { generation++; job?.cancel(); job = null; device.cancel(); mutable.value = VoiceState() }
+    fun cancel() { generation++; job?.cancel(); device.cancel(); mutable.value = VoiceState() }
+    fun attachDevice(next: AudioDevice) {
+        if(device === next) return
+        cancel(); device.close(); device = next
+    }
     fun close() { cancel(); device.close(); api.close() }
 }
 
