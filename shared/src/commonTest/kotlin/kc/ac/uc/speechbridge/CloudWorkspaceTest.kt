@@ -10,6 +10,38 @@ import kotlinx.serialization.json.*
 import kotlin.test.*
 
 class CloudWorkspaceTest {
+    @Test fun confirmedDeletionDrainsQueuedWritesAndErasesOnlyItsPendingWorkspace()=runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val owner=ViewModelStore();val account=account();val remote=Remote();val secure=MemoryCredentialStore();val legacy=Legacy()
+        val repo=SyncRepository(secure,remote);val vm=BridgeViewModel(legacy,account=account,sync=repo);owner.put("vm",vm)
+        try {
+            account.authenticate("student_a","Synthetic-password-123!",false);runCurrent();remote.offline=true
+            vm.updateIdleDraft(UtteranceDraft(text="삭제 전 마지막 초안"))
+            account.expired("synthetic-student_a",deleted=true);runCurrent()
+            assertNull(account.state.value.user)
+            assertTrue(vm.state.value.accountRequired);assertTrue(vm.state.value.conversations.isEmpty())
+            assertFalse(secure.read()!!.contains("삭제 전 마지막 초안"));assertEquals(0,repo.pendingCount())
+            assertEquals(0,legacy.writes)
+        }finally{owner.clear();Dispatchers.resetMain()}
+    }
+    @Test fun lockedPendingStoreKeepsDeletionBlockedUntilExplicitCleanupRetry()=runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val owner=ViewModelStore();val account=account();val remote=Remote();val backing=MemoryCredentialStore();var locked=false
+        val secure=object:CredentialStore {
+            override suspend fun read()=backing.read()
+            override suspend fun write(value:String?){if(locked)error("locked");backing.write(value)}
+        }
+        val vm=BridgeViewModel(Legacy(),account=account,sync=SyncRepository(secure,remote));owner.put("vm",vm)
+        try {
+            account.authenticate("student_a","Synthetic-password-123!",false);runCurrent();remote.offline=true
+            vm.updateIdleDraft(UtteranceDraft(text="잠긴 대기함"));runCurrent();locked=true
+            account.expired("synthetic-student_a",deleted=true);runCurrent()
+            assertEquals(AccountDeletion.CONFIRMED,account.state.value.deletion)
+            assertTrue(vm.state.value.accountRequired);assertTrue(backing.read()!!.contains("잠긴 대기함"))
+            locked=false;vm.retryDeletionCleanup();runCurrent()
+            assertNull(account.state.value.user);assertFalse(backing.read()!!.contains("잠긴 대기함"))
+        }finally{owner.clear();Dispatchers.resetMain()}
+    }
     private class Legacy : SessionStore {
         var writes = 0
         var raw = ArchiveCodec.encode(listOf(Conversation(id="legacy",title="기존 기기 기록",translate=false,record=true,first=Language.KO,second=Language.EN,ended=true)))
