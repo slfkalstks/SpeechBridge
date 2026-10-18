@@ -19,12 +19,12 @@ SpeechBridge는 일상과 업무에서 나눈 대화를 번역·기록하고, �
 ## 주요 기능
 
 - **한국어·영어·일본어 번역** — 입력 언어와 번역 언어를 각각 선택하고, 가운데 아이콘으로 즉시 맞바꿉니다.
-- **자동 기록** — 추가한 문장은 기기에 저장됩니다. 언어를 바꿔도 작성 중인 텍스트는 유지합니다.
+- **자동 기록** — 추가한 문장과 초안은 계정별 PostgreSQL에 저장됩니다. 연결이 끊기면 전송 대기 내용만 기기에 암호화해 보관합니다. 언어를 바꿔도 작성 중인 텍스트는 유지합니다.
 - **대화 요약** — 종료 시 AI가 제목·분류·요약을 한 번 작성합니다. 이후에는 직접 편집합니다.
 - **일상과 업무 분류** — 업무 유형과 사용자 지정 폴더를 함께 사용해 기록·할 일을 찾습니다.
 - **근거가 있는 할 일** — 원문에서 요청과 결정을 추출하고, 근거를 검토한 뒤 진행·완료 상태를 관리합니다.
 - **내용 수정과 검색** — 원문·정리 항목을 수정하고 기록과 할 일을 검색합니다. 원문이 바뀌면 관련 항목을 다시 검토합니다.
-- **회원 인증** — 회원가입·로그인 후 AI 기능을 사용합니다. 로그인 정보는 플랫폼 보안 저장소에 보관합니다.
+- **회원 인증** — 회원가입·로그인 후 내 기록과 AI 기능을 사용합니다. 로그인 정보는 플랫폼 보안 저장소에 보관합니다.
 - **화면 모드** — 기기 설정·라이트·다크 아이콘을 가로로 나열해 바로 선택합니다. 선택은 앱을 다시 열어도 유지됩니다.
 
 화자를 설정하거나 누가 말했는지 판단하는 기능은 제공하지 않습니다. 기록은 확정된 텍스트이며, 원음 녹음 파일을 저장한다는 의미는 아닙니다.
@@ -36,7 +36,7 @@ SpeechBridge는 일상과 업무에서 나눈 대화를 번역·기록하고, �
 | 대화 | 언어 선택·교환, 음성 준비 안내, 보조 키보드 입력, 원문과 번역 확인 |
 | 기록 | 날짜별 목록, 검색, 일상·업무·폴더 필터, 제목·분류·요약 직접 수정 |
 | 할 일 | 원문 근거 확인, 담당자·기한 편집, 검토·진행·완료 관리 |
-| 설정 | 회원가입·로그인, 가로 아이콘으로 화면 모드 선택, 업무 폴더 관리, 로컬 저장 상태 확인 |
+| 설정 | 회원가입·로그인, 가로 아이콘으로 화면 모드 선택, 업무 폴더 관리, 서버 저장 상태·기존 기록 가져오기·충돌 보관 |
 
 ```mermaid
 flowchart LR
@@ -55,17 +55,17 @@ AI 결과는 검토 가능한 초안입니다. 제안과 확정된 결정을 구
 
 | 영역 | 상태 |
 | --- | --- |
-| Android / iOS 공통 UI, 기기 저장, 검색·분류·할 일 | 구현 |
+| Android / iOS 공통 UI, 계정별 DB 저장, 검색·분류·할 일 | 구현 |
 | 텍스트 번역, AI 제목·분류·요약, 할 일 추출 | Mac 로컬 서버 연결 구현 |
 | 마이크 중심 UI | 구현 — 실제 청취 대신 준비 안내 |
-| STT / TTS 서버 엔진 | 별도 샘플 검증 이력 있음; 모바일 앱 연결 보류 |
-| 실제 마이크, 자동 언어 감지, 실기기 음성 검증 | 보류 |
+| STT / TTS 서버 엔진 | 별도 샘플 검증 이력 있음; 모바일 앱 연결 진행 중 |
+| 실제 마이크, 자동 언어 감지, 실기기 음성 검증 | 구현·테스트 준비 진행 중 |
 | 회원가입·로그인·세션 복원, 빌드에 지정한 주소 자동 연결 | 구현 — 게스트 없음 |
 | 외부 HTTPS 주소·실기기 연결·스토어 배포 | 준비 전 |
 
 배포판은 빌드에 지정한 HTTPS 주소를 자동 사용하며, 사용자에게 Mac 주소나 공용 토큰을 요구하지 않습니다. 주소가 없는 Release 빌드는 서비스 준비 상태를 표시합니다. Debug 시뮬레이터는 Mac으로 자동 접속합니다. 자세한 실행·보안·한계는 [회원 서버 안내](docs/ACCOUNT_SERVER.md)를 참고하세요.
 
-기록은 기기에 보관하며 계정별 분리·클라우드 동기화는 지원하지 않습니다. 로그아웃 상태에서도 기존 기록을 열고 수동 편집할 수 있습니다.
+기록은 로그인한 계정의 PostgreSQL을 원본으로 사용합니다. 로그아웃하면 화면에서 기록을 숨기며, 미전송 내용은 같은 계정으로 다시 로그인했을 때 이어서 전송합니다. 기존 기기 기록은 설정에서 명시적으로 가져온 뒤 서버 사본을 검증하고 기기 원본을 비웁니다.
 
 ## 기술 구성
 
@@ -74,8 +74,8 @@ AI 결과는 검토 가능한 초안입니다. 제안과 확정된 결정을 구
 | 공통 앱 | Kotlin Multiplatform, Compose Multiplatform, Material 3 |
 | 상태·네트워크 | Coroutines, StateFlow, Ktor, Kotlin Serialization |
 | 플랫폼 | Android 앱 / iOS SwiftUI 진입점 + Compose UI |
-| 저장 | 플랫폼별 앱 전용 파일 저장소, JSON, 원자적 파일 교체 |
-| API·인증 | Node.js 22.16 이상~26 미만, 내장 SQLite, scrypt, 만료·폐기 가능한 개인 세션 |
+| 저장 | PostgreSQL, 사용자별 RLS·트랜잭션·version, 암호화 전송 대기함 |
+| API·인증 | Node.js 22.16 이상~26 미만, PostgreSQL, scrypt, 만료·폐기 가능한 개인 세션 |
 | 로그인 보관 | Android Keystore AES-GCM / iOS Keychain |
 | 번역 모델 | TranslateGemma 12B |
 | 요약·분류·추출 모델 | Gemma 4 12B IT QAT |
@@ -110,7 +110,7 @@ Android Studio에서 `androidApp`을 에뮬레이터에 실행하거나 생성�
 
 `iosApp/iosApp.xcodeproj`를 열고 `iosApp` scheme과 iOS 시뮬레이터를 선택해 실행합니다.
 
-서버 없이도 키보드 입력, 기록, 검색, 수동 편집을 확인할 수 있습니다. 번역과 AI 정리는 아래 로컬 서버가 필요합니다.
+첫 로그인과 서버 기록 조회에는 아래 PostgreSQL·회원 API가 필요합니다. 로그인 후 연결이 끊겨도 현재 작업의 변경 내용은 암호화 대기함에 보관하고 연결 복구 시 다시 전송합니다.
 
 ### 3. Mac 로컬 AI 실행 — 개발용
 
@@ -133,14 +133,16 @@ OLLAMA_HOST=127.0.0.1:11435 ollama pull gemma4:12b-it-qat
 저장소 루트의 세 번째 터미널:
 
 ```sh
-cd server
-npm run setup:accounts
-npm run start:accounts
+npm --prefix server ci --ignore-scripts --cache .runtime/npm-cache
+npm --prefix server run db:install
+npm --prefix server run db:init
+npm --prefix server run setup:accounts
+npm --prefix server run start:accounts
 ```
 
-`setup:accounts`는 `.runtime/accounts-server.env`를 만들며 기존 파일을 보존합니다. 회원 DB도 `.runtime`에만 저장합니다. Debug 앱은 iOS 시뮬레이터에서 `http://localhost:8787`, Android 에뮬레이터에서 `http://10.0.2.2:8787`로 자동 접속합니다. **설정 → 로그인 / 회원가입**에서 사용할 계정을 만드세요. 공용 토큰 입력은 필요 없습니다.
+`setup:accounts`는 `.runtime/accounts-server.env`를 만들며 기존 파일을 보존합니다. 계정과 사용자 데이터의 PostgreSQL도 `.runtime/postgres`에만 설치합니다. 기존 SQLite 계정 이전은 [DB 안내](docs/POSTGRES.md)를 따릅니다. Debug 앱은 iOS 시뮬레이터에서 `http://localhost:8787`, Android 에뮬레이터에서 `http://10.0.2.2:8787`로 자동 접속합니다. **시작 화면 → 로그인 / 회원가입**에서 사용할 계정을 만드세요. 공용 토큰 입력은 필요 없습니다.
 
-실제 휴대전화에는 Mac에 연결되는 HTTPS 주소를 빌드에 지정해야 합니다. 현재 도메인과 외부 운영 주소는 없으며 실기기 검증은 보류 상태입니다. [회원 서버·배포 주소 설정](docs/ACCOUNT_SERVER.md)을 참고하세요. 기존 공용 토큰을 사용하는 개발 도구와 음성 평가 경로는 별도로 유지합니다.
+실제 휴대전화에는 Mac에 연결되는 HTTPS 주소를 빌드에 지정해야 합니다. 현재 도메인과 외부 운영 주소는 없으며 실기기 테스트 준비를 진행 중입니다. [회원 서버·배포 주소 설정](docs/ACCOUNT_SERVER.md)을 참고하세요. 기존 공용 토큰을 사용하는 개발 도구와 음성 평가 경로는 별도로 유지합니다.
 
 ## 테스트
 
@@ -154,14 +156,14 @@ npm run start:accounts
 # Android 에뮬레이터의 Keystore 포함 검증
 ./gradlew :shared:connectedAndroidDeviceTest
 
-# API 회귀 테스트 — 별도 모델 없이 실행
+# API 회귀 테스트 — db:init 이후, 별도 모델 없이 실행
 npm --prefix server test
 
 # 디자인 색상 일치와 텍스트 대비 검사
 python3 scripts/check-design.py
 ```
 
-실제 모델을 실행한 가상 대화 평가는 `node server/evaluate-summary.mjs`로 수행합니다. 작은 합성 평가 결과를 실제 음성 성능이나 일반적인 정확도로 해석하지 않습니다. 최신 검사 범위는 [회원 인증 검증 기록](docs/ACCOUNT_VALIDATION.md)에 남깁니다.
+실제 모델을 실행한 가상 대화 평가는 `node server/evaluate-summary.mjs`로 수행합니다. 작은 합성 평가 결과를 실제 음성 성능이나 일반적인 정확도로 해석하지 않습니다. 최신 중앙 저장 검증은 [모바일 DB 연결 검증](docs/CLOUD_WORKSPACE_VALIDATION.md)과 [TDD 기록](docs/POSTGRES_TDD.md)을 참고하세요.
 
 ## 프로젝트 구조
 

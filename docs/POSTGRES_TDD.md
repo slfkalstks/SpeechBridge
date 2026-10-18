@@ -29,3 +29,15 @@ SQLite backup API는 파일 헤더 카운터를 변경하므로 백업 비교를
 - `bcae15b` RED → 계정별 ViewModel 저장 연결: 로그인 전 기록 차단, 기존 기기 기록 자동 배정 금지, 오프라인 변경·초안의 대기 저장, 로그아웃과 다른 계정의 업로드 격리 3개 테스트. Android/iOS 각각 61개 통과. `.runtime/postgres/workspace-red.log`, `workspace-green.log`, `workspace-ios-green.log`. 아직 실제 App 진입점에는 활성화하지 않았으며 기존 기록 가져오기·충돌 처리 UI와 플랫폼 보안 저장소 연결이 남아 있다.
 
 - `57f59e4` RED → 세션 만료 도중 보안 저장이 지연되면 다음 입력을 버리던 경합 수정. 이전 계정 화면을 즉시 비우되, 큐에 이미 들어온 저장을 끝낸 뒤 계정 세대를 전환한다. Android/iOS 각각 62개, 실패·건너뜀 0. `.runtime/postgres/expiry-write-red.log`, `expiry-write-green.log`.
+
+## 실제 앱 연결 추가 체크포인트
+
+| RED | GREEN | 보장 |
+|---|---|---|
+| ffb585d | 8c26979 | 보안 저장 실패 후 계정 만료·다른 계정 로그인·동일 계정 복구, 실패 중 되돌리기 |
+| e91dc57 | 5ca2bb5 | 앞선 저장 실패와 무관하게 초안 보존, 서버 언어 enum 계약 |
+| 3c37856 | a612758 | 명시적 기존 기록 이전·서버 검증 후 원본 정리·충돌 양쪽 보관 |
+| 0e66a99 | fc3da17 | 기존 모바일 폴더 이름 200자 DB 이전 |
+| f09cd28 | 4a80596 | 연결 복구 후 자동 재전송 |
+
+최신 Android/iOS 각각70개, 서버64개 통과. `4d6af20`에서 실제 App과 네이티브 보안 저장소를 연결했다. [실제 UI·DB 확인](CLOUD_WORKSPACE_VALIDATION.md)과 단위 테스트 결과를 구분한다.

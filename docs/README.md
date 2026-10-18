@@ -1,5 +1,7 @@
 # SpeechBridge 문서
 
+- [모바일 계정별 DB 연결 검증](CLOUD_WORKSPACE_VALIDATION.md).
+
 - [PostgreSQL 서버·스키마·동기화 계약](POSTGRES.md) / [TDD 근거](POSTGRES_TDD.md) / [전체 기능·배포 준비 진행표](../plans/postgres-voice-release.md).
 
 - [회원 서버 실행·자동 연결·배포 설정](ACCOUNT_SERVER.md) / [인증 검증](ACCOUNT_VALIDATION.md).

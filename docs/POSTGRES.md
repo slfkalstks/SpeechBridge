@@ -11,6 +11,7 @@ npm --prefix server ci --ignore-scripts --cache .runtime/npm-cache
 npm --prefix server run db:install
 npm --prefix server run db:init
 npm --prefix server run db:import-accounts
+npm --prefix server run setup:accounts
 npm --prefix server run start:accounts
 ```
 
@@ -95,3 +96,11 @@ erDiagram
 ## 공식 근거
 
 [18.6 소스](https://ftp.postgresql.org/pub/source/v18.6/), [빌드·설치](https://www.postgresql.org/docs/18/install-make.html), [행 보안](https://www.postgresql.org/docs/18/ddl-rowsecurity.html), [백업·복원](https://www.postgresql.org/docs/18/backup-dump.html).
+
+## 모바일 연결
+
+App은 회원 로그인 뒤 HttpSyncRemote와 SyncRepository로 서버 기록을 불러온다. Android의 별도 Keystore AES-GCM 저장소, iOS의 별도 device-only Keychain 항목에 대기 변경만 보관한다. ACK 후 제거하고, 연결 오류는 15초 간격으로 재시도한다. 저장 자체 실패는 완료로 표시하지 않으며 같은 앱 실행 중 계정별 복구 큐를 유지한다. 기기 저장 실패가 해결되기 전에 앱을 강제 종료하면 메모리에만 남은 내용은 복구할 수 없다.
+
+409 충돌은 자동 덮어쓰지 않는다. 사용자가 ‘모두 보관’을 선택하면 서버 원본과 기기 수정본을 별도 기록으로 보관한다. 삭제 대기 요청은 서버 기록을 남기는 쪽으로 해제한다. 서버 재조회는 설정의 새로고침으로 수행한다.
+
+설정의 기존 기록 가져오기는 계정·기록 수를 확인하고 명시적으로 실행한다. 동일 ID의 다른 내용은 거부한다. 서버에서 내용이 일치하는 것을 확인한 후에만 기기 원본을 비우며, 확인 실패 시 원본을 유지한다. 자세한 실행 결과는 [모바일 연결 검증](CLOUD_WORKSPACE_VALIDATION.md)을 참고한다.
