@@ -20,11 +20,11 @@ export async function createTlsProxy({root=tlsRoot,upstreamPort=8787}={}) {
     const max=2*1024*1024;
     if(Number(req.headers['content-length'])>max)return fail(413,'payload_too_large');
     const headers={};
-    for(const name of ['authorization','content-type','content-length','accept'])if(req.headers[name])headers[name]=req.headers[name];
+    for(const name of ['authorization','content-type','content-length','accept','sec-fetch-site'])if(req.headers[name])headers[name]=req.headers[name];
     const upstream=http.request({host:'127.0.0.1',port:upstreamPort,path:req.url,method:req.method,headers},response=>{
       if(res.destroyed){response.destroy();return;}
       const outgoing={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
-      for(const name of ['content-type','content-length'])if(response.headers[name])outgoing[name]=response.headers[name];
+      for(const name of ['content-type','content-length','content-security-policy','referrer-policy','x-frame-options','permissions-policy'])if(response.headers[name])outgoing[name]=response.headers[name];
       res.writeHead(response.statusCode,outgoing);response.pipe(res);
       response.on('error',()=>res.destroy());
     });

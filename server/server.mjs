@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { serveAccountWeb } from './account-web.mjs';
 import { timingSafeEqual } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { ApiError, createProviders } from './provider.mjs';
@@ -42,6 +43,8 @@ export function createServer({ env = process.env, providers = createProviders(en
     req.on('aborted', cancel);
     res.on('close', closed);
     try {
+      if (accounts && await serveAccountWeb(req,res)) return;
+      if (req.method === 'POST' && req.headers['sec-fetch-site'] === 'cross-site') throw new ApiError(403,'cross_site_request','다른 사이트에서 보낸 요청은 허용하지 않습니다.');
       if (req.method === 'GET' && req.url === '/health') {
         if (accounts) { send(res, 200, { status: 'ok', configured: { auth: true }, authentication: 'users' }); return; }
         const health = providers.health ? await providers.health({ signal: controller.signal }) : { status: 'ok', configured: providers.configured };
