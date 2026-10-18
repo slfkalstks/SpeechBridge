@@ -10,14 +10,15 @@ import kotlinx.serialization.json.*
 class HttpSyncRemote(private val account: AccountManager, private val client: HttpClient = HttpClient {
     followRedirects = false
     install(HttpTimeout) { requestTimeoutMillis = 15_000; connectTimeoutMillis = 5_000; socketTimeoutMillis = 15_000 }
-}) : SyncRemote {
+}, private val platform: String = getPlatform().kind) : SyncRemote {
+    init { require(platform in setOf("android","ios","test")) }
     private val json = ArchiveCodec.json
     private suspend inline fun <reified T> request(identity: SyncIdentity, path: String, body: String): T {
         val connection = account.connectionFor(identity)
         val response = client.post(connection.url + path) {
             bearerAuth(connection.token)
             contentType(ContentType.Application.Json)
-            setBody(body)
+            setBody(JsonObject(json.parseToJsonElement(body).jsonObject + ("platform" to JsonPrimitive(platform))).toString())
         }
         if(response.status.value !in 200..299) {
             if(response.status.value == 401) account.expired(connection.token)

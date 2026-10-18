@@ -77,7 +77,7 @@ export function createServer({ env = process.env, providers = createProviders(en
       }
       if (dataRoute) {
         const result = req.url === '/data/mutate' ? await data.mutate(user.id, body)
-          : req.url === '/data/changes' ? await data.changes(user.id, body.after) : await data.snapshot(user.id, body.deviceId);
+          : req.url === '/data/changes' ? await data.changes(user.id, body.after) : await data.snapshot(user.id, body.deviceId, body.platform);
         if (!res.destroyed && !controller.signal.aborted) send(res, 200, result);
         return;
       }

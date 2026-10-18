@@ -9,6 +9,7 @@ const nullableText = (v, max = 16000) => v == null || typeof v === 'string' && v
 const id = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(v);
 const integer = (v, min = 0) => Number.isSafeInteger(v) && v >= min;
 const version = v => typeof v === 'string' && /^(0|[1-9][0-9]{0,17})$/.test(v);
+const platform = v => v === undefined || ['android','ios','test'].includes(v);
 const language = v => ['KO', 'EN', 'JA'].includes(v);
 const revisionMap = v => object(v) && Object.entries(v).every(([key, rev]) => id(key) && integer(rev, 1));
 const stable = v => Array.isArray(v) ? v.map(stable) : object(v) ? Object.fromEntries(Object.keys(v).sort().map(k => [k, stable(v[k])])) : v;
@@ -41,7 +42,7 @@ function validateConversation(c, key) {
 
 const entities = { conversation: 'conversations', folder: 'work_folders', settings: 'user_settings', draft: 'conversation_drafts' };
 function validateMutation(m) {
-  if (!object(m) || !id(m.deviceId) || !id(m.mutationId) || !Object.hasOwn(entities, m.entity) || !id(m.id) || !version(m.baseVersion) || !Object.hasOwn(m, 'value')) throw bad();
+  if (!object(m) || !platform(m.platform) || !id(m.deviceId) || !id(m.mutationId) || !Object.hasOwn(entities, m.entity) || !id(m.id) || !version(m.baseVersion) || !Object.hasOwn(m, 'value')) throw bad();
   if (m.entity === 'settings' && (m.id !== 'settings' || !object(m.value) || !['SYSTEM', 'LIGHT', 'DARK'].includes(m.value.appearance))) throw bad();
   if (m.value === null) return;
   if (m.entity === 'conversation') validateConversation(m.value, m.id);
@@ -50,6 +51,11 @@ function validateMutation(m) {
 }
 
 export function createUserData(db) {
+  async function device(client,user,deviceId,kind) {
+    await client.query(`INSERT INTO devices(user_id,id,platform) VALUES($1,$2,$3)
+      ON CONFLICT(user_id,id) DO UPDATE SET platform=CASE WHEN $4 THEN excluded.platform ELSE devices.platform END,last_seen=now()`,
+      [user,deviceId,kind ?? 'test',kind !== undefined]);
+  }
   async function head(client, user) {
     await client.query('INSERT INTO sync_heads(user_id) VALUES($1) ON CONFLICT DO NOTHING', [user]);
     await client.query('SELECT sequence FROM sync_heads WHERE user_id=$1 FOR UPDATE', [user]);
@@ -99,10 +105,12 @@ export function createUserData(db) {
   }
   async function mutate(user, m) {
     validateMutation(m);
-    const hash = createHash('sha256').update(JSON.stringify(stable(m))).digest('hex');
+    const {platform: metadata, ...content} = m;
+    const hash = createHash('sha256').update(JSON.stringify(stable(content))).digest('hex');
     try {
       return await db.forUser(user, async client => {
         await head(client, user);
+        await device(client,user,m.deviceId,m.platform);
         const prior = (await client.query('SELECT request_hash,result FROM sync_receipts WHERE user_id=$1 AND device_id=$2 AND mutation_id=$3', [user,m.deviceId,m.mutationId])).rows[0];
         if (prior) { if (prior.request_hash !== hash) throw conflict('mutation_reused'); return prior.result; }
         const where = m.entity === 'settings' ? 'user_id=$1' : m.entity === 'draft' ? 'user_id=$1 AND scope_id=$2 AND device_id=$3' : 'user_id=$1 AND id=$2';
@@ -122,7 +130,6 @@ export function createUserData(db) {
         else if (m.entity === 'folder') await client.query('INSERT INTO work_folders(user_id,id,name,version) VALUES($1,$2,$3,$4) ON CONFLICT(user_id,id) DO UPDATE SET name=excluded.name,version=excluded.version', [user,m.id,m.value.name.trim(),rev]);
         else if (m.entity === 'settings') await client.query('INSERT INTO user_settings(user_id,appearance,version) VALUES($1,$2,$3) ON CONFLICT(user_id) DO UPDATE SET appearance=excluded.appearance,version=excluded.version,updated_at=now()', [user,m.value.appearance,rev]);
         else {
-          await client.query("INSERT INTO devices(user_id,id,platform) VALUES($1,$2,'test') ON CONFLICT(user_id,id) DO UPDATE SET last_seen=now()", [user,m.deviceId]);
           await client.query('INSERT INTO conversation_drafts(user_id,device_id,scope_id,payload,version) VALUES($1,$2,$3,$4,$5) ON CONFLICT(user_id,device_id,scope_id) DO UPDATE SET payload=excluded.payload,version=excluded.version,updated_at=now(),deleted_at=NULL', [user,m.deviceId,m.id,m.value,rev]);
         }
         const cursor = await changed(client,user,m.entity,m.id,rev,m.value===null);
@@ -135,11 +142,12 @@ export function createUserData(db) {
       throw error;
     }
   }
-  async function snapshot(user, deviceId) {
-    if (!id(deviceId)) throw bad();
+  async function snapshot(user, deviceId, kind) {
+    if (!id(deviceId) || !platform(kind)) throw bad();
     return db.forUser(user, async client => {
       // Same lock as writers: rows and cursor describe a single committed state.
       await head(client,user);
+      await device(client,user,deviceId,kind);
       const cursor = (await client.query('SELECT sequence FROM sync_heads WHERE user_id=$1', [user])).rows[0].sequence;
       const rows = async (table, suffix = '', params = [user]) => (await client.query(`SELECT * FROM ${table} WHERE user_id=$1 ${suffix}`, params)).rows;
       const conversations = await rows('conversations','ORDER BY created_at,id');
