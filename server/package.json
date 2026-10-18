@@ -25,7 +25,8 @@
     "start:https": "node tls-proxy.mjs",
     "demo:start": "node demo.mjs start",
     "demo:check": "node demo.mjs check",
-    "demo:build": "sh ../scripts/demo-build.sh"
+    "demo:build": "sh ../scripts/demo-build.sh",
+    "db:retention": "node db/retention.mjs"
   },
   "engines": {
     "node": ">=22.16.0 <26"

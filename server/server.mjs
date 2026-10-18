@@ -1,5 +1,7 @@
 import http from 'node:http';
 import { serveAccountWeb } from './account-web.mjs';
+import { maintenance } from './db/retention.mjs';
+import { createBackup } from './db/backup.mjs';
 import { timingSafeEqual } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { ApiError, createProviders } from './provider.mjs';
@@ -46,7 +48,7 @@ export function createServer({ env = process.env, providers = createProviders(en
       if (accounts && await serveAccountWeb(req,res)) return;
       if (req.method === 'POST' && req.headers['sec-fetch-site'] === 'cross-site') throw new ApiError(403,'cross_site_request','다른 사이트에서 보낸 요청은 허용하지 않습니다.');
       if (req.method === 'GET' && req.url === '/health') {
-        if (accounts) { send(res, 200, { status: 'ok', configured: { auth: true }, authentication: 'users' }); return; }
+        if (accounts) { await database?.ready(); send(res, 200, { status: 'ok', configured: { auth: true }, authentication: 'users' }); return; }
         const health = providers.health ? await providers.health({ signal: controller.signal }) : { status: 'ok', configured: providers.configured };
         if (!res.destroyed) send(res, 200, health); return;
       }
@@ -145,10 +147,15 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (!['127.0.0.1', 'localhost', '::1'].includes(env.HOST || '127.0.0.1')) throw new Error('Bind the Mac API to loopback and expose it through an HTTPS proxy');
   const server = createServer({ env });
   await server.ready();
+  let maintaining=false;
+  const maintain=async()=>{if(maintaining)return;maintaining=true;try{await maintenance({backup:()=>createBackup()});}catch{console.error('Project backup maintenance failed; inspect the private backup inventory.');}finally{maintaining=false;}};
+  const maintenanceTimer=setInterval(maintain,60*60*1000);maintenanceTimer.unref();
+  void maintain();
   const port = Number(process.env.PORT || 8787);
   const host = process.env.HOST || '127.0.0.1';
   server.listen(port, host, () => console.log(`SpeechBridge server listening on ${host}:${port}`));
   const shutdown = () => {
+    clearInterval(maintenanceTimer);
     server.cancelActiveRequests();
     server.close();
     server.closeAllConnections();
