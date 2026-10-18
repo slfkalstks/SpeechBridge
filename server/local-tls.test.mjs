@@ -20,7 +20,7 @@ function request(port,{ca,path='/health',method='GET',body,headers={},servername
   return new Promise((resolve,reject)=>{
     const req=https.request({host:'127.0.0.1',port,path,method,ca,servername,headers},res=>{
       const chunks=[];res.on('data',c=>chunks.push(c));res.on('end',()=>resolve({status:res.statusCode,headers:res.headers,body:Buffer.concat(chunks)}));
-    });req.on('error',reject);req.end(body);
+    });req.on('connect',(res,socket)=>{socket.destroy();resolve({status:res.statusCode,headers:res.headers,body:Buffer.alloc(0)});});req.on('error',reject);req.end(body);
   });
 }
 test('project certificates are reusable, private, host-bound and have an isolated CA',async t=>{
@@ -76,7 +76,7 @@ test('proxy rejects cross-origin request targets, oversized requests and fails s
   await new Promise(resolve=>proxy.listen(0,'127.0.0.1',resolve));
   t.after(async()=>{proxy.closeAllConnections();await new Promise(r=>proxy.close(r));});
   assert.equal((await request(proxy.address().port,{ca:f.ca,path:'http://other.invalid/'})).status,400);
-  assert.equal((await request(proxy.address().port,{ca:f.ca,method:'CONNECT'})).status,405);
+  assert.equal((await request(proxy.address().port,{ca:f.ca,method:'CONNECT',path:'127.0.0.1:8787'})).status,405);
   assert.equal((await request(proxy.address().port,{ca:f.ca,method:'POST',headers:{'Content-Length':2*1024*1024+1}})).status,413);
   const unavailable=await request(proxy.address().port,{ca:f.ca});assert.equal(unavailable.status,503);
   assert.equal(JSON.parse(unavailable.body).error.code,'server_unavailable');

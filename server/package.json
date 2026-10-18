@@ -20,7 +20,9 @@
     "db:import-accounts": "node --env-file=../.runtime/postgres/server.env db/import-accounts.mjs",
     "test:coverage": "node --test --experimental-test-coverage *.test.mjs",
     "db:verify-backup": "node db/backup.mjs verify",
-    "db:restore": "node db/backup.mjs restore"
+    "db:restore": "node db/backup.mjs restore",
+    "setup:https": "node local-tls.mjs",
+    "start:https": "node tls-proxy.mjs"
   },
   "engines": {
     "node": ">=22.16.0 <26"
