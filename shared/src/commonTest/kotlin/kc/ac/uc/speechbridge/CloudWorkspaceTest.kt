@@ -18,6 +18,7 @@ class CloudWorkspaceTest {
     private class Remote : SyncRemote {
         var offline = false
         val sent = mutableListOf<SyncIdentity>()
+        val draftValues = mutableListOf<JsonObject>()
         val archives = mutableMapOf<String,Archive>()
         val versions = mutableMapOf<String,MutableMap<String,String>>()
         override suspend fun snapshot(identity: SyncIdentity, deviceId: String): DataSnapshot {
@@ -26,6 +27,11 @@ class CloudWorkspaceTest {
         }
         override suspend fun mutate(identity: SyncIdentity, mutation: PendingMutation): MutationReceipt {
             if(offline) error("offline")
+            if (mutation.entity == "draft" && mutation.value != null) {
+                val value = mutation.value.jsonObject
+                require(listOf("language","first","second").all { value[it]?.jsonPrimitive?.content in setOf("KO","EN","JA") })
+                draftValues += value
+            }
             sent += identity
             val rev = (mutation.baseVersion.toLong()+1).toString()
             versions.getOrPut(identity.userId) { mutableMapOf() }["${mutation.entity}:${mutation.id}"] = rev
@@ -140,6 +146,28 @@ class CloudWorkspaceTest {
             account.logout(); runCurrent()
             account.authenticate("student_a","Synthetic-password-123!",false); runCurrent()
             assertEquals("저장 실패 중 입력",vm.state.value.conversations.single().utterances.single().text)
+        } finally { owner.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun draftLanguageUsesTheServerContractAndSurvivesAnEarlierWriteFailure() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val owner=ViewModelStore(); val account=account(); val remote=Remote()
+        val backing=MemoryCredentialStore(); var locked=false
+        val secure=object : CredentialStore {
+            override suspend fun read()=backing.read()
+            override suspend fun write(value: String?) { if(locked) error("locked"); backing.write(value) }
+        }
+        val vm=BridgeViewModel(Legacy(),account=account,sync=SyncRepository(secure,remote)); owner.put("vm",vm)
+        try {
+            account.authenticate("student_a","Synthetic-password-123!",false); runCurrent()
+            locked=true
+            vm.start("초안 복구",false,true,Language.JA,Language.KO); runCurrent()
+            val id=vm.state.value.activeId!!
+            vm.updateInputDraft(id,UtteranceDraft(Language.JA,"아직 발화 전")); runCurrent()
+            account.expired("synthetic-student_a"); runCurrent(); locked=false
+            account.authenticate("student_a","Synthetic-password-123!",false); runCurrent()
+            assertEquals("아직 발화 전",vm.state.value.inputDrafts[id]?.text)
+            assertEquals(0,vm.state.value.syncPending)
+            assertEquals("JA",remote.draftValues.last()["first"]?.jsonPrimitive?.content)
         } finally { owner.clear(); Dispatchers.resetMain() }
     }
     private fun account() = AccountManager("https://sync.example.invalid",MemoryCredentialStore(),client=HttpClient(MockEngine { request ->
