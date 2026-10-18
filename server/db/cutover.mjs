@@ -31,40 +31,40 @@ async function reconcile(source,target) {
 // No caller-selected arbitrary database. Source and target must match verified restore provenance.
 export async function activateRestoredDatabase({source,target,confirm,beforeCommit}={}) {
  if(!(source==='speechbridge' || restored.test(source)) || !restored.test(target) || source===target || confirm!==source)throw Error('Explicit project source confirmation is required');
- const admin=await openAdmin();let old,next,frozen=false,committed=false;
+ const admin=await openAdmin();let old,next,frozen=false,committed=false,wasFrozen=false;
  try {
   await admin.query('SELECT pg_advisory_lock(83917403)');
   // A prior completed activation can be retried without reopening its retired source.
-  const existing=await admin.query('SELECT datallowconn FROM pg_database WHERE datname=$1',[target]);
+  const existing=await admin.query('SELECT 1 FROM pg_database WHERE datname=$1',[target]);
   if(!existing.rowCount)throw Error('Restore target missing');
-  // Keep targets connectable during preparation; no API can pass ready() until activated.
-  if(!existing.rows[0].datallowconn)await admin.query(`ALTER DATABASE ${ident(target)} ALLOW_CONNECTIONS true`);
   next=await openAdmin(target);
   const state=(await next.query('SELECT * FROM restore_activation WHERE singleton')).rows[0];
   if(!state || state.source_database!==source)throw Error('Verified restore source does not match');
   if(state.activated) {
-   const status=(await admin.query('SELECT datallowconn FROM pg_database WHERE datname=$1',[source])).rows[0];
-   if(status?.datallowconn!==false)throw Error('Retired source must remain disconnected');
+   const status=(await admin.query("SELECT has_database_privilege('speechbridge_auth',$1,'CONNECT') OR has_database_privilege('speechbridge_app',$1,'CONNECT') AS connected",[source])).rows[0];
+   if(status?.connected!==false)throw Error('Retired source must remain disconnected');
+   await admin.query(`GRANT CONNECT ON DATABASE ${ident(target)} TO speechbridge_auth,speechbridge_app`);
    return {activated:true,alreadyActive:true,source,target};
   }
   old=await openAdmin(source);
-  // Freeze source at the database boundary, not merely at one HTTP process.
-  await admin.query(`ALTER DATABASE ${ident(source)} ALLOW_CONNECTIONS false`);frozen=true;
+  wasFrozen=!(await admin.query("SELECT has_database_privilege('speechbridge_auth',$1,'CONNECT') OR has_database_privilege('speechbridge_app',$1,'CONNECT') AS connected",[source])).rows[0].connected;
+  // Retire application access at the DB boundary. Keep admin recovery possible after a crash.
+  await admin.query(`REVOKE CONNECT ON DATABASE ${ident(source)} FROM PUBLIC,speechbridge_auth,speechbridge_app`);frozen=true;
   await admin.query('SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=$1 AND pid<>$2',[source,old.processID]);
-  await admin.query(`ALTER DATABASE ${ident(target)} ALLOW_CONNECTIONS false`);
+  await admin.query(`REVOKE CONNECT ON DATABASE ${ident(target)} FROM PUBLIC,speechbridge_auth,speechbridge_app`);
   await admin.query('SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=$1 AND pid<>$2',[target,next.processID]);
   await next.query('BEGIN');
   const deletedAccountsRemoved=await reconcile(old,next);
   await beforeCommit?.();
   await next.query('UPDATE restore_activation SET activated=true,activated_at=now() WHERE singleton');
   await next.query('COMMIT');committed=true;
-  await admin.query(`ALTER DATABASE ${ident(target)} ALLOW_CONNECTIONS true`);
+  await admin.query(`GRANT CONNECT ON DATABASE ${ident(target)} TO speechbridge_auth,speechbridge_app`);
   return {activated:true,source,target,deletedAccountsRemoved};
  }catch(error){
   await next?.query('ROLLBACK').catch(()=>{});
   if(!committed){
-   if(frozen)await admin.query(`ALTER DATABASE ${ident(source)} ALLOW_CONNECTIONS true`);
-   if(next)await admin.query(`ALTER DATABASE ${ident(target)} ALLOW_CONNECTIONS true`);
+   if(frozen && !wasFrozen)await admin.query(`GRANT CONNECT ON DATABASE ${ident(source)} TO speechbridge_auth,speechbridge_app`);
+   if(next)await admin.query(`GRANT CONNECT ON DATABASE ${ident(target)} TO speechbridge_auth,speechbridge_app`);
   }
   throw error;
  }finally{await old?.end();await next?.end();await admin.end();}

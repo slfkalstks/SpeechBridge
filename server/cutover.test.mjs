@@ -30,7 +30,8 @@ test('cutover freezes only the source, reapplies later deletion, revokes session
  await next.ready();
  assert.equal((await next.auth.query('SELECT id FROM users WHERE id=$1',[user.user.id])).rowCount,0);
  assert.equal((await next.auth.query('SELECT count(*)::int AS n FROM sessions')).rows[0].n,0);
- await assert.rejects(openAdmin(source.database));
+ await assert.rejects(old.auth.query('SELECT 1'));
+ const adminRecovery=await openAdmin(source.database);await adminRecovery.end();
  assert.equal((await activateRestoredDatabase({source:source.database,target:target.database,confirm:source.database})).alreadyActive,true);
  // The original shared test DB was never frozen.
  await db.ready();
