@@ -60,6 +60,7 @@ test('restoring an older dump reapplies later account deletions instead of resto
   restored=await restoreBackup(backup.path);
   assert.ok(restored.deletedAccountsRemoved>=1);
   recovered=createDatabase({...process.env,PGDATABASE:restored.database});
+  await assert.rejects(recovered.ready(),/activation/,'restored snapshots must not serve users before cutover reconciliation');
   assert.equal((await recovered.auth.query('SELECT id FROM users WHERE id=$1',[session.user.id])).rowCount,0);
   assert.equal((await recovered.forUser(session.user.id,c=>c.query('SELECT * FROM conversations'))).rowCount,0);
   await assert.rejects(createPostgresAccounts({db:recovered}).handle('/auth/login',{username:session.user.username,password}),{status:401});
