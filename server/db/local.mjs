@@ -13,6 +13,10 @@ const data = join(root, 'data');
 const socket = join(root, 'socket');
 const exists = async path => access(path).then(() => true, () => false);
 const run = (name, args) => execFileSync(join(bin, name), args, { stdio: 'pipe', env: { ...process.env, TMPDIR: join(root, 'tmp') } });
+const listening = () => {
+  try { run('pg_isready', ['-h', socket, '-p', '5433', '-U', 'speechbridge_admin', '-d', 'postgres']); return true; }
+  catch { return false; }
+};
 const quote = value => "'" + value.replaceAll("'", "''") + "'";
 const cmd = process.argv[2] || 'status';
 if (!['init', 'start', 'stop', 'status', 'migrate', 'backup'].includes(cmd)) throw Error('Unknown project DB action');
@@ -43,11 +47,13 @@ try {
   }
   if (cmd === 'stop') { run('pg_ctl', ['-D', data, '-m', 'fast', '-w', 'stop']); console.log('Project PostgreSQL stopped.'); }
   else if (cmd === 'status') {
-    try { run('pg_ctl', ['-D', data, 'status']); console.log('Project PostgreSQL is running.'); }
-    catch { console.log('Project PostgreSQL is stopped.'); process.exitCode = 1; }
+    if (listening()) console.log('Project PostgreSQL is accepting connections.');
+    else { console.log('Project PostgreSQL is not accepting connections; inspect its process before restarting.'); process.exitCode = 1; }
   } else {
-    try { run('pg_ctl', ['-D', data, 'status']); }
-    catch { run('pg_ctl', ['-D', data, '-l', join(root, 'postgres.log'), '-w', 'start']); }
+    if (!listening()) {
+      if (await exists(join(data, 'postmaster.pid'))) throw Error('Existing process marker; inspect process before restarting');
+      run('pg_ctl', ['-D', data, '-l', join(root, 'postgres.log'), '-w', 'start']);
+    }
     if (cmd === 'start') { console.log('Project PostgreSQL started (private Unix socket only).'); }
     else {
       const secrets = JSON.parse(await readFile(join(root, 'credentials.json'), 'utf8'));

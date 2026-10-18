@@ -9,7 +9,16 @@
     "start:ai": "sh start-ai.sh",
     "test": "node --test *.test.mjs",
     "setup:accounts": "node setup-accounts.mjs",
-    "start:accounts": "node --env-file=../.runtime/accounts-server.env server.mjs"
+    "start:accounts": "node --env-file=../.runtime/accounts-server.env --env-file=../.runtime/postgres/server.env server.mjs",
+    "db:install": "sh db/install-local.sh",
+    "db:init": "node db/local.mjs init",
+    "db:start": "node db/local.mjs start",
+    "db:status": "node db/local.mjs status",
+    "db:stop": "node db/local.mjs stop",
+    "db:migrate": "node db/local.mjs migrate",
+    "db:backup": "node db/local.mjs backup",
+    "db:import-accounts": "node --env-file=../.runtime/postgres/server.env db/import-accounts.mjs",
+    "test:coverage": "node --test --experimental-test-coverage *.test.mjs"
   },
   "engines": {
     "node": ">=22.16.0 <26"

@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { createAccounts } from './auth.mjs';
 import { createDatabase } from './db/database.mjs';
 import { createPostgresAccounts } from './db/accounts.mjs';
@@ -25,7 +26,12 @@ test('read-only SQLite import preserves IDs, password hashes and sessions; repea
   const imported = await importSqliteAccounts({ source, backupDirectory: dir, db });
   assert.deepEqual({ users: imported.users, sessions: imported.sessions }, { users: 1, sessions: 1 });
   assert.deepEqual(await readFile(source), original);
-  assert.deepEqual(await readFile(imported.backup), original);
+  // SQLite's backup API changes file-header counters; compare persisted rows.
+  const copied = new DatabaseSync(imported.backup, { readOnly: true });
+  const originalDb = new DatabaseSync(source, { readOnly: true });
+  try {
+    for (const table of ['users', 'sessions']) assert.deepEqual(copied.prepare(`SELECT * FROM ${table}`).all(), originalDb.prepare(`SELECT * FROM ${table}`).all());
+  } finally { copied.close(); originalDb.close(); }
   const accounts = createPostgresAccounts({ db });
   assert.equal((await accounts.authenticate(`Bearer ${session.token}`)).id, session.user.id);
   assert.equal((await accounts.handle('/auth/login', { username, password })).user.id, session.user.id);
