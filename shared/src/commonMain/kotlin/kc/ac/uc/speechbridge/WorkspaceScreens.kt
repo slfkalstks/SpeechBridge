@@ -416,7 +416,7 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
         DeveloperConnectionScreen(state, vm)
     }
     LazyColumn(Modifier.fillMaxSize().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 760.dp), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { vm.account?.let { AccountPanel(it, vm::accountChanging) } }
+        item { vm.account?.let { AccountPanel(it, vm::prepareAccountChange) } }
         item { Panel {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("화면 모드", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
@@ -450,12 +450,7 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
                 AppSymbol(Symbol.FOLDER); Spacer(Modifier.width(12.dp)); Text("업무 폴더 관리", Modifier.weight(1f)); Text("${state.folders.size}개")
             }
         } }
-        item { Panel {
-            Text("내 기록", style = MaterialTheme.typography.titleMedium)
-            Text("대화 ${state.conversations.count { it.record }}개 · ${if(state.unsaved) "저장 대기 중" else "저장 완료"}", style = MaterialTheme.typography.bodyMedium)
-            if(state.unsaved) TextButton(onClick = vm::retrySave) { Text("저장 재시도") }
-            Text("대화는 자동으로 기기에 저장됩니다. AI 번역·요약을 사용할 때는 대화 내용이 AI 서버로 전송됩니다.", style = MaterialTheme.typography.bodySmall)
-        } }
+        item { CloudStoragePanel(state, vm) }
     }
 }
 

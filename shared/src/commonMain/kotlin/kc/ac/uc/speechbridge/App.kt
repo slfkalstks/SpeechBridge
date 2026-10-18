@@ -19,11 +19,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun App(store: SessionStore? = null, developerTools: Boolean = false, credentialStore: CredentialStore = MemoryCredentialStore(), developerUrl: String = "http://localhost:8787") {
+fun App(store: SessionStore? = null, developerTools: Boolean = false, credentialStore: CredentialStore = MemoryCredentialStore(), pendingStore: CredentialStore = MemoryCredentialStore(), developerUrl: String = "http://localhost:8787") {
     val actualStore = remember(store) { store ?: MemorySessionStore() }
     val vm = viewModel {
         val account = AccountManager(SERVICE_URL.ifBlank { if(developerTools) developerUrl else "" }, credentialStore, developerTools)
-        BridgeViewModel(actualStore, HttpBridgeApi(developerMode = developerTools, account = account), account)
+        BridgeViewModel(actualStore, HttpBridgeApi(developerMode = developerTools, account = account), account, SyncRepository(pendingStore, HttpSyncRemote(account)))
     }
     LaunchedEffect(vm) { vm.account?.restore() }
     val state by vm.state.collectAsStateWithLifecycle()
@@ -47,7 +47,7 @@ fun App(store: SessionStore? = null, developerTools: Boolean = false, credential
                 val wide = (maxWidth >= 840.dp || (maxWidth >= 600.dp && maxHeight < 500.dp)) && LocalDensity.current.fontScale < 1.5f
                 val compactHeight = maxHeight < 500.dp
                 Row(Modifier.fillMaxSize()) {
-                    if (wide) NavigationRail(containerColor = MaterialTheme.colorScheme.background) {
+                    if (wide && !state.accountRequired) NavigationRail(containerColor = MaterialTheme.colorScheme.background) {
                         Spacer(Modifier.height(12.dp))
                         tabs.forEach { page -> NavigationRailItem(selected = selectedTab == page,
                             onClick = { navigate(page) }, icon = { BridgeIcon(page) }, label = { Text(page.label) }) }
@@ -59,7 +59,7 @@ fun App(store: SessionStore? = null, developerTools: Boolean = false, credential
                             else { previousPage = state.page; vm.navigate(Page.SETTINGS) }
                         }) },
                         bottomBar = {
-                            if (!wide) Surface(Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                            if (!wide && !state.accountRequired) Surface(Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                                 shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surface) {
                                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp,
                                     windowInsets = WindowInsets(0, 0, 0, 0)) {
@@ -76,10 +76,15 @@ fun App(store: SessionStore? = null, developerTools: Boolean = false, credential
                         Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                             Box(Modifier.widthIn(max = 1200.dp).fillMaxSize()) {
                                 when {
+                                    state.accountRequired -> Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                        Heading("대화에서 기록까지", "로그인하고 번역·요약·할 일을 한곳에 모으세요.")
+                                        vm.account?.let { AccountPanel(it, vm::prepareAccountChange) }
+                                    }
+                                    state.page == Page.SETTINGS -> SettingsScreen(state, vm, developerTools)
                                     !state.loaded -> Column(Modifier.fillMaxSize().padding(24.dp),
                                         verticalArrangement = Arrangement.spacedBy(16.dp)) {
                                         if (state.loadFailed) {
-                                            Heading("기록을 안전하게 보관 중입니다", "기존 파일을 읽기 전까지 새 내용으로 덮어쓰지 않습니다.")
+                                            Heading("기록에 연결하지 못했어요", "연결을 확인한 뒤 다시 불러와 주세요. 전송 대기 내용은 보관되어 있습니다.")
                                             Button(onClick = vm::reload) { Text("다시 읽기") }
                                         } else { CircularProgressIndicator(); Text("기록을 불러오고 있습니다.") }
                                     }
@@ -103,11 +108,14 @@ fun App(store: SessionStore? = null, developerTools: Boolean = false, credential
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if(state.page == Page.SETTINGS || detail) IconButton(onClick = { if(detail) vm.navigate(Page.HISTORY) else settings() },
             modifier = Modifier.semantics { contentDescription = if(detail) "기록 목록으로" else "뒤로" }) { AppSymbol(Symbol.BACK) }
-        Text(if(state.page == Page.TALK) state.selected?.takeIf { it.ended }?.title ?: "대화" else state.page.label,
+        Text(if(state.accountRequired) "SpeechBridge" else if(state.page == Page.TALK) state.selected?.takeIf { it.ended }?.title ?: "대화" else state.page.label,
             Modifier.weight(1f).semantics { heading() }, style = if(detail || compact) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineLarge, maxLines = if(compact) 1 else 2,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         if(state.unsaved) TextButton(onClick = vm::retrySave) { Text("저장 재시도") }
-        if(state.page != Page.SETTINGS) FilledTonalIconButton(onClick = settings,
+        else if(state.syncConflict || state.syncPending > 0) TextButton(onClick = { vm.navigate(Page.SETTINGS) }) {
+            Text(if(state.syncConflict) "변경 확인" else "전송 대기 ${state.syncPending}")
+        }
+        if(state.page != Page.SETTINGS && !state.accountRequired) FilledTonalIconButton(onClick = settings,
             colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface),
             modifier = Modifier.size(48.dp).semantics { contentDescription = "설정" }) { BridgeIcon(Page.SETTINGS) }
     }

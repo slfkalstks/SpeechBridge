@@ -14,7 +14,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable internal fun AccountPanel(account: AccountManager, changing: () -> Unit) {
+@Composable internal fun AccountPanel(account: AccountManager, changing: suspend () -> Boolean) {
     val state by account.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var open by remember { mutableStateOf(false) }
@@ -23,16 +23,16 @@ import kotlinx.coroutines.launch
         Text(state.user?.username ?: "계정", style = MaterialTheme.typography.titleMedium)
         Text(if(state.user != null) "로그인됨 · AI 번역과 대화 정리를 사용할 수 있습니다."
             else if(account.available) "로그인하면 번역·요약·분류·할 일 추출을 사용할 수 있습니다."
-            else "서비스 연결을 준비 중입니다. 저장된 기록은 계속 사용할 수 있습니다.", style = MaterialTheme.typography.bodyMedium)
-        Text("기록은 이 기기에 남으며 계정별 분리·동기화는 지원하지 않습니다.", style = MaterialTheme.typography.bodySmall)
-        if(state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+            else "서비스 연결을 준비 중입니다. 연결이 준비되면 로그인할 수 있습니다.", style = MaterialTheme.typography.bodyMedium)
+        Text("기록은 로그인한 내 계정에 저장됩니다.", style = MaterialTheme.typography.bodySmall)
+        if(state.busy || !state.ready) LinearProgressIndicator(Modifier.fillMaxWidth())
         state.error?.let { InlineError(it) }
         if(state.user == null) Button(onClick = { open = true }, enabled = account.available && state.ready && !state.busy) { Text("로그인 / 회원가입") }
         else TextButton(onClick = { confirmLogout = true }, enabled = !state.busy) { Text("로그아웃") }
     }
     if(confirmLogout) AlertDialog(onDismissRequest = { confirmLogout = false }, title = { Text("로그아웃할까요?") },
-        text = { Text("기록은 이 기기에 남습니다. 진행 중인 AI 요청은 취소됩니다.") },
-        confirmButton = { TextButton(onClick = { confirmLogout = false; changing(); scope.launch { account.logout() } }) { Text("로그아웃") } },
+        text = { Text("서버 기록은 내 계정에 보관됩니다. 전송 대기 내용은 같은 계정으로 다시 로그인하면 이어서 저장됩니다. 진행 중인 AI 요청은 취소됩니다.") },
+        confirmButton = { TextButton(onClick = { confirmLogout = false; scope.launch { if(changing()) account.logout() } }) { Text("로그아웃") } },
         dismissButton = { TextButton(onClick = { confirmLogout = false }) { Text("취소") } })
     if(open) {
         var register by remember { mutableStateOf(false) }
@@ -62,8 +62,8 @@ import kotlinx.coroutines.launch
                 Button(onClick = {
                     if(register && password != confirmation) mismatch = true
                     else {
-                        changing()
                         scope.launch {
+                            if(!changing()) return@launch
                             account.authenticate(username, password, register)
                             password = ""; confirmation = ""
                             if(account.state.value.user != null) open = false

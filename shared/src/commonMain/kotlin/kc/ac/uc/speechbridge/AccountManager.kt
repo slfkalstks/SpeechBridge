@@ -54,7 +54,7 @@ class AccountManager(
     private var session: AccountSession? = null
 
     private suspend fun request(path: String, body: String? = null, token: String? = null): String {
-        if (!available) throw BridgeRequestException("service_pending", "서비스 연결을 준비 중입니다. 기록은 기기에 저장됩니다.")
+        if (!available) throw BridgeRequestException("service_pending", "서비스 연결을 준비 중입니다. 잠시 후 다시 시도해 주세요.")
         val response = client.request(endpoint + path) {
             method = if (body == null) HttpMethod.Get else HttpMethod.Post
             token?.let { bearerAuth(it) }
@@ -135,11 +135,11 @@ class AccountManager(
         connectionUnlocked()
     }
     private suspend fun connectionUnlocked(): Connection {
-        if (!available) throw BridgeRequestException("service_pending", "서비스 연결을 준비 중입니다. 기록은 기기에 저장됩니다.")
+        if (!available) throw BridgeRequestException("service_pending", "서비스 연결을 준비 중입니다. 잠시 후 다시 시도해 주세요.")
         val current = session
         if (current == null || current.expiresAt <= now()) {
             if (current != null) clearSession()
-            throw BridgeRequestException("login_required", "설정에서 로그인해 주세요. 기록은 기기에 저장됩니다.")
+            throw BridgeRequestException("login_required", "다시 로그인해 주세요. 전송 대기 내용은 보관됩니다.")
         }
         return Connection(endpoint, current.token)
     }
