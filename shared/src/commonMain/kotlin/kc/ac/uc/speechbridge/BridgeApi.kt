@@ -29,6 +29,9 @@ data class Connection(val url: String = "http://localhost:8787", val token: Stri
 class BridgeRequestException(val code: String, message: String) : Exception(message)
 
 fun serviceErrorMessage(code: String, status: Int): String = when (code) {
+    "version_conflict" -> "다른 기기에서 수정한 내용이 있습니다. 최신 기록과 내 변경을 확인해 주세요."
+    "mutation_reused" -> "저장 요청이 충돌했습니다. 기기에 보관한 변경을 확인해 주세요."
+    "invalid_data" -> "저장할 내용을 확인해 주세요. 기기의 변경 내용은 유지됩니다."
     "login_failed" -> "아이디 또는 비밀번호를 확인해 주세요."
     "invalid_credentials" -> "아이디는 영문·숫자·밑줄 3~32자, 비밀번호는 12~128자로 입력해 주세요."
     "username_unavailable" -> "사용할 수 없는 아이디입니다."

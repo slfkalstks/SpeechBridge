@@ -126,13 +126,22 @@ class AccountManager(
         clearSession()
     }
     suspend fun connection(): Connection = mutex.withLock {
+        connectionUnlocked()
+    }
+    suspend fun connectionFor(identity: SyncIdentity): Connection = mutex.withLock {
+        if (identity.origin != endpoint || session?.user?.id != identity.userId) {
+            throw BridgeRequestException("account_changed", "계정이 변경되었습니다. 해당 계정으로 다시 로그인해 주세요.")
+        }
+        connectionUnlocked()
+    }
+    private suspend fun connectionUnlocked(): Connection {
         if (!available) throw BridgeRequestException("service_pending", "서비스 연결을 준비 중입니다. 기록은 기기에 저장됩니다.")
         val current = session
         if (current == null || current.expiresAt <= now()) {
             if (current != null) clearSession()
             throw BridgeRequestException("login_required", "설정에서 로그인해 주세요. 기록은 기기에 저장됩니다.")
         }
-        Connection(endpoint, current.token)
+        return Connection(endpoint, current.token)
     }
     suspend fun expired(token: String) = mutex.withLock {
         if (session?.token == token) {
