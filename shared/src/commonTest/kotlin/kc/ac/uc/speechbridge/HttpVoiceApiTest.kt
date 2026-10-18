@@ -57,6 +57,16 @@ class HttpVoiceApiTest {
         assertEquals("다시 말할 필요 없는 문장",api.transcribe(PcmWave.encode(ShortArray(1600){1000},16000)).text)
         assertEquals(2,calls);api.close();account.close()
     } }
+    @Test fun connectionFailureIsNotReportedAsAnAudioProcessingFailure() = runTest { withContext(Dispatchers.Default) {
+        val account = account()
+        val api = HttpVoiceApi(account, HttpClient(MockEngine { throw IllegalStateException("private transport detail") }))
+        val error = assertFailsWith<BridgeRequestException> { api.synthesize("안녕", Language.KO) }
+        assertEquals("network_unavailable", error.code)
+        assertFalse(error.message!!.contains("private transport detail"))
+        assertTrue(error.message!!.contains("연결"))
+        assertNotNull(account.state.value.user)
+        api.close(); account.close()
+    } }
     @Test fun invalidAudioAndOverlongSpeechAreRejectedBeforeNetwork() = runTest { withContext(Dispatchers.Default) {
         val account = account()
         val api = HttpVoiceApi(account, HttpClient(MockEngine { error("Must not send") }))
