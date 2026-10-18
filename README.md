@@ -6,7 +6,7 @@
 
 Android · iOS · Kotlin Multiplatform · Mac Local AI
 
-[시작하기](#시작하기) · [주요 기능](#주요-기능) · [구현 상태](#구현-상태) · [문서](docs/README.md) · [이슈](https://github.com/slfkalstks/SpeechBridge/issues)
+[시작하기](#시작하기) · [시연 안내](docs/DEMO.md) · [주요 기능](#주요-기능) · [구현 상태](#구현-상태) · [문서](docs/README.md) · [이슈](https://github.com/slfkalstks/SpeechBridge/issues)
 
 </div>
 
@@ -60,7 +60,8 @@ AI 결과는 검토 가능한 초안입니다. 제안과 확정된 결정을 구
 | 텍스트 번역, AI 제목·분류·요약, 할 일 추출 | Mac 로컬 서버 연결 구현 |
 | Android / iOS 녹음·재생과 음성 UI | 구현·빌드 검증, 시스템 권한 요청 확인 |
 | STT / TTS 서버 엔진·회원 인증·자동 언어 감지 | 3언어 합성 샘플 API 검증 |
-| 실제 휴대전화 녹음·청취·소음 환경 검증 | 미검증·테스트 준비 중 |
+| 같은 Wi-Fi의 Debug 앱 HTTPS 연결 | 구현·iOS 시뮬레이터 확인, Android APK 준비 |
+| 실제 휴대전화 녹음·청취·소음 환경 검증 | 미검증 — 설치·테스트 절차 제공 |
 | 회원가입·로그인·세션 복원, 빌드에 지정한 주소 자동 연결 | 구현 — 게스트 없음 |
 | 외부 HTTPS 주소·실기기 연결·스토어 배포 | 준비 전 |
 
@@ -85,6 +86,8 @@ AI 결과는 검토 가능한 초안입니다. 제안과 확정된 결정을 구
 유료 API와 자동 과금 fallback은 사용하지 않습니다. 모델은 휴대전화에 설치하지 않습니다. 의존성 버전은 [`gradle/libs.versions.toml`](gradle/libs.versions.toml), 모델 설정은 [`server/setup-local.mjs`](server/setup-local.mjs)가 기준입니다.
 
 ## 시작하기
+
+이미 실행 환경을 준비한 현재 Mac에서는 `./Demo.command`로 서버를 확인하고 iPhone 시뮬레이터 앱을 시작할 수 있습니다. 별도 시연 계정·예시 기록·Android APK·5분 진행 순서는 [시연 안내](docs/DEMO.md)를 참고하세요. 처음 받은 저장소에는 로컬 모델·인증서·설치 파일이 포함되지 않으므로 아래 환경 준비가 먼저 필요합니다.
 
 ### 1. 저장소 받기
 

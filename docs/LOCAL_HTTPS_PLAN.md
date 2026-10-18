@@ -1,6 +1,6 @@
 # 휴대전화 테스트용 HTTPS 준비 검토
 
-2026-10-18 조사. **아직 구현·실기기 검증 전**이다. 공개 도메인이 없는 현재 Mac 서버를 같은 LAN의 테스트 앱에서 사용하기 위한 후속 구현안이다. 다른 프로젝트·전역 인증서 저장소·공유 서비스 설정을 변경하지 않는다.
+2026-10-18 구현·시뮬레이터 확인 완료. 공개 도메인이 없는 현재 Mac 서버를 같은 LAN의 Debug 앱에서 사용한다. **실제 휴대전화 검증은 아직 수행하지 않았다.** 다른 프로젝트·전역 인증서 저장소·공유 서비스 설정을 변경하지 않는다. 실행·설치 절차는 [시연 안내](DEMO.md)를 따른다.
 
 ## 확인한 공식 동작
 
@@ -16,4 +16,11 @@
 4. 올바른 CA 연결 성공, 다른 CA·호스트 거부, Release에서 테스트 신뢰 경로 비활성화, 리다이렉트 차단·회원 API·DB 저장을 검증한다. iOS 로컬 네트워크 권한 안내와 Android/iOS 테스트 설치 절차를 함께 준비한다.
 5. Wi-Fi 변경에 따른 주소 변경·인증서 갱신·앱 재빌드 절차를 제공한다. 고정 공개 주소를 확보하는 운영 배포와는 구분한다.
 
-현재 코드에는 Android Debug의 localhost/에뮬레이터 HTTP 예외와 iOS 로컬 네트워킹 ATS 설정만 있다. 위의 앱 전용 CA·LAN HTTPS 프록시·설치 자동화는 아직 추가하지 않았다. Ktor의 인증서 핀 설정에서 신뢰 검증을 끄는 방식은 채택하지 않는다.
+## 구현과 검증 결과
+
+- `server/local-tls.mjs`: 프로젝트 `.runtime/tls`에 CA365일·서버 인증서30일 생성, RSA/SHA256, 파일600·폴더700. 심볼릭 링크 경계·동시 생성 잠금·기존 키와 인증서 일치 확인. CA를 조용히 교체하지 않는다.
+- `server/tls-proxy.mjs`: 선택한 LAN IPv4:8443에서 TLS1.2 이상, 고정127.0.0.1:8787로 전달. 요청2MB 제한, CONNECT·절대주소 거부, 자격증명·본문 로그 없음. DB·AI를 LAN에 노출하지 않는다.
+- `-Pspeechbridge.localTls=true`: 공개 주소·CA 일치 확인 후 Debug 앱에 포함. Android Network Security Configuration과 iOS Darwin challenge에서 프로젝트 CA를 사용한다. iOS는 호스트·서명·유효기간 검사를 유지한다. Release 작업은 해당 플래그를 거부한다.
+- Node TLS 테스트6개 통과. iOS Security.framework에서 올바른 CA 성공·다른 호스트/만료/손상 CA 거부 확인. Kotlin의 standalone simulator 실행은 신뢰 서비스 오류(-26276)를 반환했으나 동일 바이너리를 booted simulator에서 실행하면 통과했다. Gradle 테스트도 `standalone=false`, `device=booted`로 수정했다. 필요하면 `-Pspeechbridge.simulatorId=UDID`로 실행 중인 기기를 지정한다.
+- Android APK에 예상 공개 DER만 포함되고 PEM/개인 키 파일이 없는지 확인. Release 보호 작업의 의도된 실패 확인. 정상 Release 전체 빌드와 실제 기기 TLS는 별도 검증 대상이다.
+- 실제 iPhone 시뮬레이터에서 해당 HTTPS 빌드로 로그인·DB 예시 조회·대화 종료·AI 제목/분류/요약·결정 추출을 확인했다. Mac 시스템 인증서 저장소에는 추가하지 않았다.

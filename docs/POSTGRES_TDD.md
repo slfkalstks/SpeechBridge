@@ -65,3 +65,17 @@ Node 83개 모두 통과, 로드된 소스 line96.98/branch91.43/function91.80%.
 합성 텍스트를 실제 회원 HTTP→테스트 PostgreSQL에 저장한 뒤 서버 인스턴스를 재생성해 로컬 모델 정리 완료·작업 1개·후속 수동 제목 보존을 확인했다. 결과 [organization-jobs.json](../server/validation/organization-jobs.json)의 약7.5초는 단일 사례이며 일반 성능 지표가 아니다. 별도로 실제 iOS 시뮬레이터에서 종료·처리 중 표시·완료 자동 반영을 관찰했다.
 
 운영 DB 선택 보완: `11b6d75` RED → `164ba9d` GREEN. 백업·마이그레이션이 프로젝트 서버 설정의 기본/복원 DB를 따르고 다른 소켓·포트·DB를 거부한다. 현재 선택 DB의 마이그레이션 재실행 확인. 최종 Node85개 통과, loaded line97.02/branch91.43/function91.95%; target 모듈 line100/branch90.91/function100%. `.runtime/postgres/target-*.log`. 실제 운영 DB 전환을 수행했다는 뜻은 아니다.
+
+
+## LAN HTTPS와 바로 시연
+
+| RED | GREEN | 보장 |
+|---|---|---|
+| c0a208e | df25a8e | 프로젝트 CA/서버 인증서, 올바른 TLS 성공·잘못된 CA/호스트 거부, 제한된 loopback 프록시 |
+| 652e723 | ac07a3f | symlink 경계 밖 생성 거부, 동시 키 생성 잠금, 공개 DER 불일치 거부 |
+| 6492f31 | 9361ae3 | iOS 정상 CA/호스트/유효기간 검증, Debug 전용 앱 신뢰 설정, Release 플래그 차단 |
+| e6c08ff | b13b946 | 다른 프로젝트/인터페이스 리스너 거부, 시연 데이터 재준비 시 수정·삭제 보존, DB 정규화 저장 |
+
+최종 Node93개 통과. 로드된 소스 line91.45/branch90.50/function88.37%; CLI 전체 실행 경로 커버리지는 아니다. AndroidHost99/iOSSim100개 통과, APK·signed Xcode Debug 빌드 성공. TLS 테스트6개, native trust 테스트1개 포함. iOS 독립 테스트 실행은 Security 서비스 오류를 반환해 booted simulator 실행으로 바꿨고 동일 테스트가 통과했다. 검사 우회·skip은 하지 않았다.
+
+`Demo.command` 실제 실행 및 프로젝트 API/HTTPS 정상 종료 후 자동 재시작 검증. APK 공개 DER 일치·개인 키/PEM 미포함 확인. Release 보호 작업은 localTls=true에서 의도대로 실패했다. 실제 iOS UI에서 HTTPS 로그인→DB 기록→대화 종료→자동 제목/분류/요약→결정 후보→할 일 목록 확인. 이는 실제 휴대전화·마이크 품질이나 전체 Release 빌드 검증은 아니다. 로컬 근거는 `.runtime/tls/{mobile-final,xcode,final-coverage,release-rejected}.log`, `.runtime/demo/{readiness.json,launch-validation.log,restart-validation.log}`.

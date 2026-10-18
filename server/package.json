@@ -22,7 +22,10 @@
     "db:verify-backup": "node db/backup.mjs verify",
     "db:restore": "node db/backup.mjs restore",
     "setup:https": "node local-tls.mjs",
-    "start:https": "node tls-proxy.mjs"
+    "start:https": "node tls-proxy.mjs",
+    "demo:start": "node demo.mjs start",
+    "demo:check": "node demo.mjs check",
+    "demo:build": "sh ../scripts/demo-build.sh"
   },
   "engines": {
     "node": ">=22.16.0 <26"
