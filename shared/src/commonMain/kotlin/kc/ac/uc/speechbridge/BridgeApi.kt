@@ -84,12 +84,12 @@ fun validatedBaseUrl(raw: String): String {
     return raw.trim().trimEnd('/')
 }
 
-class HttpBridgeApi(private val developerMode: Boolean = false, private val account: AccountManager? = null) : BridgeApi {
-    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
-    private val client = platformHttpClient {
+class HttpBridgeApi(private val developerMode: Boolean = false, private val account: AccountManager? = null,
+    private val client: HttpClient = platformHttpClient {
         followRedirects = false
         install(HttpTimeout) { requestTimeoutMillis = 100_000; connectTimeoutMillis = 5_000; socketTimeoutMillis = 100_000 }
-    }
+    }) : BridgeApi {
+    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private suspend inline fun <reified T> request(c: Connection, path: String, body: String? = null): T {
         val connection = if (developerMode && c.token.isNotBlank()) c else account?.connection() ?: c
         if (account == null && !developerMode) throw BridgeRequestException("service_pending", "AI 서비스 연결을 준비 중입니다. 기록은 기기에 저장됩니다.")
@@ -103,8 +103,8 @@ class HttpBridgeApi(private val developerMode: Boolean = false, private val acco
             }
         }
         if (response.status.value !in 200..299) {
-            if (response.status.value == 401) account?.expired(connection.token)
             val code = runCatching { json.decodeFromString<ErrorResponse>(response.bodyAsText()).error.code }.getOrDefault("unknown")
+            if (response.status.value == 401) account?.expired(connection.token, deleted = code == "account_deleted")
             throw BridgeRequestException(code, serviceErrorMessage(code, response.status.value))
         }
         return json.decodeFromString(response.bodyAsText())

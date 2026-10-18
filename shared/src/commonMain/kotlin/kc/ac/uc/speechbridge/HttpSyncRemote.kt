@@ -21,8 +21,8 @@ class HttpSyncRemote(private val account: AccountManager, private val client: Ht
             setBody(JsonObject(json.parseToJsonElement(body).jsonObject + ("platform" to JsonPrimitive(platform))).toString())
         }
         if(response.status.value !in 200..299) {
-            if(response.status.value == 401) account.expired(connection.token)
             val code = runCatching { json.decodeFromString<ErrorResponse>(response.bodyAsText()).error.code }.getOrDefault("unknown")
+            if(response.status.value == 401) account.expired(connection.token, deleted = code == "account_deleted")
             throw BridgeRequestException(code, serviceErrorMessage(code, response.status.value))
         }
         return json.decodeFromString(response.bodyAsText())

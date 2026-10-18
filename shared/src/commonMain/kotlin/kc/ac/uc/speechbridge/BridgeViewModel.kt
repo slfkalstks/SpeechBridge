@@ -60,6 +60,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     private var upload: Job? = null
     private var cloudLoad: Job? = null
     private var workspaceOperation: Job? = null
+    private var deletionCleanup: Job? = null
     private var writeRevision = 0L
     private var requestSequence = 0L
     private val requests = mutableMapOf<String, Pair<Long, Job>>()
@@ -135,16 +136,21 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         else {
             requireNotNull(account)
             viewModelScope.launch {
-                account.state.map { it.ready to it.user?.id }.distinctUntilChanged().collect { (ready, userId) ->
+                account.state.map { Triple(it.ready, it.user?.id, it.deletion) }.distinctUntilChanged().collect { (ready, userId, deletion) ->
                     if (!ready) return@collect
-                    cloudLoad?.cancel(); upload?.cancel(); workspaceOperation?.cancel(); invalidate()
-                    // Hide the old workspace immediately, then finish its already queued secure writes.
-                    // Bumping the generation first would discard input received just before expiry.
+                    invalidate()
                     identity = null
                     mutable.value = BridgeState(cloudMode = true, accountRequired = true, loaded = userId == null)
+                    cloudLoad?.cancelAndJoin(); upload?.cancelAndJoin(); workspaceOperation?.cancelAndJoin()
+                    // Finish accepted input before changing generation; no queued save may run after erasure.
                     drainWrites()
                     generation++
-                    if (account.state.value.user?.id != userId) return@collect
+                    if (account.state.value.user?.id != userId || account.state.value.deletion != deletion) return@collect
+                    if (deletion != AccountDeletion.NONE) {
+                        if (deletion == AccountDeletion.CONFIRMED) cleanupDeletedAccount()
+                        else sync.closeAccount()
+                        return@collect
+                    }
                     identity = userId?.let { SyncIdentity(account.endpoint, it) }
                     mutable.update { it.copy(accountRequired = userId == null) }
                     if (userId == null) sync.closeAccount() else loadCloud()
@@ -311,7 +317,39 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         invalidate()
         return true
     }
-    private fun canEdit() = state.value.loaded && !state.value.accountRequired && !state.value.workspaceBusy
+    private suspend fun cleanupDeletedAccount() {
+        val manager = account ?: return
+        val repository = sync ?: return
+        val current = manager.state.value
+        if (current.deletion != AccountDeletion.CONFIRMED) return
+        val deleted = SyncIdentity(manager.endpoint, current.user?.id ?: return)
+        mutable.update { it.copy(workspaceBusy = true) }
+        try {
+            repository.eraseAccount(deleted)
+            manager.finishDeletion(deleted)
+        } catch (e: CancellationException) { throw e }
+        catch (_: Exception) { inform("이 기기의 대기 내용을 정리하지 못했습니다. 기기 잠금을 해제한 뒤 정리를 재시도해 주세요.") }
+        finally { mutable.update { it.copy(workspaceBusy = false) } }
+    }
+    fun retryDeletionCleanup() {
+        if (state.value.workspaceBusy || deletionCleanup?.isActive == true) return
+        deletionCleanup = viewModelScope.launch { cleanupDeletedAccount() }
+    }
+    suspend fun deleteAccount(password: String) = viewModelScope.async {
+        val manager = account ?: return@async
+        if (state.value.workspaceBusy) { inform("기록 처리가 끝난 뒤 다시 시도해 주세요."); return@async }
+        mutable.update { it.copy(workspaceBusy = true) }
+        invalidate()
+        try {
+            cloudLoad?.cancelAndJoin(); upload?.cancelAndJoin()
+            drainWrites()
+            manager.deleteAccount(password)
+        } finally {
+            if (manager.state.value.deletion == AccountDeletion.NONE) mutable.update { it.copy(workspaceBusy = false) }
+        }
+    }.await()
+    private fun canEdit() = state.value.loaded && !state.value.accountRequired && !state.value.workspaceBusy &&
+        (account == null || account.state.value.deletion == AccountDeletion.NONE)
     fun retrySave() = persist()
     private fun persist() {
         if (!canEdit()) return

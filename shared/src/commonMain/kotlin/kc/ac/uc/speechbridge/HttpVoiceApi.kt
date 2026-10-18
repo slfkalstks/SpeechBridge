@@ -25,8 +25,8 @@ class HttpVoiceApi(private val account: AccountManager, private val client: Http
                     setBody(body.toString())
                 }
                 if(response.status.value in 200..299) return@withTimeout response
-                if(response.status.value == 401) account.expired(connection.token)
                 val code = runCatching { ArchiveCodec.json.decodeFromString<ErrorResponse>(response.bodyAsText()).error.code }.getOrDefault("unknown")
+                if(response.status.value == 401) account.expired(connection.token, deleted = code == "account_deleted")
                 if(response.status.value == 429 && code == "busy" && attempts++ < 60) {
                     // Keep this recording and its original session together while text inference finishes.
                     // Cancellation exits the delay; a later login must never receive the old audio.

@@ -434,7 +434,7 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
         DeveloperConnectionScreen(state, vm)
     }
     LazyColumn(Modifier.fillMaxSize().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 760.dp), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { vm.account?.let { AccountPanel(it, vm::prepareAccountChange) } }
+        item { vm.account?.let { AccountPanel(it, vm::prepareAccountChange, vm::deleteAccount, vm::retryDeletionCleanup) } }
         item { Panel {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("화면 모드", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)

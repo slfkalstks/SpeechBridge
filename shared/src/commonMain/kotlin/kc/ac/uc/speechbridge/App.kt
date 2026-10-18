@@ -88,8 +88,9 @@ fun App(store: SessionStore? = null, audioDevice: AudioDevice = UnavailableAudio
                             Box(Modifier.widthIn(max = 1200.dp).fillMaxSize()) {
                                 when {
                                     state.accountRequired -> Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                        Heading("대화에서 기록까지", "로그인하고 번역·요약·할 일을 한곳에 모으세요.")
-                                        vm.account?.let { AccountPanel(it, vm::prepareAccountChange) }
+                                        if (vm.account?.state?.collectAsStateWithLifecycle()?.value?.deletion == AccountDeletion.NONE)
+                                            Heading("대화에서 기록까지", "로그인하고 번역·요약·할 일을 한곳에 모으세요.")
+                                        vm.account?.let { AccountPanel(it, vm::prepareAccountChange, vm::deleteAccount, vm::retryDeletionCleanup) }
                                     }
                                     state.page == Page.SETTINGS -> SettingsScreen(state, vm, developerTools)
                                     !state.loaded -> Column(Modifier.fillMaxSize().padding(24.dp),
