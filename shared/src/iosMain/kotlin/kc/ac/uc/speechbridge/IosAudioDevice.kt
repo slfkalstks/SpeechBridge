@@ -66,11 +66,7 @@ class IosAudioDevice : AudioDevice {
             currentCoroutineContext().ensureActive()
             if(cancelled) throw CancellationException("Audio cancelled")
             if(interrupted) throw BridgeRequestException("audio_interrupted", "음성 입력이 중단되었습니다. 다시 시작해 주세요.")
-            val data = NSData.dataWithContentsOfURL(file) ?: error("Audio read failed")
-            require(data.length <= 1_025_580u)
-            val samples = PcmWave.decode(data.bytes!!.readBytes(data.length.toInt()),16000,allowMetadata = true).samples
-            if(samples.size < 1600) throw BridgeRequestException("no_speech", "조금 더 길게 말한 뒤 완료를 눌러 주세요.")
-            return PcmWave.encode(samples,16000)
+            return readIosRecording(file)
         } finally {
             recorder?.stop(); recorder = null
             NSFileManager.defaultManager.removeItemAtURL(file,null)
@@ -101,4 +97,13 @@ class IosAudioDevice : AudioDevice {
     }
     override fun cancel() { cancelled = true; recorder?.stop(); player?.stop() }
     override fun close() { cancel(); NSNotificationCenter.defaultCenter.removeObserver(interruption) }
+}
+
+/** Normalize only the completed temporary capture before upload. */
+internal fun readIosRecording(file: NSURL): ByteArray {
+    val data = NSData.dataWithContentsOfURL(file) ?: error("Audio read failed")
+    require(data.length <= 1_025_580u)
+    val samples = PcmWave.decode(data.bytes!!.readBytes(data.length.toInt()),16000,allowMetadata = true).samples
+    if(samples.size < 1600) throw BridgeRequestException("no_speech", "조금 더 길게 말한 뒤 완료를 눌러 주세요.")
+    return PcmWave.encode(samples,16000)
 }
