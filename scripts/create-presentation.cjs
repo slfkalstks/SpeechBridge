@@ -8,7 +8,16 @@ const out=path.resolve(__dirname,'../presentation');const assets=path.join(out,'
 function text(s,t,x,y,w,h,size=22,color=C.ink,bold=false){s.addText(t,{x,y,w,h,fontSize:size,color,bold,margin:0,breakLine:false,paraSpaceAfterPt:6,valign:'mid',fontFace:'Apple SD Gothic Neo'});}
 function box(s,x,y,w,h,color=C.white){s.addShape(deck.ShapeType.roundRect,{x,y,w,h,rectRadius:.22,radius:.2,line:{color,transparency:100},fill:{color}});}
 function slide(kicker,title,note,dark=false){const s=deck.addSlide();s.background={color:dark?C.night:C.bg};const n=deck._slides.length;text(s,'SPEECHBRIDGE  /  '+kicker,.55,.3,11,.3,12,dark?C.pale:C.blue,true);if(title)text(s,title,.55,.84,12.2,.8,34,dark?C.white:C.ink,true);text(s,String(n).padStart(2,'0'),12.25,7.02,.5,.2,10,dark?C.pale:C.muted);text(s,'학교 과제 · 실제 앱 캡처 / 합성 시연 데이터',.55,7.02,10,.2,10,dark?C.pale:C.muted);s.addNotes(note);notes.push({n,title,kicker,note});return s;}
-function phone(s,file,x,y,h){const p=path.join(assets,file+'.png');s.addImage({path:p,x,y,w:h*912/1944,h});}
+// Keep source captures intact; show only the device viewport in both documents.
+const captureWidth=912,captureHeight=1944,toolbarHeight=120;
+for(const name of ['talk','translation','history','summary','tasks','evidence']) {
+    const png=fs.readFileSync(path.join(assets,name+'.png'));
+    const meta=require(require.resolve('image-size',{paths:[out]})).imageSize(png);
+    if(meta.width!==captureWidth || meta.height!==captureHeight) throw new Error('Review screenshot viewport: '+name);
+    const mime=meta.type==='jpg'?'image/jpeg':'image/png';
+    fs.writeFileSync(path.join(assets,name+'.svg'),`<svg xmlns="http://www.w3.org/2000/svg" width="${captureWidth}" height="${captureHeight-toolbarHeight}" viewBox="0 ${toolbarHeight} ${captureWidth} ${captureHeight-toolbarHeight}"><title>SpeechBridge ${name}</title><image width="${captureWidth}" height="${captureHeight}" href="data:${mime};base64,${png.toString('base64')}"/></svg>\n`);
+}
+function phone(s,file,x,y,h){const p=path.join(assets,file+'.png'),scale=h/(captureHeight-toolbarHeight),w=captureWidth*scale;s.addImage({path:p,x,y,w,h:captureHeight*scale,sizing:{type:'crop',x:0,y:toolbarHeight*scale,w,h}});}
 function point(s,n,title,body,x,y,w=6){text(s,n,x,y,.55,.4,16,C.blue,true);text(s,title,x+.6,y,w-.6,.45,23,C.ink,true);text(s,body,x+.6,y+.58,w-.6,.8,17,C.muted);}
 let s=slide('VOICE → ACTION','', 'SpeechBridge는 대화를 번역한 뒤 기록과 할 일로 연결하는 앱입니다. 음성 중심 UI이며 Android와 iOS 공통 구현입니다. 오늘 보여주는 화면은 실제 iOS 시뮬레이터에서 만든 가상 시연 기록입니다. 실제 마이크와 휴대전화 검증은 보류 상태임을 먼저 분명히 설명합니다.');
 text(s,'말한 순간부터\n해야 할 일까지.',.65,1.55,7.7,1.75,48,C.ink,true);text(s,'SpeechBridge',.7,3.65,7,.65,30,C.blue,true);text(s,'번역 · 기록 · 요약 · 할 일을\n하나의 대화 흐름으로',.7,4.5,7,1.0,24,C.muted);phone(s,'talk',9.25,.45,6.45);

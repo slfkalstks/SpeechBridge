@@ -23,15 +23,15 @@ SpeechBridge는 일상과 업무에서 나눈 대화를 번역·기록하고, �
 <table>
   <tr><th>대화</th><th>번역</th><th>기록</th></tr>
   <tr>
-    <td><img src="presentation/assets/talk.png" width="220" alt="큰 마이크와 한국어·영어 선택이 있는 대화 화면" /></td>
-    <td><img src="presentation/assets/translation.png" width="220" alt="영어 원문과 실제 로컬 AI 한국어 번역" /></td>
-    <td><img src="presentation/assets/history.png" width="220" alt="일상·업무·폴더로 분류한 기록 목록" /></td>
+    <td><img src="presentation/assets/talk.svg" width="220" alt="큰 마이크와 한국어·영어 선택이 있는 대화 화면" /></td>
+    <td><img src="presentation/assets/translation.svg" width="220" alt="영어 원문과 실제 로컬 AI 한국어 번역" /></td>
+    <td><img src="presentation/assets/history.svg" width="220" alt="일상·업무·폴더로 분류한 기록 목록" /></td>
   </tr>
   <tr><th>요약</th><th>근거 확인</th><th>할 일</th></tr>
   <tr>
-    <td><img src="presentation/assets/summary.png" width="220" alt="대화 요약과 연결된 할 일" /></td>
-    <td><img src="presentation/assets/evidence.png" width="220" alt="AI가 추출한 할 일의 원문 근거 확인" /></td>
-    <td><img src="presentation/assets/tasks.png" width="220" alt="검토·진행·완료 상태를 관리하는 할 일 목록" /></td>
+    <td><img src="presentation/assets/summary.svg" width="220" alt="대화 요약과 연결된 할 일" /></td>
+    <td><img src="presentation/assets/evidence.svg" width="220" alt="AI가 추출한 할 일의 원문 근거 확인" /></td>
+    <td><img src="presentation/assets/tasks.svg" width="220" alt="검토·진행·완료 상태를 관리하는 할 일 목록" /></td>
   </tr>
 </table>
 
