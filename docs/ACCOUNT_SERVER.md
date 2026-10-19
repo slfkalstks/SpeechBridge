@@ -64,7 +64,7 @@ SPEECHBRIDGE_SERVER_URL=https://speech.example.com xcodebuild \
   -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Release
 ```
 
-Gradle property가 환경 변수보다 우선한다. HTTPS가 아닌 주소, 사용자 정보·경로·쿼리·fragment가 있는 주소는 빌드 단계에서 거부한다. 빈 주소의 Release 앱은 로컬 호스트로 접속하지 않고 서비스 준비 상태를 표시한다. HTTP 허용·인증서 검증 해제를 Release에 추가하지 않는다. 로그인 정보는 저장 당시 origin에 묶이며, 다음 빌드가 다른 origin을 사용하면 이전 토큰을 보내지 않고 다시 로그인을 요구한다.
+Gradle property가 환경 변수보다 우선한다. HTTPS가 아닌 주소, 사용자 정보·경로·쿼리·fragment가 있는 주소는 빌드 단계에서 거부한다. 빈 주소의 Release 빌드는 차단한다. HTTP 허용·인증서 검증 해제를 Release에 추가하지 않는다. 로그인 정보는 저장 당시 origin에 묶이며, 다음 빌드가 다른 origin을 사용하면 이전 토큰을 보내지 않고 다시 로그인을 요구한다.
 
 도메인이 없는 학교 시연에는 [Cloudflare Quick Tunnel](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/) 같은 임시 HTTPS 주소를 사용할 수 있다. 공식 `cloudflared` 설치 후 운영자가 `cloudflared tunnel --url http://127.0.0.1:8787`을 실행하고, 출력된 HTTPS 주소를 빌드에 지정하는 방식이다. 이 옵션은 이번에 설치·실행하거나 공개 노출하지 않았다. 임시 주소는 재실행 시 달라질 수 있고 가동 보장이 없으므로 스토어 배포용 고정 주소로 취급하지 않는다. Mac 추론은 그대로 유지되지만 터널 사업자가 HTTPS 중계를 담당하므로 사용자 대화가 그 경로를 통과한다. 장기 운영에는 안정된 HTTPS 주소와 Mac 가동·네트워크 유지가 필요하다.
 

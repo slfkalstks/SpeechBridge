@@ -1,5 +1,5 @@
 import pg from 'pg';
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {readFile,writeFile,rename,rm} from 'node:fs/promises';
 import {parseEnv} from 'node:util';
 import {fileURLToPath} from 'node:url';
@@ -80,7 +80,7 @@ async function selectTarget(source,target) {
  if(env.PGDATABASE!==source && env.PGDATABASE!==target)throw Error('Active configuration changed; preserved');
  const changed=raw.replace(/^PGDATABASE=.*$/m,'PGDATABASE='+target);
  if(changed===raw && env.PGDATABASE!==target)throw Error('No active database field');
- const temp=path+'.cutover.tmp';await writeFile(temp,changed,{flag:'wx',mode:0o600});
+ const temp=path+'.cutover-'+randomUUID()+'.tmp';await writeFile(temp,changed,{flag:'wx',mode:0o600});
  try{await rename(temp,path);}finally{await rm(temp,{force:true});}
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {

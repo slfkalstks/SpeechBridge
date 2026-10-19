@@ -66,6 +66,12 @@ adb -s DEVICE_SERIAL install -r .runtime/demo/SpeechBridge-demo.apk
 
 iOS 시뮬레이터 앱은 실제 iPhone 설치 파일이 아니다. 실제 iPhone에는 Xcode의 개발 팀 서명·프로비저닝이 필요하며, 현재 `iosApp/Configuration/Config.xcconfig`의 `TEAM_ID`는 비어 있다. Apple 개발 계정 선택과 연결 기기 확인 후 기기용 Debug 빌드를 진행해야 한다.
 
-Mac의 Wi-Fi/IP가 바뀌었거나 인증서가 갱신되면 `sh scripts/demo-build.sh`로 주소와 인증서를 반영하고 새 APK/시뮬레이터 앱을 설치한다. 이전 HTTPS 프로세스가 다른 인터페이스에 남아 있으면 시작 명령이 중단한다. 이 경우 `.runtime/demo/https.pid` 또는 포트8443의 프로세스 작업 폴더를 확인하고 **이 프로젝트의 프록시만** 종료한 뒤 다시 실행한다. 다른 프로세스를 강제로 정리하지 않는다.
+LAN 휴대전화용으로 전환할 때는 현재 프로젝트 프록시만 중지한 뒤 `npm --prefix server run setup:https`로 LAN 주소를 준비한다. 시뮬레이터 전용으로 돌아갈 때는 `node server/local-tls.mjs 127.0.0.1`을 사용한다. Mac의 Wi-Fi/IP가 바뀌었거나 인증서가 갱신되면 `sh scripts/demo-build.sh`로 주소와 인증서를 반영하고 새 APK/시뮬레이터 앱을 설치한다. 이전 HTTPS 프로세스가 다른 인터페이스에 남아 있으면 시작 명령이 중단한다. 이 경우 `.runtime/demo/https.pid` 또는 포트8443의 프로세스 작업 폴더를 확인하고 **이 프로젝트의 프록시만** 종료한 뒤 다시 실행한다. 다른 프로세스를 강제로 정리하지 않는다.
 
 시연용 CA는 공개 배포용 인증서가 아니다. Release 빌드에는 `speechbridge.localTls=true`를 사용할 수 없다. 실제 외부 공개 배포에는 운영 HTTPS 주소와 배포 설정을 별도로 확정해야 한다.
+
+## 번역 지연과 음성 오류 구분
+
+시연 시작 때 합성 인사 문장으로 번역 모델을 미리 준비하고, 모델 유지 시간을 30분으로 설정한다. 처음 로딩·요약 모델 전환·메모리 압박에서는 지연이 발생할 수 있다. 입력 길이도 영향을 준다. 현재 작은 합성 샘플의 지연은 `server/validation/member-voice-flow.json`에 기록한다.
+
+`음성 서버에 연결하지 못했습니다`라면 서버/주소 문제를 확인한다. 녹음 시작 직후 실패한다면 Simulator의 I/O → Audio Input과 macOS의 Simulator 마이크 권한을 확인한다. 실제 마이크 권한은 사용자가 선택한다. 말소리 없음/언어 감지 실패는 연결 장애와 별도 안내다. [음성 검증과 알려진 품질 한계](NATIVE_VOICE_VALIDATION.md).

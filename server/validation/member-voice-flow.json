@@ -1,5 +1,5 @@
 {
-  "createdAt": "2026-10-18T13:04:47.265Z",
+  "createdAt": "2026-10-18T23:49:37.090Z",
   "scope": "Synthetic audio through member-authenticated HTTP and real local models. No microphone or listening evaluation.",
   "results": [
     {
@@ -8,15 +8,15 @@
         "text": "유키씨 금요일까지 수정한 일정을 보내주세요.",
         "language": "ko"
       },
-      "sttMilliseconds": 462,
+      "sttMilliseconds": 520,
       "translation": {
         "text": "Please send Yuki the revised schedule by Friday.",
         "revision": 1
       },
       "targetLanguage": "en",
-      "translationMilliseconds": 6265,
+      "translationMilliseconds": 942,
       "databaseRoundTrip": true,
-      "ttsMilliseconds": 5414,
+      "ttsMilliseconds": 6142,
       "audioSeconds": 4.16
     },
     {
@@ -25,15 +25,15 @@
         "text": "Yuki please send the updated schedule by Friday.",
         "language": "en"
       },
-      "sttMilliseconds": 20370,
+      "sttMilliseconds": 381,
       "translation": {
         "text": "유키 씨, 업데이트된 일정을 금요일까지 보내주세요.",
         "revision": 1
       },
       "targetLanguage": "ko",
-      "translationMilliseconds": 1094,
+      "translationMilliseconds": 1109,
       "databaseRoundTrip": true,
-      "ttsMilliseconds": 5469,
+      "ttsMilliseconds": 4061,
       "audioSeconds": 5.28
     },
     {
@@ -42,15 +42,15 @@
         "text": "由さん金曜日までに修正した予定を送ってください。",
         "language": "ja"
       },
-      "sttMilliseconds": 522,
+      "sttMilliseconds": 335,
       "translation": {
         "text": "유 씨, 금요일까지 수정된 일정을 보내주세요.",
         "revision": 1
       },
       "targetLanguage": "ko",
-      "translationMilliseconds": 1068,
+      "translationMilliseconds": 1055,
       "databaseRoundTrip": true,
-      "ttsMilliseconds": 4038,
+      "ttsMilliseconds": 3800,
       "audioSeconds": 4.8
     }
   ],

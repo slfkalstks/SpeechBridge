@@ -56,7 +56,7 @@ import kotlinx.coroutines.launch
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("${state.user?.username.orEmpty()} 계정의 대화·할 일·폴더·설정과 이 기기의 전송 대기 내용을 삭제합니다. 되돌릴 수 없습니다.")
-                Text("기존 서버 백업은 별도로 보관 중이며 이 요청으로 즉시 지워지지 않습니다.", style = MaterialTheme.typography.bodySmall)
+                Text("서버 백업은 생성 후 30일 보관 정책으로 정리하며, 삭제한 계정은 복원에서 제외합니다. 서버가 꺼져 있으면 다음 실행 때 정리합니다.", style = MaterialTheme.typography.bodySmall)
                 OutlinedTextField(deletePassword, { deletePassword = it }, label = { Text("현재 비밀번호") },
                     singleLine = true, enabled = !state.busy, visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))

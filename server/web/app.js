@@ -32,6 +32,6 @@ $('cancel').addEventListener('click',async()=>{
  busy(true);
  try {if(session)await post('/auth/logout',{},session.token);}
  catch{message('로그아웃 응답을 확인하지 못했습니다. 이 페이지의 로그인 정보는 비웁니다.');}
- finally{session=null;$('confirmation').value='';$('consent').checked=false;$('confirm').hidden=true;$('login').hidden=false;busy(false);}
+ finally{session=null;message('삭제를 취소했습니다.');$('confirmation').value='';$('consent').checked=false;$('confirm').hidden=true;$('login').hidden=false;busy(false);}
 });
 // Session exists only in this page's memory. Nothing is written to browser storage.

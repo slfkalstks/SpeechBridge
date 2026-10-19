@@ -46,7 +46,29 @@ node server/db/backup.mjs restore '.runtime/backups/<백업 파일>.dump'
 
 현재 운영 백업을 실제로 복원해 17개 테이블 비교와 검증 DB 정리를 확인했다. 데이터가 있는 별도 테스트에서는 백업 이후 원본 변경과 복원 사본을 구분하고, RLS 격리·재로그인·기존 토큰 거부를 검사했다. 원자료는 로컬 `.runtime/postgres/backup-validation.json`이며 자격정보와 사용자 내용을 포함한 dump/명세는 Git에 넣지 않는다.
 
-운영 전환은 별도 작업이다. **현재는 `PGDATABASE`만 바꿔 복원 DB를 서비스할 수 없다.** 복원 이후 발생한 삭제 요청이 누락되지 않도록 API 시작 단계에서 복원 DB를 차단한다. 쓰기를 중단하고 마지막 삭제 이력을 반영하는 명시적 전환 절차를 구현해야 한다. [계정 삭제·복원 보호](ACCOUNT_DELETION.md)를 참고한다. 백업·마이그레이션 도구는 프로젝트의 고정 소켓·포트와 기본/복원 DB 이름만 허용한다. 실제 운영 DB 전환은 수행하지 않았다.
+### 복원 사본 활성화
+
+`PGDATABASE`만 바꿔서는 복원 사본을 서비스할 수 없다. 실제 복구가 필요한 경우에만 프로젝트 API를 중지하고 현재 원본을 백업한 뒤, 검증된 복원 사본을 명시적으로 전환한다. 백업 이후 일반 변경은 과거 사본에 포함되지 않으며 삭제 이력만 마지막에 추가 반영한다. 데이터 손실 범위를 먼저 확인해야 한다.
+
+```sh
+node server/db/cutover.mjs <현재DB> <복원DB> --confirm-source <현재DB>
+# 성공 후 프로젝트 회원 API를 재시작하고 회원 재로그인·기록을 확인한다.
+```
+
+도구는 출처가 일치하는 프로젝트 DB만 허용한다. 이전 DB의 인증/앱 CONNECT 권한을 회수하고 기존 접속을 종료한다. 최신 삭제 영수증을 반영해 삭제 계정을 제거하고 모든 복원 세션을 폐기한 뒤 활성화한다. `.runtime/postgres/server.env`를 원자적으로 바꾼다. 이전 DB의 관리자 접속은 복구를 위해 남기고 일반 서비스는 재개하지 않는다.
+
+중간에 프로세스가 종료되면 **동일한 원본/대상 명령을 재실행**한다. 다른 대상을 고르거나 두 DB를 동시에 서비스하지 않는다. 활성화 후 설정 파일 기록 전 종료도 재개할 수 있다. 관리자가 설정·상태를 확인해야 하며 단순 파일 이름 변경으로 우회하지 않는다. 가상 복원 DB로 정상 전환·롤백·SIGKILL 후 재개·퇴역 DB 거부를 확인했다. 운영 원본 전환은 미실행이다.
+
+### 보존과 자동 유지보수
+
+회원 서버 시작 시/매시간 만료 정리를 실행하고, 하루 간격으로 일관된 백업을 만든다. 백업은 생성 후 30일 정책이며 서버 중단 중 만료된 것은 다음 시작 때 처리한다. `.runtime/postgres/maintenance.json`에서 최근 확인/백업 시각을 볼 수 있다.
+
+```sh
+npm --prefix server run db:retention          # 미리보기
+npm --prefix server run db:retention -- --apply
+```
+
+해시와 명세가 맞는 `.runtime/backups` 파일만 정리한다. 기존 무명세 사본은 `node server/db/retention.mjs adopt <파일>`로 명시 등록하며 파일 내용은 바꾸지 않는다. 알 수 없는 파일은 실패 처리하고 보존한다. 같은 Mac의 백업이므로 Mac 고장에 대비한 별도 보관은 운영자가 준비해야 한다.
 
 ## 역할
 
@@ -76,6 +98,8 @@ node server/db/backup.mjs restore '.runtime/backups/<백업 파일>.dump'
 | sync_receipts | 사용자+설치+요청 ID별 요청 해시·응답 |
 | legacy_account_imports | 이미 이전한 계정 ID. 폐기된 세션의 재복원 방지 |
 | account_deletions | 삭제 계정·아이디·요청 토큰 해시와 시각. 백업/이전 원본을 통한 계정 부활 방지 |
+| account_deletion_sessions | 삭제 당시 세션 해시, 다중 기기의 삭제 상태 확인 |
+| restore_activation | 검증된 복원 출처·활성화·퇴역 대상 |
 | schema_migrations | 버전·SQL 체크섬·적용 시각 |
 
 ```mermaid

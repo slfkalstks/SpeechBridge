@@ -88,6 +88,7 @@ export function tlsJson(origin,ca,path,body,token) {
     req.setTimeout(105_000,()=>req.destroy(new Error('Demo API timed out')));req.on('error',reject);req.end(content);
   });
 }
+let stage='configuration';
 async function main() {
   if(!['start','check'].includes(process.argv[2] || 'start'))throw new Error('Usage: node demo.mjs [start|check]');
   const start=process.argv[2]!=='check';
@@ -97,20 +98,34 @@ async function main() {
   if(accountConfig.AUTH_MODE!=='users' || accountConfig.HOST!=='127.0.0.1' || accountConfig.PORT!=='8787' ||
     accountConfig.AI_PROVIDER!=='ollama-local' || accountConfig.SPEECH_PROVIDER!=='local-process' || accountConfig.OLLAMA_BASE_URL!=='http://127.0.0.1:11435')
     throw new Error('Demo needs the project member/local-AI server configuration. Existing configuration was preserved.');
-  const config=start?await prepareLocalTls():JSON.parse(await readFile(join(runtime,'tls/config.json'),'utf8'));
+  stage='local HTTPS configuration';
+  const existing=await readFile(join(runtime,'tls/config.json'),'utf8').then(JSON.parse).catch(()=>null);
+  const config=start?await prepareLocalTls(existing?.host==='127.0.0.1'?{host:'127.0.0.1'}:{}):existing;
+  if(!config)throw new Error('Prepare project test HTTPS first.');
+  stage='project listeners';
   for(const [port,address] of [[11435,'127.0.0.1:11435'],[8787,'127.0.0.1:8787'],[config.port,`${config.host}:${config.port}`]])
     assertProjectListeners(await listeners(port),root,address);
   if(start) {
+    stage='PostgreSQL start';
     await execute(process.execPath,['db/local.mjs','start'],{cwd:server});
+    stage='local AI start';
     await ensureService('ai',11435,'127.0.0.1:11435','/bin/sh',['start-ai.sh'],process.env,directory);
+    stage='member API start';
     await ensureService('api',8787,'127.0.0.1:8787',process.execPath,[`--env-file=${join(runtime,'accounts-server.env')}`,`--env-file=${join(runtime,'postgres/server.env')}`,'server.mjs'],process.env,directory);
+    stage='HTTPS proxy start';
     await ensureService('https',config.port,`${config.host}:${config.port}`,process.execPath,['tls-proxy.mjs'],process.env,directory);
   }
+  stage='HTTPS health';
   const ca=await readFile(join(runtime,'tls/ca.pem'));
   if((await tlsJson(config.origin,ca,'/health')).authentication!=='users')throw new Error('Member server is not ready.');
+  stage='model readiness';
   const providers=createProviders(accountConfig);
   const health=await providers.health({signal:AbortSignal.timeout(10_000)});
   if(!health.available?.translation || !health.available?.extraction || !health.available?.speech)throw new Error('Local text or voice models are not ready.');
+  if(start) {
+    stage='translation warm-up';
+    await providers.translate({text:'안녕하세요.',from:'ko',to:'en',revision:1});
+  }
   const credentialPath=join(directory,'account.json');let credentials,fresh=false;
   try {credentials=JSON.parse(await readFile(credentialPath,'utf8'));}
   catch(error) {
@@ -123,9 +138,11 @@ async function main() {
   }
   await chmod(credentialPath,0o600);
   if(!/^demo[a-z]{12}$/.test(credentials.username) || !/^[a-z]{24}$/.test(credentials.password))throw new Error('Invalid private demo account file; preserved for inspection.');
+  stage='demo login';
   const session=await tlsJson(config.origin,ca,fresh?'/auth/register':'/auth/login',credentials);
   try {
     const post=(path,body)=>tlsJson(config.origin,ca,path,body,session.token);
+    stage='demo records';
     if(start)await seedDemo(post);
     const snapshot=await post('/data/snapshot',{deviceId:'speechbridge-demo',platform:'test'});
     const report={checkedAt:new Date().toISOString(),origin:config.origin,caFingerprint:config.caFingerprint,
@@ -136,5 +153,5 @@ async function main() {
   }finally{await tlsJson(config.origin,ca,'/auth/logout',{},session.token);}
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url))main().catch(()=>{
-  console.error('시연 준비 실패. 프로젝트 서비스/포트·Wi-Fi·.runtime/demo 로그를 확인하세요. 기존 기록과 다른 프로젝트는 변경하지 않았습니다.');process.exitCode=1;
+  console.error(`시연 준비 실패 (${stage}). 프로젝트 서비스/포트·Wi-Fi·.runtime/demo 로그를 확인하세요. 기존 기록과 다른 프로젝트는 변경하지 않았습니다.`);process.exitCode=1;
 });

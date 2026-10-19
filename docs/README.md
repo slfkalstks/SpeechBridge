@@ -1,5 +1,8 @@
 # SpeechBridge 문서
 
+- [발표 PPTX](../presentation/SpeechBridge.pptx) / [발표자 노트](../presentation/발표자-노트.md).
+- [배포 직전 검증과 실제 출시 시 필요한 항목](PRE_RELEASE.md).
+
 - [바로 시연하기: 실행·설치 파일·5분 진행 순서](DEMO.md).
 - [직접 앱 시연 검증 결과](DEMO_UI_VALIDATION.md).
 - [계정 삭제·기기 정리·복원 보호와 남은 작업](ACCOUNT_DELETION.md).

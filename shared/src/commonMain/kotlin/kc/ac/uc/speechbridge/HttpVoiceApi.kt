@@ -8,6 +8,7 @@ import io.ktor.http.*
 import kotlinx.serialization.json.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.CancellationException
 import kotlin.io.encoding.Base64
 
 class HttpVoiceApi(private val account: AccountManager, private val client: HttpClient = platformHttpClient {
@@ -19,10 +20,13 @@ class HttpVoiceApi(private val account: AccountManager, private val client: Http
         return withTimeout(95_000) {
             var attempts = 0
             while(true) {
-                val response = client.post(validatedBaseUrl(connection.url) + path) {
+                val response = try { client.post(validatedBaseUrl(connection.url) + path) {
                     bearerAuth(connection.token)
                     contentType(ContentType.Application.Json)
                     setBody(body.toString())
+                } } catch (e: CancellationException) { throw e }
+                catch (_: Exception) {
+                    throw BridgeRequestException("network_unavailable", "음성 서버에 연결하지 못했습니다. 서버 주소와 네트워크를 확인해 주세요.")
                 }
                 if(response.status.value in 200..299) return@withTimeout response
                 val code = runCatching { ArchiveCodec.json.decodeFromString<ErrorResponse>(response.bodyAsText()).error.code }.getOrDefault("unknown")

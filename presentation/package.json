@@ -1,0 +1,13 @@
+{
+  "name": "speechbridge-presentation",
+  "private": true,
+  "scripts": {
+    "build": "node ../scripts/create-presentation.cjs"
+  },
+  "devDependencies": {
+    "pptxgenjs": "4.0.0"
+  },
+  "overrides": {
+    "image-size": "2.0.4"
+  }
+}

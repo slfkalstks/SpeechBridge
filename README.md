@@ -6,7 +6,7 @@
 
 Android · iOS · Kotlin Multiplatform · Mac Local AI
 
-[시작하기](#시작하기) · [시연 안내](docs/DEMO.md) · [주요 기능](#주요-기능) · [구현 상태](#구현-상태) · [문서](docs/README.md) · [이슈](https://github.com/slfkalstks/SpeechBridge/issues)
+[발표 PPTX](presentation/SpeechBridge.pptx) · [시작하기](#시작하기) · [시연 안내](docs/DEMO.md) · [주요 기능](#주요-기능) · [구현 상태](#구현-상태) · [문서](docs/README.md) · [이슈](https://github.com/slfkalstks/SpeechBridge/issues)
 
 </div>
 
@@ -14,7 +14,32 @@ Android · iOS · Kotlin Multiplatform · Mac Local AI
 
 SpeechBridge는 일상과 업무에서 나눈 대화를 번역·기록하고, 요약과 할 일로 연결하는 모바일 앱입니다. Android와 iOS가 같은 Compose UI와 데이터 규칙을 공유하며, AI 추론은 휴대전화 대신 Mac의 로컬 모델에서 처리합니다.
 
-> **현재는 개발 중인 시제품입니다.** Android/iOS 마이크 입력·자동 언어 감지·번역 음성 재생을 연결했습니다. 공통 테스트·빌드·합성 음성 서버 검증은 완료했으며 실제 휴대전화의 녹음·청취 검증은 남아 있습니다. 보조 키보드도 사용할 수 있습니다. 회원가입·로그인과 자동 서버 주소 적용을 구현했습니다. 서버는 현재 MacBook이며, 외부 HTTPS 주소와 스토어 배포는 아직 준비 전입니다.
+> **학교 과제용 시제품입니다.** 회원 인증·PostgreSQL 저장·로컬 AI·음성 입력/재생을 구현했고, 앱 직접 시연과 자동 회귀를 수행했습니다. 실기기·마이크·청취 검증은 보류 중입니다. 공개 운영 도메인과 스토어 서명은 아직 없으며, 출시 완료를 의미하지 않습니다. [최신 검증과 남은 항목](docs/PRE_RELEASE.md).
+
+## 실제 앱 화면
+
+발표 PPTX에 사용한 **실제 iOS 시뮬레이터 캡처**입니다. 가상 시연 데이터를 사용했으며, 번역 화면은 보조 키보드 입력으로 검증했습니다.
+
+<table>
+  <tr><th>대화</th><th>번역</th><th>기록</th></tr>
+  <tr>
+    <td><img src="presentation/assets/talk.png" width="220" alt="큰 마이크와 한국어·영어 선택이 있는 대화 화면" /></td>
+    <td><img src="presentation/assets/translation.png" width="220" alt="영어 원문과 실제 로컬 AI 한국어 번역" /></td>
+    <td><img src="presentation/assets/history.png" width="220" alt="일상·업무·폴더로 분류한 기록 목록" /></td>
+  </tr>
+  <tr><th>요약</th><th>근거 확인</th><th>할 일</th></tr>
+  <tr>
+    <td><img src="presentation/assets/summary.png" width="220" alt="대화 요약과 연결된 할 일" /></td>
+    <td><img src="presentation/assets/evidence.png" width="220" alt="AI가 추출한 할 일의 원문 근거 확인" /></td>
+    <td><img src="presentation/assets/tasks.png" width="220" alt="검토·진행·완료 상태를 관리하는 할 일 목록" /></td>
+  </tr>
+</table>
+
+## 발표 자료
+
+**[편집 가능한 PPTX 다운로드](presentation/SpeechBridge.pptx)** · [PDF 미리보기](presentation/SpeechBridge.pdf) · [발표자 노트](presentation/발표자-노트.md)
+
+10장, 약 6–8분 구성입니다. 문제·핵심 사용 흐름·실제 앱 화면·서버/DB 구조·검증 범위·라이브 시연을 담았습니다. 텍스트와 도형은 편집할 수 있고 캡처 이미지는 교체할 수 있습니다. [제작·재생성 안내](presentation/README.md).
 
 ## 주요 기능
 
@@ -63,9 +88,11 @@ AI 결과는 검토 가능한 초안입니다. 제안과 확정된 결정을 구
 | 같은 Wi-Fi의 Debug 앱 HTTPS 연결 | 구현·iOS 시뮬레이터 확인, Android APK 준비 |
 | 실제 휴대전화 녹음·청취·소음 환경 검증 | 미검증 — 설치·테스트 절차 제공 |
 | 회원가입·로그인·세션 복원, 빌드에 지정한 주소 자동 연결 | 구현 — 게스트 없음 |
-| 외부 HTTPS 주소·실기기 연결·스토어 배포 | 준비 전 |
+| 앱·웹 계정 삭제, 백업 보존·검증 복원·전환 | 구현·회귀 검증 |
+| Android Release AAB / iOS 기기용 Release archive | 빌드 검증; 테스트 주소·미서명, 제출용 아님 |
+| 외부 HTTPS 주소·스토어 배포 | 운영 주소·배포자 정보·서명 필요 |
 
-배포판은 빌드에 지정한 HTTPS 주소를 자동 사용하며, 사용자에게 Mac 주소나 공용 토큰을 요구하지 않습니다. 주소가 없는 Release 빌드는 서비스 준비 상태를 표시합니다. Debug 시뮬레이터는 Mac으로 자동 접속합니다. 자세한 실행·보안·한계는 [회원 서버 안내](docs/ACCOUNT_SERVER.md)를 참고하세요.
+배포판은 빌드에 지정한 HTTPS 주소를 자동 사용하며, 사용자에게 Mac 주소나 공용 토큰을 요구하지 않습니다. 주소가 없는 Release 빌드는 실패하도록 차단합니다. Debug 시뮬레이터는 Mac으로 자동 접속합니다. 자세한 실행·보안·한계는 [회원 서버 안내](docs/ACCOUNT_SERVER.md)를 참고하세요.
 
 기록은 로그인한 계정의 PostgreSQL을 원본으로 사용합니다. 로그아웃하면 화면에서 기록을 숨기며, 미전송 내용은 같은 계정으로 다시 로그인했을 때 이어서 전송합니다. 기존 기기 기록은 설정에서 명시적으로 가져온 뒤 서버 사본을 검증하고 기기 원본을 비웁니다.
 
@@ -146,7 +173,7 @@ npm --prefix server run start:accounts
 
 `setup:accounts`는 `.runtime/accounts-server.env`를 만들며 기존 파일을 보존합니다. 계정과 사용자 데이터의 PostgreSQL도 `.runtime/postgres`에만 설치합니다. 기존 SQLite 계정 이전은 [DB 안내](docs/POSTGRES.md)를 따릅니다. Debug 앱은 iOS 시뮬레이터에서 `http://localhost:8787`, Android 에뮬레이터에서 `http://10.0.2.2:8787`로 자동 접속합니다. **시작 화면 → 로그인 / 회원가입**에서 사용할 계정을 만드세요. 공용 토큰 입력은 필요 없습니다.
 
-실제 휴대전화에는 Mac에 연결되는 HTTPS 주소를 빌드에 지정해야 합니다. 현재 도메인과 외부 운영 주소는 없으며 실기기 테스트 준비를 진행 중입니다. [회원 서버·배포 주소 설정](docs/ACCOUNT_SERVER.md)을 참고하세요. 기존 공용 토큰을 사용하는 개발 도구와 음성 평가 경로는 별도로 유지합니다.
+실제 휴대전화에는 Mac에 연결되는 HTTPS 주소를 빌드에 지정해야 합니다. 현재 도메인과 외부 운영 주소는 없습니다. 시뮬레이터 시연은 Wi-Fi에 의존하지 않는 loopback HTTPS를 사용하며, 휴대전화 테스트 때는 LAN 주소로 다시 준비·빌드합니다. [회원 서버·배포 주소 설정](docs/ACCOUNT_SERVER.md)을 참고하세요. 기존 공용 토큰을 사용하는 개발 도구와 음성 평가 경로는 별도로 유지합니다.
 
 ## 테스트
 
@@ -182,6 +209,7 @@ SpeechBridge/
 │   └── iosMain/      # iOS 저장·플랫폼 코드
 ├── server/           # 무료 로컬 AI API와 평가 스크립트
 ├── docs/             # 제품 계약, 실행 절차, 조사·검증 기록
+├── presentation/     # 편집 가능한 PPTX, PDF, 실제 앱 화면
 ├── plans/            # 구현 계획과 진행 이력
 └── scripts/          # 디자인 검증 도구
 ```
@@ -193,7 +221,9 @@ SpeechBridge/
 - [ ] 실제 휴대전화 연결·저장·음성 성능 검증
 - [x] 회원가입·로그인·보안 저장 및 자동 서버 주소 적용
 - [ ] 외부 HTTPS 고정 주소 운영
-- [ ] 서버 운영·오프라인 대응·스토어 배포 준비
+- [x] 서버 운영·오프라인 복구·계정 삭제·백업/복원 도구
+- [x] Release 빌드 검사·발표 PPTX·실제 화면 문서
+- [ ] 공개 배포용 도메인·개인정보 운영 정보·스토어 서명
 - [ ] VoiceOver / TalkBack 실사용 검증 확대
 
 ## 기여

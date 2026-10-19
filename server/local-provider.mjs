@@ -149,7 +149,7 @@ export function createLocalProvider(env, {
   }
   async function generate(model, messages, signal, format) {
     const result = await call('/api/chat', {
-      model, messages, stream: false, keep_alive: '5m',
+      model, messages, stream: false, keep_alive: '30m',
       ...(format ? { format, think: false } : {}),
       options: { temperature: 0, seed: 42, num_ctx: format ? 8192 : 4096, num_predict: 1536 },
     }, signal);

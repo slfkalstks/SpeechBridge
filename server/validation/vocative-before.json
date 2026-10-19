@@ -1,0 +1,52 @@
+{
+  "createdAt": "2026-10-18T23:45:47.743Z",
+  "scope": "Five synthetic typed inputs, real local TranslateGemma. Targeted semantic predicates, not general accuracy or microphone validation.",
+  "providerSha256": "f510c0604c2d17b3141940c1f5271342173c1a6a1827aa98c08c4a4b3a2ba9e4",
+  "results": [
+    {
+      "from": "ko",
+      "to": "en",
+      "source": "유키씨 금요일까지 수정한 일정을 보내주세요.",
+      "translation": "Please send Yuki the revised schedule by Friday.",
+      "expected": "Yuki is addressed; no invented recipient; Friday retained.",
+      "passed": false,
+      "milliseconds": 1015
+    },
+    {
+      "from": "ko",
+      "to": "en",
+      "source": "유키 씨에게 금요일까지 수정한 일정을 보내주세요.",
+      "translation": "Please send the revised schedule to Ms. Yuki by Friday.",
+      "expected": "Yuki is recipient with no invented gender/honorific; Friday retained.",
+      "passed": false,
+      "milliseconds": 1061
+    },
+    {
+      "from": "ja",
+      "to": "ko",
+      "source": "ユキさん、金曜日までに修正した予定を送ってください。",
+      "translation": "유키 씨, 금요일까지 수정된 내용을 담은 계획서를 보내주세요.",
+      "expected": "Yuki is addressed; Friday retained.",
+      "passed": true,
+      "milliseconds": 1312
+    },
+    {
+      "from": "en",
+      "to": "ko",
+      "source": "Yuki, please send the updated schedule by Friday.",
+      "translation": "유키 씨, 업데이트된 일정은 금요일까지 보내주세요.",
+      "expected": "Yuki is addressed; Friday retained.",
+      "passed": true,
+      "milliseconds": 1172
+    },
+    {
+      "from": "ko",
+      "to": "en",
+      "source": "회의는 금요일이 아니라 목요일 오후 2시입니다.",
+      "translation": "The meeting is not on Friday; it is on Thursday at 2:00 PM.",
+      "expected": "Thursday 14:00, not Friday; negation and time retained.",
+      "passed": true,
+      "milliseconds": 1334
+    }
+  ]
+}
