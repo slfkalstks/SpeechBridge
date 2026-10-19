@@ -107,43 +107,45 @@ function link(s, x1, y1, x2, y2, both = false) {
     s.addShape(deck.ShapeType.line, { x: Math.min(x1,x2), y: Math.min(y1,y2), w: Math.abs(x2-x1), h: Math.abs(y2-y1),
         flipV: y2 < y1, line: { color: C.blue, width: 1.6, beginArrowType: both ? 'triangle' : undefined, endArrowType: 'triangle' } });
 }
-s = slide('시스템 아키텍처', '모바일 앱 ↔ MacBook 서버: Node.js HTTP API ↔ Ollama API / NeMo-Speech.cpp / Python·MLX / PostgreSQL. 회원 인증·음성 인식·번역·음성 합성·할 일 추출·기록 동기화 API.');
-box(s, 3.25, 1.65, 9.45, 5.25, C.pale);
-text(s, 'MacBook 서버', 3.57, 1.86, 8.7, .4, 25, C.blue, true);
-box(s, .6, 3.1, 2.05, 1.9);
-s.addShape(deck.ShapeType.roundRect, {x:1.32,y:3.36,w:.58,h:.8,rectRadius:.08,
-    line:{color:C.blue,width:2},fill:{color:C.white}});
-s.addShape(deck.ShapeType.line, {x:1.49,y:4.04,w:.24,h:0,line:{color:C.blue,width:2}});
-text(s, '모바일 앱', .85, 4.38, 1.55, .4, 24, C.blue, true);
-box(s, 3.64, 2.52, 4.12, 3.99);
-logo(s, 'nodejs', 3.94, 2.81, 1.34, .61);
-text(s, 'API 서버', 5.58, 2.85, 1.83, .4, 25, C.blue, true);
-text(s, 'HTTP API', 3.97, 3.65, 3.5, .36, 23, C.ink, true);
-[
-    ['회원 인증 API', 4.35],
-    ['음성 인식 API', 4.69],
-    ['번역 API', 5.03],
-    ['음성 합성 API', 5.37],
-    ['할 일 추출 API', 5.71],
-    ['기록 동기화 API', 6.05],
-].forEach(([name, y]) => text(s, name, 3.97, y, 3.5, .26, 19));
-box(s, 9.24, 2.52, 3.07, 1.08);
-text(s, 'Ollama API', 9.49, 2.87, 2.58, .39, 25, C.blue, true);
-box(s, 9.24, 3.97, 3.07, 1.08);
-text(s, 'NeMo-Speech.cpp', 9.49, 4.14, 2.58, .3, 20, C.blue, true);
-text(s, 'Python · MLX', 9.49, 4.57, 2.58, .29, 20);
-box(s, 9.24, 5.42, 3.07, 1.09);
-logo(s, 'postgresql', 9.44, 5.59, .75, .75);
-text(s, 'PostgreSQL', 10.39, 5.77, 1.72, .37, 21, C.ink, true);
-link(s, 2.69, 4.04, 3.6, 4.04, true);
-text(s, 'HTTPS', 2.7, 3.62, .89, .25, 13, C.blue);
-// Feature/API names stay in the server; arrows carry only data labels.
-link(s, 7.81, 3.06, 9.19, 3.06, true);
-text(s, '텍스트 · 결과', 7.87, 2.67, 1.25, .25, 12, C.blue);
-link(s, 7.81, 4.51, 9.19, 4.51, true);
-text(s, '음성 · 텍스트', 7.87, 4.12, 1.25, .25, 12, C.blue);
-link(s, 7.81, 5.96, 9.19, 5.96, true);
-text(s, '계정 · 기록', 7.87, 5.57, 1.25, .25, 12, C.blue);
+// Match the supplied HomeTwin page 6: two input lanes, a central server,
+// and two connected components. Keep only names and short function labels.
+function centerText(s, value, x, y, w, h, size = 24, color = C.ink, bold = false) {
+    s.addText(value, {x, y, w, h, fontSize:size, color, bold, margin:0, valign:'mid', align:'center', fontFace:'Apple SD Gothic Neo'});
+}
+s = slide('시스템 아키텍처', '모바일 앱 · HTTP API · SpeechBridge MacBook 서버(Node.js) · 로컬 AI · PostgreSQL.');
+const laneTop = 2.0, laneBottom = 4.45, laneH = 1.95;
+const inputX = .65, inputW = 2.45, apiX = 3.63, apiW = 2.6;
+const serverX = 6.91, serverW = 2.66, outputX = 10.23, outputW = 2.46;
+box(s, inputX, laneTop, inputW, laneH);
+box(s, inputX, laneBottom, inputW, laneH);
+centerText(s, '모바일 앱', inputX + .23, 2.48, 2.0, .5, 28, C.blue, true);
+centerText(s, '음성 · 텍스트', inputX + .23, 3.16, 2.0, .4, 23, C.ink);
+centerText(s, '기록 · 할 일', inputX + .23, 4.94, 2.0, .5, 28, C.blue, true);
+centerText(s, '조회 · 수정', inputX + .23, 5.62, 2.0, .4, 23, C.ink);
+box(s, apiX, laneTop, apiW, laneH, C.pale);
+box(s, apiX, laneBottom, apiW, laneH, C.pale);
+centerText(s, 'HTTP API', apiX + .23, 2.32, 2.14, .48, 28, C.blue, true);
+centerText(s, '음성 인식 · 번역\n음성 합성', apiX + .23, 3.03, 2.14, .66, 21);
+centerText(s, 'HTTP API', apiX + .23, 4.77, 2.14, .48, 28, C.blue, true);
+centerText(s, '회원 인증 · 동기화\n할 일 추출', apiX + .23, 5.48, 2.14, .66, 21);
+box(s, serverX, laneTop, serverW, 4.4, C.blue);
+centerText(s, 'SpeechBridge', serverX + .21, 2.49, 2.24, .48, 22, C.white, true);
+centerText(s, '서버', serverX + .21, 3.13, 2.24, .59, 36, C.white, true);
+centerText(s, 'MacBook', serverX + .21, 4.06, 2.24, .47, 28, C.white);
+box(s, serverX + .26, 4.98, 2.14, .96);
+logo(s, 'nodejs', serverX + .49, 5.18, 1.68, .56);
+centerText(s, 'MacBook 내부', outputX + .1, 1.55, 2.26, .28, 16, C.muted);
+box(s, outputX, laneTop, outputW, laneH);
+centerText(s, '로컬 AI', outputX + .21, 2.23, 2.04, .4, 26, C.blue, true);
+centerText(s, 'Ollama API\nNeMo-Speech.cpp\nPython · MLX', outputX + .21, 2.94, 2.04, .78, 18);
+box(s, outputX, laneBottom, outputW, laneH);
+logo(s, 'postgresql', outputX + .68, 4.74, 1.1, 1.1);
+centerText(s, 'PostgreSQL', outputX + .21, 5.93, 2.04, .35, 23, C.blue, true);
+for (const cy of [2.98, 5.43]) {
+    link(s, inputX + inputW + .03, cy, apiX - .03, cy, true);
+    link(s, apiX + apiW + .03, cy, serverX - .03, cy, true);
+    link(s, serverX + serverW + .03, cy, outputX - .03, cy, true);
+}
 
 s = slide('직접 사용해 보기', 'Demo.command를 실행해 시연을 준비합니다. 보조 키보드로 “please prepare demo slides by friday”를 입력해 번역을 보여주고 대화를 종료해 요약을 확인한 뒤 할 일 근거를 검토합니다. 화면에 나온 내용은 시연용 가상 데이터입니다. 실제 휴대전화·마이크·청취 검증은 보류 중이라 이번에는 텍스트를 입력해 시연합니다.');
 text(s, '“please prepare demo slides by friday”', .8, 2.1, 11.7, .7, 30, C.blue, true);
