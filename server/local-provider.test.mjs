@@ -143,3 +143,26 @@ test('organization never files a conversation under an unrelated existing projec
   const value = await createProviders(env, fixture({ chat: result })).organize({ ...input, folders: [{ id: 'apollo', name: '아폴로 프로젝트' }] });
   assert.equal(value.folderId, null);
 });
+
+test('translation remains resident across idle time while background model expires', async () => {
+  const f = fixture(); const p = createProviders(env, f);
+  await p.translate(trans);
+  assert.equal(f.calls.find(c => c.url.endsWith('/api/chat')).body.keep_alive, -1);
+  const background = fixture({ chat: { items: [] } });
+  await createProviders(env, background).extract(input);
+  assert.equal(background.calls.find(c => c.url.endsWith('/api/chat')).body.keep_alive, '30m');
+});
+
+test('startup warmup verifies local model and loads the exact translation context without user content', async () => {
+  const f = fixture(); const p = createProviders(env, f);
+  await p.warmup();
+  const call = f.calls.find(c => c.url.endsWith('/api/generate'));
+  assert.equal(call.body.model, 'translategemma:12b');
+  assert.equal(call.body.keep_alive, -1);
+  assert.equal(call.body.options.num_ctx, 4096);
+  assert.equal(call.body.prompt, undefined);
+  assert.ok(f.calls.findIndex(c=>c.url.endsWith('/api/show')) < f.calls.indexOf(call));
+  const remote = fixture({ show: { remote_host: 'https://ollama.com', remote_model: 'fake' } });
+  await assert.rejects(createProviders(env, remote).warmup(), {code:'local_model_required'});
+  assert.ok(!remote.calls.some(c=>c.url.endsWith('/api/generate')));
+});
