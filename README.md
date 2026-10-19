@@ -39,7 +39,7 @@ SpeechBridge는 일상과 업무에서 나눈 대화를 번역·기록하고, �
 
 **[편집 가능한 PPTX 다운로드](presentation/SpeechBridge.pptx)** · [PDF 미리보기](presentation/SpeechBridge.pdf) · [발표자 노트](presentation/발표자-노트.md)
 
-7장, 약 5–7분 구성입니다. 핵심 기능·실제 앱 화면·AI 모델별 역할·로고와 주요 API 경로를 담은 시스템 구조도·라이브 시연을 담았습니다. 텍스트와 도형은 편집할 수 있고 캡처 이미지는 교체할 수 있습니다. [제작·재생성 안내](presentation/README.md).
+7장, 약 5–7분 구성입니다. 핵심 기능·실제 앱 화면·AI 모델별 역할·서버·기능별 API·데이터 흐름을 담은 시스템 구조도·라이브 시연을 담았습니다. 텍스트와 도형은 편집할 수 있고 캡처 이미지는 교체할 수 있습니다. [제작·재생성 안내](presentation/README.md).
 
 ## 주요 기능
 

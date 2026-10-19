@@ -107,51 +107,43 @@ function link(s, x1, y1, x2, y2, both = false) {
     s.addShape(deck.ShapeType.line, { x: Math.min(x1,x2), y: Math.min(y1,y2), w: Math.abs(x2-x1), h: Math.abs(y2-y1),
         flipV: y2 < y1, line: { color: C.blue, width: 1.6, beginArrowType: both ? 'triangle' : undefined, endArrowType: 'triangle' } });
 }
-s = slide('시스템 아키텍처 · API 흐름', 'Kotlin Multiplatform · Compose Multiplatform · Ktor / HTTPS · Node.js / Ollama · NeMo-Speech.cpp · Python · MLX / PostgreSQL');
-box(s, 3.65, 1.65, 9.05, 5.25, C.pale);
-text(s, 'MacBook', 3.95, 1.85, 8.2, .36, 21, C.blue, true);
-box(s, .6, 2.5, 2.55, 3.61);
-logo(s, 'kotlin-multiplatform', .8, 2.84, 2.15, .46);
-text(s, 'Android · iOS', .86, 3.73, 2.1, .38, 23, C.blue, true);
-text(s, 'Compose Multiplatform', .86, 4.34, 2.1, .4, 15);
-text(s, 'Ktor Client', .86, 4.92, 2.1, .35, 20);
-text(s, 'Keychain · Keystore', .86, 5.57, 2.1, .28, 15, C.muted);
-box(s, 4.06, 2.37, 4.36, 4.23);
-logo(s, 'nodejs', 4.35, 2.57, 1.32, .56);
-text(s, 'HTTP API', 5.91, 2.67, 2.23, .4, 23, C.blue, true);
-text(s, 'node:http · node:https', 4.35, 3.29, 3.8, .28, 17, C.muted);
+s = slide('시스템 아키텍처', '모바일 앱 ↔ MacBook 서버: Node.js HTTP API ↔ Ollama API / NeMo-Speech.cpp / Python·MLX / PostgreSQL. 회원 인증·음성 인식·번역·음성 합성·할 일 추출·기록 동기화 API.');
+box(s, 3.25, 1.65, 9.45, 5.25, C.pale);
+text(s, 'MacBook 서버', 3.57, 1.86, 8.7, .4, 25, C.blue, true);
+box(s, .6, 3.1, 2.05, 1.9);
+s.addShape(deck.ShapeType.roundRect, {x:1.32,y:3.36,w:.58,h:.8,rectRadius:.08,
+    line:{color:C.blue,width:2},fill:{color:C.white}});
+s.addShape(deck.ShapeType.line, {x:1.49,y:4.04,w:.24,h:0,line:{color:C.blue,width:2}});
+text(s, '모바일 앱', .85, 4.38, 1.55, .4, 24, C.blue, true);
+box(s, 3.64, 2.52, 4.12, 3.99);
+logo(s, 'nodejs', 3.94, 2.81, 1.34, .61);
+text(s, 'API 서버', 5.58, 2.85, 1.83, .4, 25, C.blue, true);
+text(s, 'HTTP API', 3.97, 3.65, 3.5, .36, 23, C.ink, true);
 [
-    ['POST', '/auth/register · /auth/login', 3.91],
-    ['POST', '/auth/logout · /auth/delete', 4.21],
-    ['GET', '/auth/me', 4.51],
-    ['POST', '/speech/transcribe', 4.93],
-    ['POST', '/speech/synthesize', 5.23],
-    ['POST', '/translate · /extract', 5.65],
-    ['POST', '/data/snapshot · /data/mutate', 5.95],
-    ['POST', '/data/changes', 6.25],
-].forEach(([method, route, y]) => {
-    text(s, method, 4.35, y, .53, .22, 12, C.blue, true);
-    text(s, route, 4.98, y, 3.2, .22, 14, C.ink);
-});
-box(s, 9.25, 2.37, 3.08, 1.29);
-text(s, 'Ollama', 9.51, 2.55, 2.56, .35, 24, C.blue, true);
-text(s, 'POST /api/chat', 9.51, 3.02, 2.56, .3, 20);
-box(s, 9.25, 3.96, 3.08, 1.18);
-text(s, 'NeMo-Speech.cpp', 9.51, 4.17, 2.56, .31, 19, C.blue, true);
-text(s, 'Python · MLX', 9.51, 4.62, 2.56, .29, 20);
-box(s, 9.25, 5.44, 3.08, 1.16);
-logo(s, 'postgresql', 9.48, 5.62, .73, .73);
-text(s, 'PostgreSQL', 10.41, 5.72, 1.75, .35, 21, C.ink, true);
-text(s, 'pg · SQL · RLS', 10.41, 6.17, 1.75, .22, 13, C.muted);
-link(s, 3.16, 4.53, 4.02, 4.53, true);
-text(s, 'HTTPS', 3.18, 3.87, .83, .22, 12, C.blue);
-text(s, 'Bearer', 3.18, 4.17, .83, .22, 12, C.muted);
-link(s, 8.46, 3.03, 9.21, 3.03, true);
-text(s, 'HTTP', 8.47, 2.68, .74, .22, 12, C.blue);
-link(s, 8.46, 4.55, 9.21, 4.55, true);
-text(s, '프로세스', 8.47, 4.18, .74, .22, 11, C.blue);
-link(s, 8.46, 6.03, 9.21, 6.03, true);
-text(s, 'SQL', 8.47, 5.68, .74, .22, 12, C.blue);
+    ['회원 인증 API', 4.35],
+    ['음성 인식 API', 4.69],
+    ['번역 API', 5.03],
+    ['음성 합성 API', 5.37],
+    ['할 일 추출 API', 5.71],
+    ['기록 동기화 API', 6.05],
+].forEach(([name, y]) => text(s, name, 3.97, y, 3.5, .26, 19));
+box(s, 9.24, 2.52, 3.07, 1.08);
+text(s, 'Ollama API', 9.49, 2.87, 2.58, .39, 25, C.blue, true);
+box(s, 9.24, 3.97, 3.07, 1.08);
+text(s, 'NeMo-Speech.cpp', 9.49, 4.14, 2.58, .3, 20, C.blue, true);
+text(s, 'Python · MLX', 9.49, 4.57, 2.58, .29, 20);
+box(s, 9.24, 5.42, 3.07, 1.09);
+logo(s, 'postgresql', 9.44, 5.59, .75, .75);
+text(s, 'PostgreSQL', 10.39, 5.77, 1.72, .37, 21, C.ink, true);
+link(s, 2.69, 4.04, 3.6, 4.04, true);
+text(s, 'HTTPS', 2.7, 3.62, .89, .25, 13, C.blue);
+// Feature/API names stay in the server; arrows carry only data labels.
+link(s, 7.81, 3.06, 9.19, 3.06, true);
+text(s, '텍스트 · 결과', 7.87, 2.67, 1.25, .25, 12, C.blue);
+link(s, 7.81, 4.51, 9.19, 4.51, true);
+text(s, '음성 · 텍스트', 7.87, 4.12, 1.25, .25, 12, C.blue);
+link(s, 7.81, 5.96, 9.19, 5.96, true);
+text(s, '계정 · 기록', 7.87, 5.57, 1.25, .25, 12, C.blue);
 
 s = slide('직접 사용해 보기', 'Demo.command를 실행해 시연을 준비합니다. 보조 키보드로 “please prepare demo slides by friday”를 입력해 번역을 보여주고 대화를 종료해 요약을 확인한 뒤 할 일 근거를 검토합니다. 화면에 나온 내용은 시연용 가상 데이터입니다. 실제 휴대전화·마이크·청취 검증은 보류 중이라 이번에는 텍스트를 입력해 시연합니다.');
 text(s, '“please prepare demo slides by friday”', .8, 2.1, 11.7, .7, 30, C.blue, true);

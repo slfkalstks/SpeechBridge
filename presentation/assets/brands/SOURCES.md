@@ -19,4 +19,4 @@
 - `server/db/`와 `server/package.json`: PostgreSQL, `pg`, RLS.
 - `shared/src/iosMain/`와 `shared/src/androidMain/`: Keychain / Android Keystore.
 
-슬라이드는 앱에서 사용하는 주요 경로를 표시한다. 운영 점검 경로나 서버 내부 작업 전용 경로 전체를 나열한 API 명세서는 아니다.
+슬라이드는 기능별 API 이름과 데이터 흐름을 표시하며 실제 주소는 생략한다. Kotlin 로고는 이전 시안용으로 보관하며 현재 슬라이드에는 사용하지 않는다.
