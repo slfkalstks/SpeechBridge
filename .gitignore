@@ -47,3 +47,6 @@ docs/validation/*.png
 
 # PowerPoint creates a local lock file while a presentation is open
 presentation/~$*.pptx
+
+# Local editorial review artifacts
+_workspace/
