@@ -28,6 +28,7 @@ function validateConversation(c, key) {
   for (const u of c.utterances) {
     if (!object(u) || !id(u.id) || utterances.has(u.id) || !language(u.language) || !text(u.originalText) || !text(u.text) || !integer(u.revision, 1) ||
         !nullableText(u.speaker, 200) || !nullableText(u.translation) ||
+        (u.audioDurationMs != null && (!integer(u.audioDurationMs, 1) || u.audioDurationMs > 30000)) ||
         (u.translation == null ? u.translationRevision != null : u.translationRevision !== u.revision)) throw bad();
     utterances.set(u.id, u);
   }
@@ -75,6 +76,7 @@ export function createUserData(db) {
       for (const u of old) {
         const next = c.utterances.find(v => v.id === u.id);
         if (!next || next.originalText !== u.original_text || next.revision < u.current_revision ||
+            (u.audio_duration_ms != null && next.audioDurationMs != null && u.audio_duration_ms !== next.audioDurationMs) ||
             next.revision === u.current_revision && next.text !== u.current_text) throw conflict();
       }
     }
@@ -86,9 +88,10 @@ export function createUserData(db) {
         organization_sources=excluded.organization_sources,version=excluded.version`,
     [user,c.id,c.title,c.summary ?? null,c.createdAt,c.createdAt,c.ended,c.first,c.second,c.translate,c.category ?? null,c.workType ?? null,c.folderId ?? null,c.metadataRevision,c.organized,c.organizationAttempted,c.organizationSources,rev]);
     for (const [position, u] of c.utterances.entries()) {
-      await client.query(`INSERT INTO utterances(user_id,conversation_id,id,position,language,original_text,current_text,current_revision,legacy_speaker) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
-        ON CONFLICT(user_id,conversation_id,id) DO UPDATE SET current_text=excluded.current_text,current_revision=excluded.current_revision,language=excluded.language`,
-      [user,c.id,u.id,position,u.language,u.originalText,u.text,u.revision,u.speaker ?? '']);
+      await client.query(`INSERT INTO utterances(user_id,conversation_id,id,position,language,original_text,current_text,current_revision,legacy_speaker,audio_duration_ms) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        ON CONFLICT(user_id,conversation_id,id) DO UPDATE SET current_text=excluded.current_text,current_revision=excluded.current_revision,language=excluded.language,
+          audio_duration_ms=COALESCE(utterances.audio_duration_ms,excluded.audio_duration_ms)`,
+      [user,c.id,u.id,position,u.language,u.originalText,u.text,u.revision,u.speaker ?? '',u.audioDurationMs ?? null]);
       for (const [r, txt] of [[1,u.originalText],[u.revision,u.text]]) {
         const result = await client.query(`INSERT INTO utterance_revisions(user_id,conversation_id,utterance_id,revision,text) VALUES($1,$2,$3,$4,$5)
           ON CONFLICT(user_id,conversation_id,utterance_id,revision) DO NOTHING RETURNING revision`, [user,c.id,u.id,r,txt]);
@@ -173,7 +176,7 @@ export function createUserData(db) {
           metadataRevision:c.metadata_revision,organized:c.organized,organizationAttempted:c.organization_attempted,organizationSources:c.organization_sources,
           utterances: utterances.filter(u=>u.conversation_id===c.id).map(u=>{
             const tr = translations.find(tr=>tr.conversation_id===c.id && tr.utterance_id===u.id && tr.revision===u.current_revision && tr.target_language===(u.language===c.first_language?c.second_language:c.first_language));
-            return {id:u.id,speaker:u.legacy_speaker,language:u.language,originalText:u.original_text,text:u.current_text,revision:u.current_revision,translation:tr?.text ?? null,translationRevision:tr?.revision ?? null};
+            return {...(u.audio_duration_ms != null ? {audioDurationMs:u.audio_duration_ms} : {}),id:u.id,speaker:u.legacy_speaker,language:u.language,originalText:u.original_text,text:u.current_text,revision:u.current_revision,translation:tr?.text ?? null,translationRevision:tr?.revision ?? null};
           }),
           items: items.filter(i=>i.conversation_id===c.id).map(i=>({id:i.id,sourceId:i.source_id,sourceRevision:i.source_revision,kind:i.kind,text:i.text,owner:i.owner_text,dueText:i.due_text,reviewed:i.reviewed,status:i.status,origin:i.origin,evidenceQuote:i.evidence_quote,contextRevisions:i.context_revisions,omittedByLatestExtraction:i.omitted_by_latest_extraction}))
         })) } };

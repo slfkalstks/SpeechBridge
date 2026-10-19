@@ -171,3 +171,26 @@ test('automatic TTS preference persists in PostgreSQL and old clients preserve i
   assert.equal((await data.snapshot(user.id,'test-device')).archive.autoReadTranslation,false);
   await assert.rejects(put('settings','settings',{appearance:'DARK',autoReadTranslation:'false'},'2'),{code:'invalid_data'});
 });
+
+
+test('measured audio duration survives sync and old-client edits without fabricating legacy values', async t => {
+  const {data,user,put}=await fixture(t);
+  const c=conversation(); c.utterances[0].audioDurationMs=5250;
+  await put('conversation','c1',c);
+  assert.equal((await data.snapshot(user.id,'second-device')).archive.conversations[0].utterances[0].audioDurationMs,5250);
+  const older=conversation(); older.title='제목 수정';
+  await put('conversation','c1',older,'1');
+  assert.equal((await data.snapshot(user.id,'test-device')).archive.conversations[0].utterances[0].audioDurationMs,5250);
+  c.utterances[0].audioDurationMs=6000;
+  await assert.rejects(put('conversation','c1',c,'2'),{status:409});
+  const legacy={...conversation(),id:'legacy'};
+  await put('conversation','legacy',legacy);
+  assert.equal((await data.snapshot(user.id,'test-device')).archive.conversations.find(c=>c.id==='legacy').utterances[0].audioDurationMs,undefined);
+});
+test('invalid audio durations cannot enter the database', async t => {
+  const {put}=await fixture(t);
+  for(const duration of [-1,0,1.5,30001,'5000']) {
+    const c=conversation(); c.utterances[0].audioDurationMs=duration;
+    await assert.rejects(put('conversation','c1',c),{status:400});
+  }
+});

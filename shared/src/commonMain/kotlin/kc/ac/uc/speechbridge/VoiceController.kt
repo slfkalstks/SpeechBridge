@@ -2,12 +2,14 @@ package kc.ac.uc.speechbridge
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.serialization.Serializable
 
 interface AudioDevice {
     suspend fun requestPermission(): Boolean
     /** Mono PCM16/16kHz WAV, at most 30 seconds. No permanent recording file. */
     suspend fun record(progress: (Float, Int) -> Unit): ByteArray
+    suspend fun recordWithPreview(progress: (Float, Int) -> Unit, preview: (ByteArray) -> Unit): ByteArray = record(progress)
     fun finishRecording()
     suspend fun play(wav: ByteArray)
     fun cancel()
@@ -20,7 +22,7 @@ class UnavailableAudioDevice : AudioDevice {
     override suspend fun play(wav: ByteArray) { error("No audio device") }
     override fun cancel() {}
 }
-@Serializable data class Transcription(val text: String, val language: String)
+@Serializable data class Transcription(val text: String, val language: String, val audioDurationMs: Int? = null)
 interface VoiceApi {
     suspend fun transcribe(wav: ByteArray, language: String = "auto"): Transcription
     suspend fun synthesize(text: String, language: Language): ByteArray
@@ -28,15 +30,26 @@ interface VoiceApi {
 }
 enum class VoicePhase { IDLE, PERMISSION, RECORDING, TRANSCRIBING, SYNTHESIZING, PLAYING, ERROR }
 data class VoiceState(val phase: VoicePhase = VoicePhase.IDLE, val level: Float = 0f, val seconds: Int = 0,
+    val previewLanguage: Language? = null, val previewText: String? = null, val previewTranslation: String? = null, val previewMessage: String? = null,
     val playingKey: String? = null, val errorCode: String? = null, val message: String? = null)
 
 /** Owns one foreground capture or playback. Generation guards include late permission callbacks. */
 class VoiceController(private val scope: CoroutineScope, private var device: AudioDevice, private val api: VoiceApi,
-    private val onTranscript: (Transcription) -> Unit) {
+    private val onTranscript: (Transcription) -> Unit,
+    private val translatePreview: suspend (Transcription) -> String? = { null }) {
     private val mutable = MutableStateFlow(VoiceState())
     val state = mutable.asStateFlow()
     private var generation = 0L
     private var job: Job? = null
+    private var previewRevision = 0L
+    private var previewQueue: Channel<ByteArray>? = null
+    private var latestPreview: ByteArray? = null
+    fun refreshPreviewTranslation() {
+        previewRevision++
+        if (state.value.phase != VoicePhase.RECORDING) return
+        mutable.update { it.copy(previewTranslation = null, previewMessage = null) }
+        latestPreview?.let { previewQueue?.trySend(it) }
+    }
     private fun begin(initial: VoiceState, operation: suspend (Long) -> Unit) {
         val previous = job
         cancel()
@@ -64,22 +77,58 @@ class VoiceController(private val scope: CoroutineScope, private var device: Aud
         if (epoch != generation) return@begin
         if (!granted) throw BridgeRequestException("microphone_denied", "마이크 권한이 필요합니다. 기기 설정에서 SpeechBridge의 마이크를 허용해 주세요.")
         mutable.value = VoiceState(VoicePhase.RECORDING)
-        val wav = withTimeout(32_000) {
-            device.record { level, seconds -> scope.launch {
-                if (epoch == generation && state.value.phase == VoicePhase.RECORDING)
-                    mutable.update { it.copy(level = level.coerceIn(0f,1f), seconds = seconds.coerceIn(0,30)) }
-            } }
+        // One request at a time; queued snapshots collapse to the newest audio.
+        val snapshots = Channel<ByteArray>(Channel.CONFLATED)
+        previewQueue = snapshots
+        val previewJob = scope.launch {
+            for (chunk in snapshots) {
+                try {
+                    val partial = withTimeout(8_000) { api.transcribe(chunk, language) }
+                    ensureActive()
+                    if (epoch != generation || state.value.phase != VoicePhase.RECORDING) break
+                    if (partial.text.isBlank()) continue
+                    val detected = Language.entries.first { it.code == partial.language }
+                    if (partial.text == state.value.previewText && state.value.previewTranslation != null) continue
+                    mutable.update { it.copy(previewLanguage = detected, previewText = partial.text, previewTranslation = null, previewMessage = null) }
+                    val version = previewRevision
+                    val translated = withTimeout(8_000) { translatePreview(partial) }
+                    ensureActive()
+                    if (epoch == generation && version == previewRevision && state.value.phase == VoicePhase.RECORDING)
+                        mutable.update { it.copy(previewTranslation = translated) }
+                } catch (e: TimeoutCancellationException) {
+                    if (epoch == generation) mutable.update { it.copy(previewMessage = "미리보기가 지연되고 있어요") }
+                } catch (e: CancellationException) { throw e }
+                catch (_: Exception) {
+                    if (epoch == generation) mutable.update { it.copy(previewMessage = "완료 후 다시 처리합니다") }
+                }
+            }
+        }
+        val wav = try {
+            withTimeout(32_000) {
+                device.recordWithPreview({ level, seconds -> scope.launch {
+                    if (epoch == generation && state.value.phase == VoicePhase.RECORDING)
+                        mutable.update { it.copy(level = level.coerceIn(0f,1f), seconds = seconds.coerceIn(0,30)) }
+                } }, { chunk -> scope.launch {
+                    if (epoch == generation && state.value.phase == VoicePhase.RECORDING) {
+                        latestPreview = chunk; snapshots.trySend(chunk)
+                    }
+                } })
+            }
+        } finally {
+            snapshots.close()
+            previewJob.cancel()
+            withContext(NonCancellable) { previewJob.join() }
         }
         currentCoroutineContext().ensureActive()
         if (epoch != generation) return@begin
-        PcmWave.decode(wav,16000)
-        mutable.value = VoiceState(VoicePhase.TRANSCRIBING)
+        val durationMs = (PcmWave.decode(wav,16000).samples.size + 15) / 16
+        mutable.update { it.copy(phase = VoicePhase.TRANSCRIBING, seconds = (durationMs + 999) / 1000, previewMessage = null) }
         val result = api.transcribe(wav, language)
         currentCoroutineContext().ensureActive()
         require(result.text.isNotBlank() && result.text.length <= 16000 && Language.entries.any { it.code == result.language })
         if (epoch == generation) {
             mutable.value = VoiceState()
-            onTranscript(result)
+            onTranscript(result.copy(audioDurationMs = durationMs))
         }
     }
     fun finish() { if(state.value.phase == VoicePhase.RECORDING) device.finishRecording() }
@@ -99,7 +148,7 @@ class VoiceController(private val scope: CoroutineScope, private var device: Aud
             if(epoch == generation) mutable.value = VoiceState()
         }
     }
-    fun cancel() { generation++; job?.cancel(); device.cancel(); mutable.value = VoiceState() }
+    fun cancel() { generation++; previewRevision++; previewQueue = null; latestPreview = null; job?.cancel(); device.cancel(); mutable.value = VoiceState() }
     fun attachDevice(next: AudioDevice) {
         if(device === next) return
         cancel(); device.close(); device = next

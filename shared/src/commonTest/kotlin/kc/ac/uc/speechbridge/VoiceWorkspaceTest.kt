@@ -43,6 +43,37 @@ class VoiceWorkspaceTest {
             assertEquals("en", api.inputs.single().from); assertEquals("ko", api.inputs.single().to)
             assertEquals("아직 보내지 않은 입력", vm.state.value.inputDrafts[c.id]?.text)
             assertEquals("Hello", ArchiveCodec.decode(store.read()!!).single().utterances.single().text)
+            assertEquals(100, c.utterances.single().audioDurationMs)
+            assertEquals(100L, ArchiveCodec.decode(store.read()!!).single().audioDurationMs)
+        } finally { owner.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun japanesePreviewChangesSourceKeepsEnglishTargetAndSavesOnlyOnFinish() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val owner = ViewModelStore(); val voice = Voice(); val api = Api()
+        val capture = CompletableDeferred<ByteArray>(); var sendPreview: (ByteArray) -> Unit = {}
+        val device = object : AudioDevice by Device() {
+            override suspend fun recordWithPreview(progress: (Float, Int) -> Unit, preview: (ByteArray) -> Unit): ByteArray {
+                sendPreview = preview; return capture.await()
+            }
+            override fun finishRecording() { capture.complete(PcmWave.encode(ShortArray(1600) { 1000 }, 16000)) }
+        }
+        val vm = BridgeViewModel(MemorySessionStore(), api, audioDevice = device, voiceApi = voice)
+        owner.put("vm", vm)
+        try {
+            runCurrent(); voice.result.complete(Transcription("こんにちは", "ja"))
+            vm.startVoice(); runCurrent(); sendPreview(PcmWave.encode(ShortArray(1600) { 1000 }, 16000)); runCurrent()
+            assertEquals(Language.JA, vm.voice.state.value.previewLanguage)
+            assertEquals("번역 결과", vm.voice.state.value.previewTranslation)
+            assertEquals("ja", api.inputs.single().from); assertEquals("en", api.inputs.single().to)
+            assertTrue(vm.state.value.conversations.isEmpty())
+            vm.updateStartDraft(StartDraft(first = Language.JA, second = Language.KO)); runCurrent()
+            assertEquals(VoicePhase.RECORDING, vm.voice.state.value.phase)
+            assertEquals("こんにちは", vm.voice.state.value.previewText)
+            assertEquals("ja", api.inputs.last().from); assertEquals("ko", api.inputs.last().to)
+            vm.voice.finish(); runCurrent()
+            val c = vm.state.value.selected!!
+            assertEquals(Language.JA, c.first); assertEquals(Language.KO, c.second)
+            assertEquals(1, c.utterances.size); assertEquals(100, c.utterances.single().audioDurationMs)
         } finally { owner.clear(); Dispatchers.resetMain() }
     }
     @Test fun leavingConversationDiscardsLateSpeechWithoutCreatingARecord() = runTest {

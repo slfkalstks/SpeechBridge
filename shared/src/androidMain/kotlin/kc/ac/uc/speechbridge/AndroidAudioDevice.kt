@@ -25,8 +25,9 @@ class AndroidAudioDevice(context: Context, private val permission: suspend () ->
             throw BridgeRequestException("audio_busy", "다른 앱에서 소리를 사용 중입니다. 잠시 후 다시 시도해 주세요.")
         return request
     }
+    override suspend fun record(progress: (Float, Int) -> Unit): ByteArray = recordWithPreview(progress, {})
     @SuppressLint("MissingPermission")
-    override suspend fun record(progress: (Float, Int) -> Unit): ByteArray {
+    override suspend fun recordWithPreview(progress: (Float, Int) -> Unit, preview: (ByteArray) -> Unit): ByteArray {
         finish.set(false); cancelled.set(false)
         return withContext(Dispatchers.IO) {
             val audioFocus = focus()
@@ -41,6 +42,7 @@ class AndroidAudioDevice(context: Context, private val permission: suspend () ->
                 input.startRecording()
                 val all = ShortArray(16000*30); val buffer = ShortArray(1600)
                 var count = 0
+                var nextPreview = 16000 * 3
                 val started = SystemClock.elapsedRealtime()
                 while(!finish.get() && !cancelled.get() && count < all.size && SystemClock.elapsedRealtime()-started < 30_000) {
                     currentCoroutineContext().ensureActive()
@@ -51,6 +53,10 @@ class AndroidAudioDevice(context: Context, private val permission: suspend () ->
                         buffer.copyInto(all,count,0,read); count += read
                         val rms = sqrt((0 until read).sumOf { buffer[it].toDouble()*buffer[it] } / read) / 32768
                         progress((rms*5).toFloat(), count/16000)
+                        if(count >= nextPreview) {
+                            preview(PcmWave.encode(all.copyOf(count), 16000))
+                            nextPreview = count + 16000 * 3
+                        }
                     }
                     delay(20)
                 }

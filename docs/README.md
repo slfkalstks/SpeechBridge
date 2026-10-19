@@ -1,5 +1,7 @@
 # SpeechBridge 문서
 
+- [음성 미리보기·언어 전환·녹음 길이](LIVE_VOICE_PREVIEW.md).
+
 - [모델 선정 근거](MODEL_SELECTION.md): 네 모델의 역할·비교·한계.
 - [번역 속도 전후 측정](TRANSLATION_PERFORMANCE.md): 재로딩 원인·개선·실측 원자료.
 - [발표 PPTX](../presentation/SpeechBridge.pptx) / [발표자 노트](../presentation/발표자-노트.md).

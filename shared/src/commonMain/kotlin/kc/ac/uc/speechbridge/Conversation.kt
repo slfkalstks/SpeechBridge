@@ -27,6 +27,7 @@ fun newId(): String = "${Clock.System.now().toEpochMilliseconds()}-${Random.next
     val revision: Int = 1,
     val translation: String? = null,
     val translationRevision: Int? = null,
+    val audioDurationMs: Int? = null,
 )
 
 @Serializable data class ActionItem(
@@ -164,3 +165,24 @@ interface SpeechOutput {
     suspend fun speak(text: String, language: Language)
     fun stop()
 }
+
+/** Only measured audio contributes; old and keyboard-only records have no duration. */
+val Conversation.audioDurationMs: Long?
+    get() = utterances.mapNotNull { it.audioDurationMs }.takeIf { it.isNotEmpty() }?.sumOf { it.toLong() }
+
+fun formatRecordingDuration(seconds: Long): String {
+    val total = seconds.coerceAtLeast(0)
+    val hours = total / 3600
+    val minutes = total % 3600 / 60
+    val remainder = total % 60
+    return when {
+        hours > 0 -> "${hours}시간 ${minutes}분 ${remainder}초"
+        minutes > 0 -> "${minutes}분 ${remainder}초"
+        else -> "${remainder}초"
+    }
+}
+fun formatAudioDuration(milliseconds: Long): String = formatRecordingDuration((milliseconds.coerceAtLeast(0) + 999) / 1000)
+
+/** A newly detected source keeps the current target, or swaps when the target speaks. */
+fun detectedLanguagePair(first: Language, second: Language, detected: Language): Pair<Language, Language> =
+    detected to if (detected == second) first else second

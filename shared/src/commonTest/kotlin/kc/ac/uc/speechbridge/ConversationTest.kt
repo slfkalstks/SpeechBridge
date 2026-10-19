@@ -3,6 +3,32 @@ package kc.ac.uc.speechbridge
 import kotlin.test.*
 
 class ConversationTest {
+    @Test fun autoDetectedLanguageKeepsTargetAndSwapsForTheOtherSide() {
+        assertEquals(Language.JA to Language.EN, detectedLanguagePair(Language.KO, Language.EN, Language.JA))
+        assertEquals(Language.EN to Language.KO, detectedLanguagePair(Language.KO, Language.EN, Language.EN))
+        assertEquals(Language.KO to Language.EN, detectedLanguagePair(Language.KO, Language.EN, Language.KO))
+    }
+
+    @Test fun durationLabelsUseSecondsMinutesAndHoursWithoutPrefixes() {
+        mapOf(0L to "0초", 5L to "5초", 59L to "59초", 60L to "1분 0초", 135L to "2분 15초",
+            3599L to "59분 59초", 3600L to "1시간 0분 0초", 3800L to "1시간 3분 20초").forEach { (seconds, label) ->
+            assertEquals(label, formatRecordingDuration(seconds))
+        }
+        assertEquals("1초", formatAudioDuration(100))
+        assertEquals("1분 0초", formatAudioDuration(60000))
+    }
+    @Test fun audioDurationSurvivesEditsAndStorageWithoutInventingLegacyDurations() {
+        val legacy = conversation()
+        assertNull(ArchiveCodec.decode(ArchiveCodec.encode(listOf(legacy))).single().audioDurationMs)
+        val timed = legacy.copy(utterances = listOf(u.copy(audioDurationMs = 1500), u.copy(id = "u2", audioDurationMs = 28500), u.copy(id = "typed")))
+        val restored = ArchiveCodec.decode(ArchiveCodec.encode(listOf(timed))).single().editUtterance("u", "수정")
+        assertEquals(30000L, restored.audioDurationMs)
+        assertEquals(1500, restored.utterances.first().audioDurationMs)
+        assertNull(restored.utterances.last().audioDurationMs)
+        val long = legacy.copy(utterances = List(127) { u.copy(id = "audio$it", audioDurationMs = 30000) })
+        assertEquals("1시간 3분 30초", formatAudioDuration(long.audioDurationMs!!))
+    }
+
     private val u = Utterance(id = "u", speaker = "민수", language = Language.KO, originalText = "내일 보고서를 보내 주세요.", translation = "Send the report tomorrow.", translationRevision = 1)
     private fun conversation(record: Boolean = true) = Conversation(id = "c", title = "회의", translate = true, record = record,
         first = Language.KO, second = Language.EN, utterances = listOf(u), items = listOf(ActionItem(id = "i", sourceId = "u", sourceRevision = 1, kind = ItemKind.REQUEST, text = "보고서 보내기", reviewed = true)))

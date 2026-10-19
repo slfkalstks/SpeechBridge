@@ -104,8 +104,8 @@ import androidx.compose.ui.unit.dp
         else -> "눌러서 말하기"
     }
     val hint = when(voice.phase) {
-        VoicePhase.RECORDING -> "${voice.seconds}초 · 최대 30초"
-        VoicePhase.TRANSCRIBING -> "언어를 감지하고 자동으로 기록합니다"
+        VoicePhase.RECORDING -> formatRecordingDuration(voice.seconds.toLong())
+        VoicePhase.TRANSCRIBING -> formatRecordingDuration(voice.seconds.toLong())
         VoicePhase.PERMISSION -> "기기의 권한 요청을 확인해 주세요"
         else -> "한국어 · English · 日本語 자동 감지"
     }
@@ -142,6 +142,31 @@ import androidx.compose.ui.unit.dp
     }
 }
 
+@Composable private fun LiveVoicePreview(voice: VoiceState) {
+    val active = voice.phase in setOf(VoicePhase.RECORDING, VoicePhase.TRANSCRIBING)
+    Surface(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+        shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surface) {
+        Column(Modifier.heightIn(max = 220.dp).verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(voice.previewLanguage?.label ?: "음성 인식", Modifier.weight(1f), style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if(active) Text("인식 중", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            }
+            Text(voice.previewText ?: if(active) "듣고 있어요…" else "말하면 여기에 표시됩니다", style = MaterialTheme.typography.bodyLarge)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("번역", Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                if(active && voice.previewText != null && voice.previewTranslation == null)
+                    Text("번역 중", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            }
+            Text(voice.previewTranslation ?: "번역을 기다리고 있어요", style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            voice.previewMessage?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
+    }
+}
+
 @Composable private fun Composer(draft: UtteranceDraft, onChange: (UtteranceDraft) -> Unit, onSend: (UtteranceDraft) -> Unit, onClose: () -> Unit) {
     var text by remember { mutableStateOf(draft.text) }
     val local = draft.copy(text = text)
@@ -167,16 +192,22 @@ import androidx.compose.ui.unit.dp
 
 @Composable private fun StartConversation(state: BridgeState, vm: BridgeViewModel) {
     val draft = state.idleDraft
+    val voice by vm.voice.state.collectAsState()
     var keyboard by remember { mutableStateOf(draft.text.isNotEmpty()) }
     BoxWithConstraints(Modifier.fillMaxSize().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 760.dp)) {
     val compact = maxHeight < 460.dp || LocalDensity.current.fontScale > 1.5f
     Column(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
-            LanguageBar(state.startDraft.first, state.startDraft.second) { a, b -> vm.updateStartDraft(state.startDraft.copy(first = a, second = b)) }
+            val pair = voice.previewLanguage?.let { detectedLanguagePair(state.startDraft.first, state.startDraft.second, it) }
+                ?: (state.startDraft.first to state.startDraft.second)
+            LanguageBar(pair.first, pair.second) { a, b -> vm.updateStartDraft(state.startDraft.copy(first = a, second = b)) }
         }
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = if(compact) 0.dp else 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            if(!keyboard) VoiceControl(vm, compact = compact, onKeyboard = { keyboard = true })
+            if(!keyboard) {
+                LiveVoicePreview(voice)
+                VoiceControl(vm, compact = compact, onKeyboard = { keyboard = true })
+            }
         }
         if(keyboard) Composer(draft, { vm.updateIdleDraft(it) }, { sent ->
             vm.startConversation(); vm.state.value.activeId?.let { vm.addUtterance(it, sent.language, sent.text) }
@@ -205,9 +236,12 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) {
-                if(c.ended) Text(c.classificationLabel(state.folders), style = MaterialTheme.typography.bodySmall,
+                if(c.ended) Text(c.classificationLabel(state.folders) + (c.audioDurationMs?.let { " · ${formatAudioDuration(it)}" } ?: ""), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
-                else LanguageBar(c.first, c.second) { a, b -> vm.setLanguages(c.id, a, b) }
+                else {
+                    val pair = voice.previewLanguage?.let { detectedLanguagePair(c.first, c.second, it) } ?: (c.first to c.second)
+                    LanguageBar(pair.first, pair.second) { a, b -> vm.setLanguages(c.id, a, b) }
+                }
             }
             if(!c.ended) FilledTonalButton(onClick = { vm.cancelVoice(); finish = true }, enabled = voice.phase !in setOf(VoicePhase.PERMISSION, VoicePhase.RECORDING, VoicePhase.TRANSCRIBING), modifier = Modifier.heightIn(min = 48.dp)) { Text("종료") }
             else MoreMenu("기록 더보기") { close ->
@@ -254,6 +288,7 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
             }
         }
         if(!c.ended) {
+            if(voice.phase in setOf(VoicePhase.RECORDING, VoicePhase.TRANSCRIBING)) LiveVoicePreview(voice)
             if(keyboard) key(c.id) { Composer(draft, { vm.updateInputDraft(c.id, it) }, { vm.addUtterance(c.id, it.language, it.text) }, { keyboard = false }) }
             else VoiceControl(vm, compact = true, onKeyboard = { keyboard = true })
         }
@@ -285,6 +320,8 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("${u.language.label}${if(u.revision > 1) " · 수정됨" else ""}", Modifier.weight(1f),
                         style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    u.audioDurationMs?.let { Text(formatAudioDuration(it.toLong()),
+                        style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     MoreMenu("발언 더보기: ${u.text.take(40)}") { close ->
                         DropdownMenuItem(text = { Text("원문 수정") }, onClick = { close(); edit() })
                         if(c.translate) DropdownMenuItem(text = { Text(if(busy) "번역 취소" else "다시 번역") }, onClick = { close(); if(busy) cancel() else translate() })
@@ -393,7 +430,7 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
                             Text(c.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             c.utterances.lastOrNull()?.let { Text(it.text, maxLines = 2, overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                            Text(c.classificationLabel(state.folders) + if(!c.ended) " · 진행 중" else "",
+                            Text(c.classificationLabel(state.folders) + (c.audioDurationMs?.let { " · ${formatAudioDuration(it)}" } ?: "") + if(!c.ended) " · 진행 중" else "",
                                 style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                         }
                         MoreMenu("${c.title} 더보기") { close ->

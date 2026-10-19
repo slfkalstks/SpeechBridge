@@ -65,7 +65,15 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     private var writeRevision = 0L
     private var requestSequence = 0L
     private val requests = mutableMapOf<String, Pair<Long, Job>>()
-    val voice = VoiceController(viewModelScope, audioDevice, voiceApi, ::recordTranscript)
+    val voice = VoiceController(viewModelScope, audioDevice, voiceApi, ::recordTranscript) { partial ->
+        val current = state.value
+        val c = current.conversations.find { it.id == current.activeId }
+        val first = c?.first ?: current.startDraft.first
+        val second = c?.second ?: current.startDraft.second
+        val detected = Language.entries.first { it.code == partial.language }
+        val target = detectedLanguagePair(first, second, detected).second
+        api.translate(current.connection, TranslationRequest(partial.text, detected.code, target.code, 1)).text
+    }
     fun startVoice() {
         if (!canEdit() || state.value.page != Page.TALK || state.value.selected?.ended == true) return
         cancelVoice(); voice.start()
@@ -90,15 +98,15 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         val oldDraft = state.value.activeId?.let { state.value.inputDrafts[it] } ?: state.value.idleDraft
         if (state.value.activeId == null) {
             val pair = state.value.startDraft
-            val target = if (detected == pair.second) pair.first else pair.second
+            val target = detectedLanguagePair(pair.first, pair.second, detected).second
             updateStartDraft(pair.copy(first = detected, second = target))
             startConversation()
         }
         val id = state.value.activeId ?: return
         val c = state.value.conversations.first { it.id == id }
-        val target = if (detected == c.second) c.first else c.second
+        val target = detectedLanguagePair(c.first, c.second, detected).second
         setLanguages(id, detected, target)
-        addUtterance(id, detected, result.text)
+        addUtterance(id, "", detected, result.text, result.audioDurationMs)
         // Speech must not consume text the user has not submitted.
         if (oldDraft.text.isNotEmpty()) updateInputDraft(id, oldDraft)
     }
@@ -393,8 +401,10 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     fun navigate(page: Page) { cancelVoice(); mutable.update { it.copy(page = page) } }
     fun updateStartDraft(draft: StartDraft) {
         if (!canEdit() || draft.first == draft.second) return
-        voice.cancel()
+        val capturing = voice.state.value.phase in setOf(VoicePhase.RECORDING, VoicePhase.TRANSCRIBING)
+        if (!capturing) voice.cancel()
         mutable.update { it.copy(startDraft = draft, idleDraft = it.idleDraft.copy(language = draft.first)) }
+        if (capturing) voice.refreshPreviewTranslation()
         if (sync != null) persist()
     }
     fun updateIdleDraft(draft: UtteranceDraft) {
@@ -450,7 +460,8 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         if (first == second) return
         val c = state.value.conversations.find { it.id == id && !it.ended } ?: return
         if (c.first == first && c.second == second) return
-        voice.cancel()
+        val capturing = voice.state.value.phase in setOf(VoicePhase.RECORDING, VoicePhase.TRANSCRIBING)
+        if (!capturing) voice.cancel()
         val next = c.copy(first = first, second = second)
         val changed = c.utterances.filter { c.target(it.language) != next.target(it.language) }.map { it.id }.toSet()
         val keys = changed.map { "translate:$it" } + "extract:$id"
@@ -463,6 +474,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
             busy = state.busy - keys.toSet(), requestErrors = state.requestErrors - keys.toSet(),
         ) }
         persist()
+        if (capturing) voice.refreshPreviewTranslation()
         if(c.translate) changed.forEach { translate(id, it) }
     }
     fun filterCategory(filter: CategoryFilter) { mutable.update { it.copy(categoryFilter = filter) } }
@@ -532,11 +544,11 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     }
     fun addUtterance(id: String, language: Language, text: String) = addUtterance(id, "", language, text)
 
-    fun addUtterance(id: String, speaker: String, language: Language, text: String) {
+    fun addUtterance(id: String, speaker: String, language: Language, text: String, audioDurationMs: Int? = null) {
         if (!canEdit()) return
         val c = state.value.conversations.find { it.id == id } ?: return
         if (c.ended || text.isBlank()) return
-        val u = Utterance(speaker = speaker.trim(), language = language, originalText = text.trim())
+        val u = Utterance(speaker = speaker.trim(), language = language, originalText = text.trim(), audioDurationMs = audioDurationMs)
         change(id) { it.copy(utterances = it.utterances + u,
             items = it.items.map { item -> if (item.origin == Origin.SERVICE) item.copy(reviewed = false) else item }) }
         mutable.update { it.copy(inputDrafts = it.inputDrafts - id) }

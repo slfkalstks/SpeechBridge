@@ -163,3 +163,8 @@ App은 회원 로그인 뒤 HttpSyncRemote와 SyncRepository로 서버 기록을
 설정의 기존 기록 가져오기는 계정·기록 수를 확인하고 명시적으로 실행한다. 동일 ID의 다른 내용은 거부한다. 서버에서 내용이 일치하는 것을 확인한 후에만 기기 원본을 비우며, 확인 실패 시 원본을 유지한다. 자세한 실행 결과는 [모바일 연결 검증](CLOUD_WORKSPACE_VALIDATION.md)을 참고한다.
 
 2026-10-19 migration 011: `user_settings.auto_read_translation boolean NOT NULL DEFAULT true` 추가. 계정별 동기화·version·충돌 처리에 포함하며, 이전 클라이언트가 필드를 생략하면 기존 값을 보존한다.
+
+
+## 녹음 길이
+
+마이그레이션 `012_audio_duration.sql`은 `utterances.audio_duration_ms`를 추가합니다. 새 음성 입력은 PCM 프레임 수로 측정한 길이를 저장하며, 텍스트 입력과 예전 기록은 NULL을 유지합니다. 기록 목록·상세의 길이는 저장된 음성 길이의 합계입니다. 기존 앱이 이 필드를 생략해도 서버는 저장된 값을 보존하고, 이미 저장된 길이를 다른 값으로 덮어쓰는 요청은 거부합니다.

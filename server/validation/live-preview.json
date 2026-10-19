@@ -1,0 +1,54 @@
+{
+  "scope": "Synthetic cumulative PCM snapshots, real local STT/translation, isolated PostgreSQL; no microphone or listening test.",
+  "results": [
+    {
+      "language": "ko",
+      "audioDurationMs": 3000,
+      "previewUnavailable": "language_not_detected"
+    },
+    {
+      "language": "ko",
+      "audioDurationMs": 4960,
+      "transcript": "유키씨 금요일까지 수정한 일정을 보내주세요.",
+      "target": "en",
+      "translation": "Please send Yuki the revised schedule by Friday.",
+      "sttMs": 356,
+      "totalMs": 1210
+    },
+    {
+      "language": "en",
+      "audioDurationMs": 3000,
+      "transcript": "Yuki please send the updated screen.",
+      "target": "ko",
+      "translation": "유키 씨, 업데이트된 화면을 보내주세요.",
+      "sttMs": 329,
+      "totalMs": 1268
+    },
+    {
+      "language": "en",
+      "audioDurationMs": 4560,
+      "transcript": "Yuki please send the updated schedule by Friday.",
+      "target": "ko",
+      "translation": "유키 씨, 업데이트된 일정을 금요일까지 보내주세요.",
+      "sttMs": 332,
+      "totalMs": 1365
+    },
+    {
+      "language": "ja",
+      "audioDurationMs": 3000,
+      "previewUnavailable": "language_not_detected"
+    },
+    {
+      "language": "ja",
+      "audioDurationMs": 5280,
+      "transcript": "由さん金曜日までに修正した予定を送ってください。",
+      "target": "en",
+      "translation": "Please send me the revised schedule by Friday.",
+      "sttMs": 334,
+      "totalMs": 1193,
+      "changedTarget": "ko",
+      "changedTranslation": "유 씨, 금요일까지 수정된 일정을 보내주세요.",
+      "databaseRoundTrip": true
+    }
+  ]
+}

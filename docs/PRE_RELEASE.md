@@ -50,3 +50,6 @@
 2026-10-19 후속: ‘녹음 완료’ 이후 오류 조사로 iOS 파일 읽기를 AVAudioFile 기반으로 변경하고 입력/파일 실패를 구분했다. 합성 파일 포함 iOS 116개 테스트 통과. 기존 정상 Apple WAV 파싱 자체는 통과했으며, 실제 사용자 녹음 오류의 근본 원인·해결은 아직 미확인이다. [검증 근거](NATIVE_VOICE_VALIDATION.md#2026-10-19-녹음-완료-이후-실패-조사).
 
 2026-10-19 자동 TTS 후속: 새 번역 자동 읽기(기본 켜짐), 설정 토글, 듣기·준비 중·중지 UI, 백그라운드·이동·녹음 시작·끄기 이후 늦은 응답 재생 방지. PostgreSQL migration 011 적용, 구 클라이언트 설정 저장과 호환. Node 108 / Android Host 114 / iOS Simulator 120 통과, Debug APK·signed simulator 재빌드·설치. 설정 끄기→재시작 복원·DB false 확인 후 켜기로 복원. 실제 청취는 미검증. [TTS 검증](NATIVE_VOICE_VALIDATION.md#2026-10-19-자동-읽기와-설정).
+
+
+2026-10-19 추가: 녹음 길이 PostgreSQL 저장·표시, 3초 누적 음성 미리보기, 감지 언어 표시, 원문/녹음을 유지한 번역 대상 변경. Node 110 / Android host 123 / iOS simulator 130 통과. APK와 signed simulator 앱 빌드·설치 및 대화 미리보기·기록 목록/상세 5초 표시 확인. 실제 로컬 모델 합성 부분/전체 음성 검증은 [별도 기록](LIVE_VOICE_PREVIEW.md) 참조. 실제 마이크·휴대전화·청취는 계속 보류.

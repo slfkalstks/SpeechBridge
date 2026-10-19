@@ -7,6 +7,22 @@ import platform.Foundation.*
 import kotlin.test.*
 
 class IosAudioFileTest {
+    @Test fun streamingHardwareBuffersConvertToMono16kWithoutMicrophone() {
+        for(rate in listOf(16000.0, 44100.0, 48000.0)) {
+            val format = AVAudioFormat(AVAudioPCMFormatFloat32, rate, 2u, false)
+            val converter = IosPcmConverter(format)
+            val buffer = AVAudioPCMBuffer(format, (rate / 10).toUInt())
+            buffer.frameLength = (rate / 10).toUInt()
+            repeat(2) { channel -> repeat(buffer.frameLength.toInt()) { index ->
+                buffer.floatChannelData!![channel]!![index] = (kotlin.math.sin(index * 2 * kotlin.math.PI * 440 / rate) * .25).toFloat()
+            } }
+            val frames = (0 until 10).flatMap { converter.convert(buffer).toList() }
+            assertTrue(frames.size in 15000..16100, "rate=$rate frames=${frames.size}")
+            assertTrue(frames.any { it > 1000 })
+            PcmWave.decode(PcmWave.encode(frames.toShortArray(),16000),16000)
+        }
+    }
+
     private fun fixture(block: (NSURL) -> Unit) {
         val file = NSURL.fileURLWithPath(NSTemporaryDirectory() + "speechbridge-audio-test-${newId()}.wav")
         try { block(file) } finally { NSFileManager.defaultManager.removeItemAtURL(file, null) }
