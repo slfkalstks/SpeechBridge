@@ -205,12 +205,19 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) {
-                if(c.ended) TextButton(onClick = { classify = true }) { Text(c.classificationLabel(state.folders), maxLines = 2); Spacer(Modifier.width(8.dp)); AppSymbol(Symbol.DOWN, Modifier.size(16.dp)) }
+                if(c.ended) Text(c.classificationLabel(state.folders), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
                 else LanguageBar(c.first, c.second) { a, b -> vm.setLanguages(c.id, a, b) }
             }
             if(!c.ended) FilledTonalButton(onClick = { vm.cancelVoice(); finish = true }, enabled = voice.phase !in setOf(VoicePhase.PERMISSION, VoicePhase.RECORDING, VoicePhase.TRANSCRIBING), modifier = Modifier.heightIn(min = 48.dp)) { Text("종료") }
             else MoreMenu("기록 더보기") { close ->
                 DropdownMenuItem(text = { Text("제목·분류 수정") }, onClick = { close(); classify = true })
+                DropdownMenuItem(text = { Text(if(c.summary == null) "요약 작성" else "요약 수정") }, onClick = { close(); summaryEdit = true })
+                val extracting = "extract:${c.id}" in state.busy
+                DropdownMenuItem(text = { Text(if(extracting) "할 일 정리 취소" else "할 일·결정 다시 정리") },
+                    enabled = c.utterances.isNotEmpty(), onClick = {
+                        close(); if(extracting) vm.cancelRequest("extract:${c.id}") else vm.extract(c.id)
+                    })
                 DropdownMenuItem(text = { Text(if(state.activeId == null) "새 대화" else "진행 중인 대화") }, onClick = { close(); vm.select(state.activeId ?: "") })
             }
         }
@@ -230,27 +237,18 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
             } else {
                 item {
                     Panel {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("대화 요약", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                            TextButton(onClick = { summaryEdit = true }) { Text(if(c.summary == null) "직접 작성" else "수정") }
-                        }
                         SelectionContainer { Text(c.summary ?: if("organize:${c.id}" in state.busy || state.organizationJobs[c.id] in setOf("pending","running"))
                             (if(state.syncPending > 0) "서버에 저장되면 자동으로 요약합니다." else "대화를 요약하고 있어요…") else "아직 요약이 없어요. 직접 작성할 수 있습니다.") }
                         if(state.requestErrors.containsKey("organize:${c.id}") || state.organizationJobs[c.id] == "failed") Text("자동 정리를 완료하지 못했어요. 제목·분류·요약을 직접 편집해 주세요.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 item {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("할 일과 결정", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                        val busy = "extract:${c.id}" in state.busy
-                        TextButton(onClick = { if(busy) vm.cancelRequest("extract:${c.id}") else vm.extract(c.id) }, enabled = c.utterances.isNotEmpty()) {
-                            Text(if(busy) "정리 취소" else if(c.items.isEmpty()) "AI 정리" else "다시 정리")
-                        }
-                    }
+                    Text("할 일과 결정", style = MaterialTheme.typography.titleMedium)
                     if("extract:${c.id}" in state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
                     state.requestErrors["extract:${c.id}"]?.let { InlineError(it) }
                 }
-                if(c.items.isEmpty()) item { EmptyState("아직 정리된 항목이 없어요", "AI 정리로 대화에서 할 일과 결정을 찾을 수 있어요.") }
+                if(c.items.isEmpty()) item { Text("등록된 항목이 없어요", style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 items(c.items, key = { it.id }) { item -> ActionCard(c, item, { itemEdit = ItemEditor(item.sourceId, item) }, { review = item },
                     { vm.task(c.id, item.id, it) }, { vm.deleteItem(c.id, item.id) }) }
             }
@@ -335,14 +333,14 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
         Row(verticalAlignment = Alignment.Top) {
             Checkbox(checked = item.status == TaskStatus.DONE && !needsReview, onCheckedChange = {
                 if(needsReview) onReview() else onTask(if(it) TaskStatus.DONE else TaskStatus.TODO)
-            }, modifier = Modifier.semantics { contentDescription = if(needsReview) "근거 검토 후 완료" else "할 일 완료 상태" })
+            }, modifier = Modifier.semantics { contentDescription = if(needsReview) "내용 확인 후 완료" else "할 일 완료 상태" })
             Column(Modifier.weight(1f).padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(item.text, style = MaterialTheme.typography.bodyLarge,
                     textDecoration = if(item.status == TaskStatus.DONE && !needsReview) TextDecoration.LineThrough else null,
                     color = if(item.status == TaskStatus.DONE && !needsReview) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
                 val details = listOfNotNull(item.owner, item.dueText).joinToString(" · ")
                 if(details.isNotBlank()) Text(details, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if(needsReview) TextButton(onClick = onReview, contentPadding = PaddingValues(0.dp)) { Text("근거 확인 필요", color = MaterialTheme.colorScheme.tertiary) }
+                if(needsReview) TextButton(onClick = onReview, contentPadding = PaddingValues(0.dp)) { Text("확인 필요", color = MaterialTheme.colorScheme.tertiary) }
                 else if(item.status == TaskStatus.CANDIDATE) TextButton(onClick = { onTask(TaskStatus.TODO) }, contentPadding = PaddingValues(0.dp)) { Text("할 일로 등록") }
                 if(item.omittedByLatestExtraction) Text("최근 정리에서 제외된 항목", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
             }

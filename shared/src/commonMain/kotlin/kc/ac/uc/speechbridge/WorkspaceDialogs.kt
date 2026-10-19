@@ -72,11 +72,11 @@ import androidx.compose.ui.unit.dp
 
 @Composable internal fun ReviewDialog(c: Conversation, item: ActionItem, onDismiss: () -> Unit, onConfirm: () -> Unit) {
     val source = c.utterances.find { it.id == item.sourceId }
-    AlertDialog(onDismissRequest = onDismiss, title = { Text("근거와 내용 확인") }, text = {
+    AlertDialog(onDismissRequest = onDismiss, title = { Text("내용 확인") }, text = {
         Column(Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("현재 원문", fontWeight = FontWeight.Bold)
+            Text("원문", fontWeight = FontWeight.Bold)
             SelectionContainer { Text(source?.text ?: "근거를 찾을 수 없습니다.") }
-            item.evidenceQuote?.let { quote ->
+            item.evidenceQuote?.takeIf { it.isNotBlank() && it.trim() != source?.text?.trim() }?.let { quote ->
                 Text(if(source?.revision == item.sourceRevision) "AI가 참조한 원문" else "생성 당시 인용 · 현재 원문과 비교하세요", fontWeight = FontWeight.Bold)
                 SelectionContainer { Text(quote, style = MaterialTheme.typography.bodyMedium) }
             }
@@ -87,8 +87,9 @@ import androidx.compose.ui.unit.dp
             }
             HorizontalDivider()
             Text(item.text, fontWeight = FontWeight.Medium)
-            Text("담당: ${item.owner ?: "미정"}\n기한: ${item.dueText ?: "미정"}")
-            Text("내가 내용을 검토했다는 표시입니다. 상대방의 동의나 업무 수락을 뜻하지 않습니다.", style = MaterialTheme.typography.bodySmall)
+            val details = listOfNotNull(item.owner?.takeIf { it.isNotBlank() }?.let { "담당: $it" },
+                item.dueText?.takeIf { it.isNotBlank() }?.let { "기한: $it" })
+            if(details.isNotEmpty()) Text(details.joinToString(" · "))
         }
     }, confirmButton = { TextButton(onClick = onConfirm, enabled = source != null) { Text("내용 확인 완료") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("닫기") } })
