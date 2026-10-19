@@ -2,6 +2,8 @@
 
 2026-10-17. Apple M3 Max·36GiB, Ollama0.34.4 Metal, 단일 순차 요청. 실제 모델을 다운로드하고 합성 텍스트로 추론했다. 모델 학습·유료 API·클라우드 추론은 사용하지 않았다.
 
+> 이 문서는 10월 17일의 비교 기록입니다. 10월 19일 상주 정책과 성능 변경은 [후속 측정](TRANSLATION_PERFORMANCE.md), 현재 선정 이유는 [모델 설명](MODEL_SELECTION.md)을 참고하세요.
+
 ## 이번 기본값
 
 - 번역: `translategemma:12b` (Q4_K_M).

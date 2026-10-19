@@ -86,7 +86,7 @@ npm --prefix server run db:retention -- --apply
 | 테이블 | 저장 내용 |
 |---|---|
 | users / sessions | 계정, scrypt hash/salt/파라미터, 해시 토큰·발급 순서·만료 |
-| user_settings / devices | 화면 모드, 앱 설치 ID·플랫폼 |
+| user_settings / devices | 화면 모드·번역 자동 읽기, 앱 설치 ID·플랫폼 |
 | work_folders | 사용자 지정 업무 폴더·version·삭제 표시 |
 | conversations | 제목·요약·언어·일상/업무·업무 유형·폴더·AI 최초 처리 상태·revision |
 | utterances / utterance_revisions | 최초/현재 원문, 알려진 수정본·revision·순서 |
@@ -161,3 +161,5 @@ App은 회원 로그인 뒤 HttpSyncRemote와 SyncRepository로 서버 기록을
 실제 로컬 모델 검증: `node --env-file=.runtime/accounts-server.env server/evaluate-organization-jobs.mjs` (프로젝트 루트). 프로젝트 테스트 DB의 가상 계정만 사용한다. 결과는 [organization-jobs.json](../server/validation/organization-jobs.json). UI 검증과 범위는 [CLOUD_WORKSPACE_VALIDATION.md](CLOUD_WORKSPACE_VALIDATION.md)를 참고한다.
 
 설정의 기존 기록 가져오기는 계정·기록 수를 확인하고 명시적으로 실행한다. 동일 ID의 다른 내용은 거부한다. 서버에서 내용이 일치하는 것을 확인한 후에만 기기 원본을 비우며, 확인 실패 시 원본을 유지한다. 자세한 실행 결과는 [모바일 연결 검증](CLOUD_WORKSPACE_VALIDATION.md)을 참고한다.
+
+2026-10-19 migration 011: `user_settings.auto_read_translation boolean NOT NULL DEFAULT true` 추가. 계정별 동기화·version·충돌 처리에 포함하며, 이전 클라이언트가 필드를 생략하면 기존 값을 보존한다.

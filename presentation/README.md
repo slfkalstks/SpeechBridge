@@ -1,13 +1,15 @@
 # SpeechBridge 발표 자료
 
-- **[SpeechBridge.pptx](SpeechBridge.pptx)**: 편집 가능한 16:9 PowerPoint, 10장, 슬라이드별 발표자 노트 포함.
-- [발표자 노트](발표자-노트.md): 약 6–8분 설명과 라이브 시연 순서.
+- **[SpeechBridge.pptx](SpeechBridge.pptx)**: 편집 가능한 16:9 PowerPoint, 13장, 슬라이드별 발표자 노트 포함.
+- [발표자 노트](발표자-노트.md): 약 8–10분 설명과 라이브 시연 순서.
 - [PDF](SpeechBridge.pdf): 글꼴과 배치를 보존한 미리보기.
 - `assets/`: 실제 iOS 시뮬레이터에서 캡처한 6개 화면. 가상 시연 데이터만 사용했다.
 
+7–9장은 최종 사용 모델의 역할과 선정 이유, 현재 동작 방식과 검증 범위입니다. 발표 슬라이드와 발표자 노트에는 모델 간 비교·개선 전후 수치를 넣지 않습니다. 상세 선정 근거는 [개발 문서](../docs/MODEL_SELECTION.md)에 별도로 보관합니다.
+
 앱의 블루 `#405394`와 밝은 배경 `#F2F3F9`를 사용했다. [Canva 피치덱 목록](https://www.canva.com/presentations/templates/pitch-deck/)과 [미리캔버스 PPT 목록](https://www.miricanvas.com/ko/template/all-types/ppt)의 간결한 제품 소개 구성을 참고했다. 외부 템플릿 파일·유료 요소를 복제하지 않고 새로 작성했다.
 
-텍스트·도형은 편집 가능하며 앱 화면은 교체 가능한 PNG다. 사용 글꼴은 Apple SD Gothic Neo다. 다른 운영체제에서는 설치된 한글 글꼴로 바꾸거나 PDF를 사용한다. 글꼴 파일은 재배포하지 않는다. PowerPoint에서 일부 렌더링 차이는 있을 수 있다. 10장 모두 PDF로 렌더링해 한글·겹침·잘림을 확인했다.
+텍스트·도형은 편집 가능하며 앱 화면은 교체 가능한 PNG다. 사용 글꼴은 Apple SD Gothic Neo다. 다른 운영체제에서는 설치된 한글 글꼴로 바꾸거나 PDF를 사용한다. 글꼴 파일은 재배포하지 않는다. PowerPoint에서 일부 렌더링 차이는 있을 수 있다. 13장 모두 PDF로 렌더링해 한글·겹침·잘림을 확인했다.
 
 ## 재생성
 

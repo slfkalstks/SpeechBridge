@@ -98,3 +98,16 @@ node server/evaluate-member-voice.mjs --with-translation
 시뮬레이터에서 다시 확인할 때 `I/O → Audio Input → MacBook Pro 마이크`를 선택하고 녹음한다. 이 메뉴와 내장 마이크 항목의 존재는 UI에서 확인했으며 입력 설정 자체를 바꾸거나 마이크 권한을 새로 부여하지 않았다. 같은 현상이 계속되면 새 안내 문구로 입력·파일·연결 중 실패 단계를 구분한다. 실제 사용자 녹음의 재현·해결 여부는 여전히 미확인이다.
 
 API 근거: [AVAudioRecorder.stop](https://developer.apple.com/documentation/avfaudio/avaudiorecorder/stop()), [AVAudioFile](https://developer.apple.com/documentation/avfaudio/avaudiofile). 로컬 Xcode SDK 헤더의 PCM 읽기/변환 및 파일 닫기 계약도 확인했다.
+
+## 2026-10-19 자동 읽기와 설정
+
+새로 입력된 문장의 번역 완료 시 자동 TTS를 요청한다. 설정 → **번역 자동 읽기**에서 끄며, 기본값은 켜짐이다. 설정은 계정별 PostgreSQL `user_settings.auto_read_translation`에 저장하고 오프라인이면 암호화 대기함으로 보낸다. migration 011은 기존 데이터를 유지한다. 구 클라이언트가 화면 모드만 저장해도 자동 읽기 값을 덮어쓰지 않는다.
+
+과거 기록 조회·재번역은 자동 재생하지 않는다. 화면 이동, 백그라운드 전환, 새 녹음 시작, 끄기 이후 도착한 오래된 번역도 재생하지 않는다. 이미 녹음/합성/재생 중이면 자동 읽기로 끼어들지 않는다. 재생 대기열은 없고 건너뛴 결과는 수동 듣기를 사용할 수 있다. 음성 생성 중에는 ‘준비 중’과 취소, 재생 중에는 ‘중지’를 표시한다.
+
+- Node 108개: 실제 테스트 PostgreSQL의 기본값·꺼짐 저장·다른 기기 조회·구 설정 호환·잘못된 타입 거절 포함.
+- Android Host 114 / iOS Simulator 120개: 자동 읽기·중복/늦은 응답 방지·수동 듣기·오프라인 저장 복원·동기화 포함. 오디오 장치 fake를 사용한 상태 검증이다.
+- 새 Debug APK와 signed simulator 빌드 성공. iOS 설정에서 끄기→재시작→꺼짐 복원 확인, 실제 서버 snapshot false 확인. 기존 기록 4개 보존, 최종 설정 켜짐으로 복원.
+- 실제 회원 HTTPS에서 합성 한국어 한 문장을 Qwen3-TTS로 생성: 완성까지 6.33초, 24kHz PCM16 비무음 WAV, 길이 3.6초. [원자료](../.ecc/benchmarks/tts-member-https.json). 실제 청취·스피커·마이크 검증은 하지 않았다.
+
+실기기 준비 시 바로 확인할 것: 새 발화 번역 후 1회 재생, 설정을 끄면 자동 재생 없음, 수동 듣기는 가능, 준비/재생 중 중지, 앱 백그라운드 및 새 녹음으로 전환 시 중단.

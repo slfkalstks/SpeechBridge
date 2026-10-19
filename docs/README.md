@@ -1,5 +1,7 @@
 # SpeechBridge 문서
 
+- [모델 선정 근거](MODEL_SELECTION.md): 네 모델의 역할·비교·한계.
+- [번역 속도 전후 측정](TRANSLATION_PERFORMANCE.md): 재로딩 원인·개선·실측 원자료.
 - [발표 PPTX](../presentation/SpeechBridge.pptx) / [발표자 노트](../presentation/발표자-노트.md).
 - [배포 직전 검증과 실제 출시 시 필요한 항목](PRE_RELEASE.md).
 

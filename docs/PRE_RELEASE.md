@@ -8,23 +8,23 @@
 - 30일 검증 백업 보존, 기존 보존 사본 등록, 서버 시작/매시간 정리와 하루 단위 백업.
 - 복원 사본의 명시적 활성화·최신 삭제 이력 적용·세션 폐기·퇴역 DB 차단·강제 종료 후 재개.
 - 운영 HTTPS 주소가 없는 Release 빌드 차단, 테스트 CA의 Release 포함 차단, Android 클라우드/기기 이동 백업 제외, 앱 아이콘.
-- 편집 가능한 10장 [PPTX](../presentation/SpeechBridge.pptx), 발표자 노트, 실제 앱 화면 6개와 README 삽입.
-- 시뮬레이터 서버 주소를 loopback HTTPS로 고정. 음성 네트워크 오류를 일반 음성 실패와 구분. 번역 모델 30분 유지·시연 전 준비.
+- 편집 가능한 13장 [PPTX](../presentation/SpeechBridge.pptx), 발표자 노트, 실제 앱 화면 6개와 README 삽입.
+- 시뮬레이터 서버 주소를 loopback HTTPS로 고정. 음성 네트워크 오류를 일반 음성 실패와 구분. 번역 모델 유지·API 시작 시 preload·상주 허용 2개. [측정](TRANSLATION_PERFORMANCE.md).
 
 ## 확인한 결과
 
 | 검사 | 결과와 범위 |
 |---|---|
-| Node 서버 회귀 | 105개 통과. 실제 프로젝트 테스트 PostgreSQL 사용 |
-| Node loaded-source coverage | line 90.09%, branch 89.75%, function 88.44%. 모든 CLI/앱 전체 커버리지가 아님 |
-| Android Host / iOS Simulator | 110 / 111개 통과. 음성 연결 실패 분류 포함 |
+| Node 서버 회귀 | 108개 통과. 실제 프로젝트 테스트 PostgreSQL 사용 |
+| Node loaded-source coverage | 직전 배포 준비 검사: line 90.09%, branch 89.75%, function 88.44%. 후속 108개 테스트의 coverage를 새로 측정한 수치는 아님. 모든 CLI/앱 전체 커버리지가 아님 |
+| Android Host / iOS Simulator | 114 / 120개 통과. 자동 읽기·취소·설정 동기화 포함 |
 | 실제 앱 UI | 언어 반전, 실제 텍스트 번역, AI 요약, 수동 수정, 할 일, 테마, 재실행, 연결 복구, 권한 거절 알림. [상세](DEMO_UI_VALIDATION.md) |
 | 웹 UI | 시연 계정 로그인·삭제 확인·취소·개인정보 안내. 이 계정 영구 삭제는 하지 않음 |
 | Release | Android AAB 및 iOS 기기용 archive 빌드. Android lint 오류 0개(버전/리소스 경고는 보고서에 기록). 예약 주소 `https://speechbridge.invalid`, 미서명 검증용으로 실제 배포 불가 |
 | Debug | 프로젝트 CA를 포함한 설치 APK와 signed iOS simulator 앱. 현재 loopback용이며 휴대전화는 LAN용 재빌드 필요 |
 | 합성 음성 | 3언어 STT→번역→PostgreSQL 왕복→TTS 성공. [현재 원자료](../server/validation/member-voice-flow.json) |
 | 접근성 점검 | 가로 테마/언어/마이크 등의 접근성 라벨 직접 확인. 정적 텍스트 대비 30쌍 통과, 최소 5.62:1. 전체 접근성 인증 아님 |
-| 발표 | 10장/발표자 노트/6개 실제 화면 포함. PDF 전체 렌더링으로 한글·배치 확인 |
+| 발표 | 13장/모델 역할·선정 이유/발표자 노트/6개 실제 화면 포함. PDF 전체 렌더링으로 한글·배치 확인 |
 
 로컬 근거는 `.runtime/demo/release-final-coverage.log`, `voice-transport-{red,green}.log`, `release-android-final.log`, `release-ios-final.log`, `release-demo-build.log`, `readiness.json`에 있다. 이 폴더의 자격정보·모델·로그는 Git에 올리지 않는다.
 
@@ -38,7 +38,7 @@
 ## 남아 있는 제품 한계
 
 - 고유명사 인식과 호명/수신자 번역 오류가 관찰됐다. 원문 수정·재번역·근거 검토가 필요하다. 합성 샘플의 성공률을 일반 정확도로 주장하지 않는다.
-- 모델 첫 로딩과 번역↔요약 모델 전환, 긴 입력에서는 지연이 크다. 30분 유지와 시연 준비로 유휴 후 재로딩을 줄였지만 실시간 스트리밍 번역은 아니다.
+- 모델 첫 로딩과 번역↔요약 모델 전환, 긴 입력에서는 지연이 크다. 상주 허용 2개와 시작 시 준비로 재로딩을 줄였지만 첫 전환 재로딩이 관찰됐으며 실시간 스트리밍 번역은 아니다.
 - 현재 비밀번호 재설정/복구는 제공하지 않는다. 아이디·비밀번호 기반 학교 시연 범위다.
 - Mac 한 대의 백업은 장치 고장까지 보호하지 않는다. 실제 공개 운영에는 별도 보관·모니터링이 필요하다.
 
@@ -48,3 +48,5 @@
 
 
 2026-10-19 후속: ‘녹음 완료’ 이후 오류 조사로 iOS 파일 읽기를 AVAudioFile 기반으로 변경하고 입력/파일 실패를 구분했다. 합성 파일 포함 iOS 116개 테스트 통과. 기존 정상 Apple WAV 파싱 자체는 통과했으며, 실제 사용자 녹음 오류의 근본 원인·해결은 아직 미확인이다. [검증 근거](NATIVE_VOICE_VALIDATION.md#2026-10-19-녹음-완료-이후-실패-조사).
+
+2026-10-19 자동 TTS 후속: 새 번역 자동 읽기(기본 켜짐), 설정 토글, 듣기·준비 중·중지 UI, 백그라운드·이동·녹음 시작·끄기 이후 늦은 응답 재생 방지. PostgreSQL migration 011 적용, 구 클라이언트 설정 저장과 호환. Node 108 / Android Host 114 / iOS Simulator 120 통과, Debug APK·signed simulator 재빌드·설치. 설정 끄기→재시작 복원·DB false 확인 후 켜기로 복원. 실제 청취는 미검증. [TTS 검증](NATIVE_VOICE_VALIDATION.md#2026-10-19-자동-읽기와-설정).
