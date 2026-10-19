@@ -68,9 +68,15 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     val voice = VoiceController(viewModelScope, audioDevice, voiceApi, ::recordTranscript)
     fun startVoice() {
         if (!canEdit() || state.value.page != Page.TALK || state.value.selected?.ended == true) return
-        voice.start()
+        cancelVoice(); voice.start()
     }
-    fun cancelVoice() = voice.cancel()
+    private var foreground = true
+    private var autoReadEpoch = 0L
+    fun cancelVoice() { autoReadEpoch++; voice.cancel() }
+    fun setForeground(active: Boolean) {
+        foreground = active
+        if (!active) cancelVoice()
+    }
     fun speak(id: String, utteranceId: String) {
         if (!canEdit()) return
         val c = state.value.conversations.find { it.id == id } ?: return
@@ -374,14 +380,17 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
     fun setAutoReadTranslation(enabled: Boolean) {
         if (!canEdit()) return
         mutable.update { it.copy(autoReadTranslation = enabled) }
-        if (!enabled && voice.state.value.phase in setOf(VoicePhase.SYNTHESIZING, VoicePhase.PLAYING)) voice.cancel()
+        if (!enabled) {
+            autoReadEpoch++
+            if (voice.state.value.phase in setOf(VoicePhase.SYNTHESIZING, VoicePhase.PLAYING)) voice.cancel()
+        }
         persist()
     }
     fun setAppearance(appearance: Appearance) {
         if (!canEdit()) return
         mutable.update { it.copy(appearance = appearance) }; persist()
     }
-    fun navigate(page: Page) { voice.cancel(); mutable.update { it.copy(page = page) } }
+    fun navigate(page: Page) { cancelVoice(); mutable.update { it.copy(page = page) } }
     fun updateStartDraft(draft: StartDraft) {
         if (!canEdit() || draft.first == draft.second) return
         voice.cancel()
@@ -532,7 +541,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
             items = it.items.map { item -> if (item.origin == Origin.SERVICE) item.copy(reviewed = false) else item }) }
         mutable.update { it.copy(inputDrafts = it.inputDrafts - id) }
         if (sync != null) persist()
-        if (c.translate) translate(id, u.id)
+        if (c.translate) translate(id, u.id, autoRead = true)
     }
     fun editUtterance(id: String, utteranceId: String, text: String) {
         voice.cancel()
@@ -573,14 +582,23 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         val apply: () -> Unit = { mutable.update { it.copy(health = result, message = "서버에 도달했습니다. 설정 표시는 실제 API 호출 성공을 뜻하지 않습니다.") } }
         apply
     }
-    fun translate(id: String, utteranceId: String) {
+    fun translate(id: String, utteranceId: String, autoRead: Boolean = false) {
         val c = state.value.conversations.find { it.id == id } ?: return
         val u = c.utterances.find { it.id == utteranceId } ?: return
         if (!c.translate) return
+        val readingEpoch = autoReadEpoch
         launchRequest("translate:$utteranceId") {
             val result = api.translate(state.value.connection, TranslationRequest(u.text, u.language.code, c.target(u.language).code, u.revision))
             require(result.revision == u.revision && result.text.isNotBlank())
-            val apply: () -> Unit = { change(id) { it.translateResult(u.id, u.revision, result.text) } }
+            val apply: () -> Unit = {
+                change(id) { it.translateResult(u.id, u.revision, result.text) }
+                val current = state.value
+                val selected = current.selected
+                if (autoRead && readingEpoch == autoReadEpoch && foreground && current.autoReadTranslation &&
+                    current.page == Page.TALK && selected?.id == id && !selected.ended &&
+                    selected.utterances.lastOrNull()?.let { it.id == u.id && it.revision == u.revision } == true &&
+                    voice.state.value.phase in setOf(VoicePhase.IDLE, VoicePhase.ERROR)) speak(id, u.id)
+            }
             apply
         }
     }

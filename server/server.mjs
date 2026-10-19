@@ -145,8 +145,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   // CLI defaults to individual accounts. Legacy shared-token mode must be explicit.
   const env = { ...process.env, AUTH_MODE: process.env.AUTH_MODE || 'users' };
   if (!['127.0.0.1', 'localhost', '::1'].includes(env.HOST || '127.0.0.1')) throw new Error('Bind the Mac API to loopback and expose it through an HTTPS proxy');
-  const server = createServer({ env });
+  const providers = createProviders(env);
+  const server = createServer({ env, providers });
   await server.ready();
+  // Pay model loading cost during startup, before the first conversation request.
+  // Keep account/storage access available if the local AI runtime is unavailable.
+  try { await providers.warmup?.({ signal: AbortSignal.timeout(15_000) }); }
+  catch { console.error('Translation warmup unavailable; account and storage services remain available.'); }
   let maintaining=false;
   const maintain=async()=>{if(maintaining)return;maintaining=true;try{await maintenance({backup:()=>createBackup()});}catch{console.error('Project backup maintenance failed; inspect the private backup inventory.');}finally{maintaining=false;}};
   const maintenanceTimer=setInterval(maintain,60*60*1000);maintenanceTimer.unref();

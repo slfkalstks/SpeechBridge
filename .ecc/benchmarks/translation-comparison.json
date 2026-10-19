@@ -1,0 +1,138 @@
+{
+  "createdAt": "2026-10-19T01:29:11.063Z",
+  "runs": [
+    "before",
+    "after"
+  ],
+  "groups": {
+    "cold": {
+      "before": {
+        "n": 3,
+        "meanMs": 4185.251486,
+        "p50Ms": 4074.9557919999997,
+        "p95Ms": 4993.278416000001,
+        "p99Ms": 4993.278416000001
+      },
+      "after": {
+        "n": 3,
+        "meanMs": 3680.9916113333334,
+        "p50Ms": 3758.3967920000005,
+        "p95Ms": 4604.329042,
+        "p99Ms": 4604.329042
+      },
+      "meanReductionPercent": 12.048496401075449,
+      "p50ReductionPercent": 7.768403294619087
+    },
+    "warm": {
+      "before": {
+        "n": 100,
+        "meanMs": 1656.7566950400014,
+        "p50Ms": 1200.5997919999936,
+        "p95Ms": 2592.74229200001,
+        "p99Ms": 2752.9726660000015
+      },
+      "after": {
+        "n": 100,
+        "meanMs": 1665.4371829099994,
+        "p50Ms": 1171.633167,
+        "p95Ms": 2578.2246250000026,
+        "p99Ms": 2638.897167000003
+      },
+      "meanReductionPercent": -0.5239446380983749,
+      "p50ReductionPercent": 2.4126794951163717
+    },
+    "after-summary-model": {
+      "before": {
+        "n": 3,
+        "meanMs": 4424.830236333335,
+        "p50Ms": 4465.671000000002,
+        "p95Ms": 4614.203999999998,
+        "p99Ms": 4614.203999999998
+      },
+      "after": {
+        "n": 3,
+        "meanMs": 1979.8587223333209,
+        "p50Ms": 1148.8544589999947,
+        "p95Ms": 3689.169165999978,
+        "p99Ms": 3689.169165999978
+      },
+      "meanReductionPercent": 55.255713403957756,
+      "p50ReductionPercent": 74.27364310984858
+    }
+  },
+  "outputComparison": {
+    "paired": 106,
+    "identical": 106,
+    "differences": []
+  },
+  "concurrent": {
+    "before": {
+      "requests": 10,
+      "statusCounts": {
+        "200": 4,
+        "429": 6
+      },
+      "successfulCompletionMs": [
+        893.8330419999838,
+        1762.2721249999886,
+        2631.0861250000016,
+        3501.6098340000026
+      ]
+    },
+    "after": {
+      "requests": 10,
+      "statusCounts": {
+        "200": 4,
+        "429": 6
+      },
+      "successfulCompletionMs": [
+        897.3712499999965,
+        1777.2779170000285,
+        2682.9585420000076,
+        3585.5658330000006
+      ]
+    }
+  },
+  "preparedFirst": [
+    {
+      "fixture": 0,
+      "preparationMs": 1959.9382500000065,
+      "status": 200,
+      "elapsedMs": 985.567584000004,
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      }
+    },
+    {
+      "fixture": 1,
+      "preparationMs": 1624.8585409999941,
+      "status": 200,
+      "elapsedMs": 1107.5986250000133,
+      "result": {
+        "text": "예약을 취소하지 마십시오. 내일 저녁 7시로 변경해 주세요.",
+        "revision": 1
+      }
+    },
+    {
+      "fixture": 2,
+      "preparationMs": 1617.7483749999956,
+      "status": 200,
+      "elapsedMs": 1079.72445899999,
+      "result": {
+        "text": "この料理にはピーナッツが入っていますか？ 私はピーナッツを食べることができません。",
+        "revision": 1
+      }
+    }
+  ],
+  "residentAfter": [
+    {
+      "name": "translategemma:12b",
+      "size_vram": 8072105819
+    },
+    {
+      "name": "gemma4:12b-it-qat",
+      "size_vram": 7652759304
+    }
+  ]
+}

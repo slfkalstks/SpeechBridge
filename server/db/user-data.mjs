@@ -44,7 +44,7 @@ function validateConversation(c, key) {
 const entities = { conversation: 'conversations', folder: 'work_folders', settings: 'user_settings', draft: 'conversation_drafts' };
 function validateMutation(m) {
   if (!object(m) || !platform(m.platform) || !id(m.deviceId) || !id(m.mutationId) || !Object.hasOwn(entities, m.entity) || !id(m.id) || !version(m.baseVersion) || !Object.hasOwn(m, 'value')) throw bad();
-  if (m.entity === 'settings' && (m.id !== 'settings' || !object(m.value) || !['SYSTEM', 'LIGHT', 'DARK'].includes(m.value.appearance))) throw bad();
+  if (m.entity === 'settings' && (m.id !== 'settings' || !object(m.value) || !['SYSTEM', 'LIGHT', 'DARK'].includes(m.value.appearance) || (m.value.autoReadTranslation !== undefined && typeof m.value.autoReadTranslation !== 'boolean'))) throw bad();
   if (m.value === null) return;
   if (m.entity === 'conversation') validateConversation(m.value, m.id);
   if (m.entity === 'folder' && (!object(m.value) || m.value.id !== m.id || !text(m.value.name, 200))) throw bad();
@@ -132,7 +132,7 @@ export function createUserData(db) {
           await enqueueOrganization(client,user,m.value,previous);
         }
         else if (m.entity === 'folder') await client.query('INSERT INTO work_folders(user_id,id,name,version) VALUES($1,$2,$3,$4) ON CONFLICT(user_id,id) DO UPDATE SET name=excluded.name,version=excluded.version', [user,m.id,m.value.name.trim(),rev]);
-        else if (m.entity === 'settings') await client.query('INSERT INTO user_settings(user_id,appearance,version) VALUES($1,$2,$3) ON CONFLICT(user_id) DO UPDATE SET appearance=excluded.appearance,version=excluded.version,updated_at=now()', [user,m.value.appearance,rev]);
+        else if (m.entity === 'settings') await client.query('INSERT INTO user_settings(user_id,appearance,version,auto_read_translation) VALUES($1,$2,$3,COALESCE($4,true)) ON CONFLICT(user_id) DO UPDATE SET appearance=excluded.appearance,auto_read_translation=COALESCE($4,user_settings.auto_read_translation),version=excluded.version,updated_at=now()', [user,m.value.appearance,rev,m.value.autoReadTranslation ?? null]);
         else {
           await client.query('INSERT INTO conversation_drafts(user_id,device_id,scope_id,payload,version) VALUES($1,$2,$3,$4,$5) ON CONFLICT(user_id,device_id,scope_id) DO UPDATE SET payload=excluded.payload,version=excluded.version,updated_at=now(),deleted_at=NULL', [user,m.deviceId,m.id,m.value,rev]);
         }
@@ -167,7 +167,7 @@ export function createUserData(db) {
       if (settings) versions['settings:settings'] = settings.version;
       return { cursor, versions, organizationJobs: Object.fromEntries(jobs.map(j=>[j.conversation_id,j.state])),
         drafts: Object.fromEntries(drafts.filter(d=>!d.deleted_at).map(d=>[d.scope_id,d.payload])), archive: {
-        version: 1, appearance: settings?.appearance ?? 'SYSTEM', folders: folders.filter(f=>!f.deleted_at).map(f=>({id:f.id,name:f.name})),
+        version: 1, appearance: settings?.appearance ?? 'SYSTEM', autoReadTranslation: settings?.auto_read_translation ?? true, folders: folders.filter(f=>!f.deleted_at).map(f=>({id:f.id,name:f.name})),
         conversations: conversations.filter(c=>!c.deleted_at).map(c=>({ id:c.id,title:c.title,summary:c.summary,createdAt:c.created_at_text || c.created_at.toISOString(),
           first:c.first_language,second:c.second_language,translate:c.translate,record:true,ended:c.ended,category:c.category,workType:c.work_type,folderId:c.folder_id,
           metadataRevision:c.metadata_revision,organized:c.organized,organizationAttempted:c.organization_attempted,organizationSources:c.organization_sources,

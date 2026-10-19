@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-19T01:31:25.930Z",
+  "scope": "Synthetic Korean text, real authenticated HTTPS TTS, canonical non-silent PCM validation; no playback or listening test",
+  "input": {
+    "text": "회의는 내일 오후 세 시에 시작합니다.",
+    "language": "ko"
+  },
+  "elapsedMs": 6331.533208,
+  "bytes": 172844,
+  "audioSeconds": 3.6
+}

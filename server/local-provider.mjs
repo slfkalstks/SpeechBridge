@@ -149,7 +149,7 @@ export function createLocalProvider(env, {
   }
   async function generate(model, messages, signal, format) {
     const result = await call('/api/chat', {
-      model, messages, stream: false, keep_alive: '30m',
+      model, messages, stream: false, keep_alive: format ? '30m' : -1,
       ...(format ? { format, think: false } : {}),
       options: { temperature: 0, seed: 42, num_ctx: format ? 8192 : 4096, num_predict: 1536 },
     }, signal);
@@ -171,6 +171,14 @@ export function createLocalProvider(env, {
   }
   return {
     configured,
+    async warmup(context) {
+      return run(0, context, async signal => {
+        await verifyModel(translationModel, signal);
+        const loaded = await call('/api/generate', { model: translationModel, stream: false,
+          keep_alive: -1, options: { num_ctx: 4096 } }, signal);
+        if (loaded.done !== true) throw invalid();
+      });
+    },
     async health(context = {}) {
       const signal = AbortSignal.any([AbortSignal.timeout(2000), ...(context.signal ? [context.signal] : [])]);
       const available = { translation: false, extraction: false, speech: false };

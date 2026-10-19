@@ -22,8 +22,9 @@ class VoiceWorkspaceTest {
     }
     private class Api: BridgeApi {
         val inputs = mutableListOf<TranslationRequest>()
+        var gate: CompletableDeferred<Unit>? = null
         override suspend fun translate(connection: Connection, request: TranslationRequest): TranslationResponse {
-            inputs += request; return TranslationResponse("번역 결과", request.revision)
+            inputs += request; gate?.await(); return TranslationResponse("번역 결과", request.revision)
         }
         override suspend fun extract(connection: Connection, request: ExtractionRequest) = ExtractionResponse(emptyList())
         override suspend fun health(connection: Connection) = Health("ok", emptyMap())
@@ -72,6 +73,42 @@ class VoiceWorkspaceTest {
             owner.put("restored", restored); runCurrent()
             assertFalse(restored.state.value.autoReadTranslation)
         } finally { owner.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun lateTranslationsNeverPlayAfterBackgroundNavigationOrMicrophoneStart() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            for (scenario in 0..3) {
+                val owner = ViewModelStore(); val voice = Voice(); val api = Api().apply { gate = CompletableDeferred() }
+                val vm = BridgeViewModel(MemorySessionStore(), api, audioDevice = Device(), voiceApi = voice)
+                owner.put("vm", vm)
+                try {
+                    runCurrent(); vm.startConversation(); val id = vm.state.value.activeId!!
+                    vm.addUtterance(id, Language.KO, "뒤늦은 번역"); runCurrent()
+                    when(scenario) {
+                        0 -> { vm.setForeground(false); vm.setForeground(true) }
+                        1 -> { vm.navigate(Page.HISTORY); vm.navigate(Page.TALK) }
+                        2 -> { vm.startVoice(); runCurrent() }
+                        3 -> { vm.setAutoReadTranslation(false); vm.setAutoReadTranslation(true) }
+                    }
+                    api.gate!!.complete(Unit); runCurrent()
+                    assertTrue(voice.spoken.isEmpty(), "scenario=$scenario")
+                } finally { owner.clear() }
+            }
+        } finally { Dispatchers.resetMain() }
+    }
+    @Test fun manualRetranslationDoesNotAutomaticallyReplayAndOffStillAllowsListening() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val owner=ViewModelStore(); val voice=Voice()
+        val vm=BridgeViewModel(MemorySessionStore(),Api(),audioDevice=Device(),voiceApi=voice)
+        owner.put("vm",vm)
+        try {
+            runCurrent();vm.setAutoReadTranslation(false);vm.startConversation()
+            val id=vm.state.value.activeId!!;vm.addUtterance(id,Language.KO,"수동 재생");runCurrent()
+            val u=vm.state.value.selected!!.utterances.single()
+            vm.translate(id,u.id);runCurrent();assertTrue(voice.spoken.isEmpty())
+            vm.speak(id,u.id);runCurrent();assertEquals(listOf("번역 결과"),voice.spoken)
+        } finally {owner.clear();Dispatchers.resetMain()}
     }
 
 }

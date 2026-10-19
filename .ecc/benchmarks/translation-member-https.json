@@ -1,0 +1,82 @@
+{
+  "date": "2026-10-19T01:29:11.377Z",
+  "scope": "Synthetic member HTTPS requests against the running app server; no UI/microphone, no conversation mutations",
+  "results": [
+    {
+      "path": "/organize",
+      "input": {
+        "language": "ko",
+        "utterances": [
+          {
+            "id": "synthetic-1",
+            "revision": 1,
+            "text": "회의는 내일 오후 3시에 시작합니다. 민수님은 보고서 두 부를 준비해 주세요."
+          }
+        ],
+        "folders": []
+      },
+      "result": {
+        "summary": "내일 오후 3시에 회의가 시작될 예정이며, 민수에게 보고서 두 부를 준비해 달라는 요청이 있었다.",
+        "title": "내일 회의 및 보고서 준비 요청",
+        "category": "WORK",
+        "workType": "TASK",
+        "folderId": null
+      },
+      "elapsedMs": 5455.345249999999
+    },
+    {
+      "path": "/translate",
+      "input": {
+        "text": "내일 오후 3시까지 보고서 두 부를 보내 주세요.",
+        "from": "ko",
+        "to": "en",
+        "revision": 1
+      },
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "elapsedMs": 1026.234375
+    },
+    {
+      "path": "/translate",
+      "input": {
+        "text": "내일 오후 3시까지 보고서 두 부를 보내 주세요.",
+        "from": "ko",
+        "to": "en",
+        "revision": 1
+      },
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "elapsedMs": 634.5339999999997
+    },
+    {
+      "path": "/translate",
+      "input": {
+        "text": "내일 오후 3시까지 보고서 두 부를 보내 주세요.",
+        "from": "ko",
+        "to": "en",
+        "revision": 1
+      },
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "elapsedMs": 634.2302500000005
+    }
+  ],
+  "residentAfter": [
+    {
+      "name": "translategemma:12b",
+      "size_vram": 8072105819,
+      "context_length": 4096
+    },
+    {
+      "name": "gemma4:12b-it-qat",
+      "size_vram": 7949527284,
+      "context_length": 8192
+    }
+  ]
+}

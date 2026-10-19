@@ -29,9 +29,10 @@ fun App(store: SessionStore? = null, audioDevice: AudioDevice = UnavailableAudio
     }
     DisposableEffect(vm, audioDevice) {
         vm.voice.attachDevice(audioDevice)
-        onDispose { vm.cancelVoice() }
+        onDispose { vm.setForeground(false) }
     }
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { vm.cancelVoice() }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { vm.setForeground(false) }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { vm.setForeground(true) }
     LaunchedEffect(vm) { vm.account?.restore() }
     val state by vm.state.collectAsStateWithLifecycle()
     val voice by vm.voice.state.collectAsStateWithLifecycle()

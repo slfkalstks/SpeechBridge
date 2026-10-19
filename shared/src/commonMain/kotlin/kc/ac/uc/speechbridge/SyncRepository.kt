@@ -59,7 +59,8 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
                 listOfNotNull(mutation.value?.let { json.decodeFromJsonElement<Conversation>(it) }))
             "folder" -> result = result.copy(folders = result.folders.filterNot { it.id == mutation.id } +
                 listOfNotNull(mutation.value?.let { json.decodeFromJsonElement<WorkFolder>(it) }))
-            "settings" -> result = result.copy(appearance = Appearance.valueOf(mutation.value!!.jsonObject.getValue("appearance").jsonPrimitive.content))
+            "settings" -> result = result.copy(appearance = Appearance.valueOf(mutation.value!!.jsonObject.getValue("appearance").jsonPrimitive.content),
+                autoReadTranslation = mutation.value.jsonObject["autoReadTranslation"]?.jsonPrimitive?.boolean ?: result.autoReadTranslation)
         }
         return result
     }
@@ -176,7 +177,8 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
         for (conversation in next.conversations) if (archive.conversations.find { it.id == conversation.id } != conversation) add("conversation", conversation.id, json.encodeToJsonElement(conversation))
         for (conversation in archive.conversations) if (next.conversations.none { it.id == conversation.id }) add("conversation", conversation.id, null)
         for (folder in archive.folders) if (next.folders.none { it.id == folder.id }) add("folder", folder.id, null)
-        if (archive.appearance != next.appearance) add("settings", "settings", buildJsonObject { put("appearance", next.appearance.name) })
+        if (archive.appearance != next.appearance || archive.autoReadTranslation != next.autoReadTranslation)
+            add("settings", "settings", buildJsonObject { put("appearance", next.appearance.name); put("autoReadTranslation", next.autoReadTranslation) })
         try {
             if (pending.size != queue(user).size || key(user) in volatileQueues) enqueue(pending, user)
         } finally {
@@ -259,7 +261,9 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
                 add("conversation", copy.id, json.encodeToJsonElement(copy))
             }
             val appearance = if (pending.any { it.entity == "settings" }) archive.appearance else snapshot.archive.appearance
-            if (appearance != snapshot.archive.appearance) add("settings", "settings", buildJsonObject { put("appearance", appearance.name) })
+            val autoRead = if (pending.any { it.entity == "settings" }) archive.autoReadTranslation else snapshot.archive.autoReadTranslation
+            if (appearance != snapshot.archive.appearance || autoRead != snapshot.archive.autoReadTranslation)
+                add("settings", "settings", buildJsonObject { put("appearance", appearance.name); put("autoReadTranslation", autoRead) })
             val nextDrafts = snapshot.drafts.toMutableMap()
             fun recover(value:JsonObject):String {
                 val record = draftConversation(value)
@@ -297,7 +301,7 @@ class SyncRepository(private val secure: CredentialStore, private val remote: Sy
             persist(envelope!!.copy(accounts = accounts))
             volatileQueues.remove(key(user))
             versions = snapshot.versions; drafts = nextDrafts; organizationJobs = snapshot.organizationJobs
-            archive = snapshot.archive.copy(conversations = records, folders = folders, appearance = appearance)
+            archive = snapshot.archive.copy(conversations = records, folders = folders, appearance = appearance, autoReadTranslation = autoRead)
             SyncWorkspace(archive,copies)
         }
     }

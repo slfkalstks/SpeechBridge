@@ -1,0 +1,3740 @@
+{
+  "label": "after",
+  "date": "2026-10-19T01:25:12.194Z",
+  "scope": "Synthetic HTTP translation on project-local Ollama; no microphone, UI rendering, TLS or PostgreSQL. Cold means unloaded runner, not OS disk cache.",
+  "sourceSha256": "dfef41bae9b893c5afc063bb39d72b852ab10a6855513895338f5b22be073581",
+  "runtime": {
+    "version": "0.34.4"
+  },
+  "fixtures": [
+    {
+      "from": "ko",
+      "to": "en",
+      "text": "내일 오후 3시까지 보고서 두 부를 보내 주세요.",
+      "revision": 1
+    },
+    {
+      "from": "en",
+      "to": "ko",
+      "text": "Please do not cancel the reservation. Change it to 7 PM tomorrow.",
+      "revision": 1
+    },
+    {
+      "from": "ko",
+      "to": "ja",
+      "text": "이 음식에 땅콩이 들어 있나요? 저는 땅콩을 먹을 수 없습니다.",
+      "revision": 1
+    },
+    {
+      "from": "ja",
+      "to": "ko",
+      "text": "会議は金曜日ではなく、木曜日の午後2時に変更になりました。",
+      "revision": 1
+    },
+    {
+      "from": "en",
+      "to": "ja",
+      "text": "Please send the updated schedule to Yuki by Friday.",
+      "revision": 1
+    },
+    {
+      "from": "ja",
+      "to": "en",
+      "text": "駅まで歩いて何分かかりますか。タクシーは使いません。",
+      "revision": 1
+    },
+    {
+      "from": "ko",
+      "to": "en",
+      "text": "예약을 취소하지 마세요. 참석자는 12명에서 9명으로 줄었고, 시작 시간은 다음 화요일 오후 2시에서 3시 30분으로 바뀌었습니다. 장소와 식사 메뉴는 그대로 유지해 주세요.",
+      "revision": 1
+    },
+    {
+      "from": "en",
+      "to": "ko",
+      "text": "The draft is not approved yet. Please send only the revised introduction to Mina by Thursday, not the full report. If the figures are still unverified, mark them as estimates rather than confirmed results.",
+      "revision": 1
+    },
+    {
+      "from": "ko",
+      "to": "ja",
+      "text": "다나카 씨, 지난번에 보낸 파일은 사용하지 마세요. 이번 메일의 첨부 파일로 바꿔 주세요. 금액은 15,000엔이 아니라 1,500엔입니다. 확인되면 답장을 부탁드립니다.",
+      "revision": 1
+    },
+    {
+      "from": "ja",
+      "to": "ko",
+      "text": "会議は金曜日ではなく木曜日の午後2時に変更になりました。田中さんは資料を準備し、ユキさんは会場の予約だけを確認してください。予約を取り直す必要はありません。",
+      "revision": 1
+    },
+    {
+      "from": "en",
+      "to": "ja",
+      "text": "Yuki, please review pages 2 through 5 by Friday. Do not change the customer names. We agreed to postpone the launch, but we have not chosen a new date. The budget remains unchanged.",
+      "revision": 1
+    },
+    {
+      "from": "ja",
+      "to": "en",
+      "text": "駅まで歩いて何分かかりますか。タクシーは使いません。午後6時までに受付を済ませたいので、途中で道に迷った場合の連絡先も教えてください。",
+      "revision": 1
+    }
+  ],
+  "results": [
+    {
+      "group": "cold",
+      "index": 0,
+      "fixture": 0,
+      "status": 200,
+      "elapsedMs": 4604.329042,
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.201708999999994
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.6768749999999955
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 4588.099875,
+          "total_duration": 4586842041,
+          "load_duration": 3615482916,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 462103000,
+          "eval_count": 17,
+          "eval_duration": 498316000
+        }
+      ]
+    },
+    {
+      "group": "cold",
+      "index": 1,
+      "fixture": 1,
+      "status": 200,
+      "elapsedMs": 3758.3967920000005,
+      "result": {
+        "text": "예약을 취소하지 마십시오. 내일 저녁 7시로 변경해 주세요.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 3.4545420000004015
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.7742499999994834
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 3751.8877920000004,
+          "total_duration": 3750964042,
+          "load_duration": 2659642084,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 462264000,
+          "eval_count": 21,
+          "eval_duration": 624647000
+        }
+      ]
+    },
+    {
+      "group": "cold",
+      "index": 2,
+      "fixture": 2,
+      "status": 200,
+      "elapsedMs": 2680.249,
+      "result": {
+        "text": "この料理にはピーナッツが入っていますか？ 私はピーナッツを食べることができません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.5430000000014843
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9682080000002316
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2676.517667,
+          "total_duration": 2675447208,
+          "load_duration": 1615361125,
+          "prompt_eval_count": 129,
+          "prompt_eval_duration": 465344000,
+          "eval_count": 20,
+          "eval_duration": 591348000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 0,
+      "fixture": 0,
+      "status": 200,
+      "elapsedMs": 977.0263749999995,
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.7825420000008307
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 2.448833000000377
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 970.3904999999995,
+          "total_duration": 969620666,
+          "load_duration": 1344791,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 462317000,
+          "eval_count": 17,
+          "eval_duration": 493637000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 1,
+      "fixture": 1,
+      "status": 200,
+      "elapsedMs": 1095.1026660000007,
+      "result": {
+        "text": "예약을 취소하지 마십시오. 내일 저녁 7시로 변경해 주세요.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.6045000000012806
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.089458000000377
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1091.3630409999987,
+          "total_duration": 1090484083,
+          "load_duration": 905791,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 458423000,
+          "eval_count": 21,
+          "eval_duration": 623043000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 2,
+      "fixture": 2,
+      "status": 200,
+      "elapsedMs": 736.6807499999995,
+      "result": {
+        "text": "この料理にはピーナッツが入っていますか？ 私はピーナッツを食べることができません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 3.229957999999897
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.4659589999992022
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 730.863707999999,
+          "total_duration": 730289333,
+          "load_duration": 1091916,
+          "prompt_eval_count": 129,
+          "prompt_eval_duration": 128782999,
+          "eval_count": 20,
+          "eval_duration": 588195000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 3,
+      "fixture": 3,
+      "status": 200,
+      "elapsedMs": 973.3877909999992,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.4820419999996375
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.8531249999996362
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 970.3132910000004,
+          "total_duration": 969722459,
+          "load_duration": 747292,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 461737000,
+          "eval_count": 17,
+          "eval_duration": 499297000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 4,
+      "fixture": 4,
+      "status": 200,
+      "elapsedMs": 874.9099999999999,
+      "result": {
+        "text": "更新されたスケジュールを金曜日までにユキに送ってください。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.168582999998762
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.0294170000015583
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 870.9355420000011,
+          "total_duration": 870149250,
+          "load_duration": 889916,
+          "prompt_eval_count": 120,
+          "prompt_eval_duration": 456561000,
+          "eval_count": 14,
+          "eval_duration": 406192000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 5,
+      "fixture": 5,
+      "status": 200,
+      "elapsedMs": 1089.2592080000013,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.5507920000000013
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.854709000001094
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1086.008041000001,
+          "total_duration": 1085328458,
+          "load_duration": 877791,
+          "prompt_eval_count": 126,
+          "prompt_eval_duration": 456473000,
+          "eval_count": 21,
+          "eval_duration": 619587000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 6,
+      "fixture": 6,
+      "status": 200,
+      "elapsedMs": 2407.1822920000013,
+      "result": {
+        "text": "Please do not cancel the reservation. The number of attendees has decreased from 12 to 9, and the start time has been changed from next Tuesday at 2:00 PM to 3:30 PM. Please keep the location and meal menu the same.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.5655000000006112
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9693749999969441
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2403.461625,
+          "total_duration": 2402617250,
+          "load_duration": 826042,
+          "prompt_eval_count": 166,
+          "prompt_eval_duration": 629650000,
+          "eval_count": 57,
+          "eval_duration": 1761266000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 7,
+      "fixture": 7,
+      "status": 200,
+      "elapsedMs": 2559.766499999998,
+      "result": {
+        "text": "제출된 초안은 아직 승인되지 않았습니다. 목요일까지 미나에게 전체 보고서가 아닌, 수정된 서론 부분만 보내주시기 바랍니다. 만약 수치가 아직 검증되지 않았다면, 확정된 결과로 표시하는 대신 추정치로 표시해 주십시오.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 3.588792000002286
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.7307500000024447
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2552.8907919999983,
+          "total_duration": 2552172542,
+          "load_duration": 1328042,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 551400000,
+          "eval_count": 65,
+          "eval_duration": 1977991000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 8,
+      "fixture": 8,
+      "status": 200,
+      "elapsedMs": 2315.3754580000023,
+      "result": {
+        "text": "田中様、先にお送りしたファイルは使用しないでください。今度のメールに添付されているファイルを使用してください。金額は15,000円ではなく、1,500円です。確認ができましたら、ご返信をお願いいたします。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.6557080000020505
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9889159999984258
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2311.944374999999,
+          "total_duration": 2311349750,
+          "load_duration": 908042,
+          "prompt_eval_count": 165,
+          "prompt_eval_duration": 630227000,
+          "eval_count": 54,
+          "eval_duration": 1670700000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 9,
+      "fixture": 9,
+      "status": 200,
+      "elapsedMs": 2271.5975419999995,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다. 타나카 씨는 자료를 준비해주시고, 유키 씨는 장소 예약만 확인해주시면 됩니다. 다시 예약을 할 필요는 없습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.519040999999561
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9692079999986163
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2267.114125,
+          "total_duration": 2266161583,
+          "load_duration": 914333,
+          "prompt_eval_count": 148,
+          "prompt_eval_duration": 564606000,
+          "eval_count": 49,
+          "eval_duration": 1684655000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 10,
+      "fixture": 10,
+      "status": 200,
+      "elapsedMs": 2226.7768340000002,
+      "result": {
+        "text": "ユキさん、金曜日までに2ページから5ページまでをご確認ください。顧客の名前は変更しないでください。発売日を延期することに合意しましたが、新しい日程はまだ決定していません。予算は変更ありません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.9451250000020082
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9880419999972219
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2222.7270830000016,
+          "total_duration": 2222088667,
+          "load_duration": 911417,
+          "prompt_eval_count": 152,
+          "prompt_eval_duration": 567692000,
+          "eval_count": 48,
+          "eval_duration": 1639020000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 11,
+      "fixture": 11,
+      "status": 200,
+      "elapsedMs": 2365.675333000003,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi. I would like to complete the check-in process by 6:00 PM, so please also provide a contact number in case I get lost along the way.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.684124999999767
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.346292000001995
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2360.5084580000002,
+          "total_duration": 2359846792,
+          "load_duration": 1056792,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 607189000,
+          "eval_count": 55,
+          "eval_duration": 1737025000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 12,
+      "fixture": 0,
+      "status": 200,
+      "elapsedMs": 1007.5409170000021,
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.059084000000439
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.0390000000006694
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1003.3945410000015,
+          "total_duration": 1002752959,
+          "load_duration": 907834,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 463508000,
+          "eval_count": 17,
+          "eval_duration": 522038000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 13,
+      "fixture": 1,
+      "status": 200,
+      "elapsedMs": 1153.4047090000022,
+      "result": {
+        "text": "예약을 취소하지 마십시오. 내일 저녁 7시로 변경해 주세요.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.520542000002024
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.1059590000004391
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1148.8943749999962,
+          "total_duration": 1148233750,
+          "load_duration": 952042,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 477045000,
+          "eval_count": 21,
+          "eval_duration": 657213000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 14,
+      "fixture": 2,
+      "status": 200,
+      "elapsedMs": 1113.923459000005,
+      "result": {
+        "text": "この料理にはピーナッツが入っていますか？ 私はピーナッツを食べることができません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.0546249999970314
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.106832999998005
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1109.9082500000004,
+          "total_duration": 1109309125,
+          "load_duration": 920583,
+          "prompt_eval_count": 129,
+          "prompt_eval_duration": 481640000,
+          "eval_count": 20,
+          "eval_duration": 612037000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 15,
+      "fixture": 3,
+      "status": 200,
+      "elapsedMs": 1018.4569160000028,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.0445830000026035
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9919999999983702
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1014.6312920000055,
+          "total_duration": 1013914250,
+          "load_duration": 878792,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 479276000,
+          "eval_count": 17,
+          "eval_duration": 521258000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 16,
+      "fixture": 4,
+      "status": 200,
+      "elapsedMs": 926.7307500000024,
+      "result": {
+        "text": "更新されたスケジュールを金曜日までにユキに送ってください。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.6219159999964177
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.568291000003228
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 921.5829999999987,
+          "total_duration": 920860167,
+          "load_duration": 1899625,
+          "prompt_eval_count": 120,
+          "prompt_eval_duration": 481557000,
+          "eval_count": 14,
+          "eval_duration": 423436000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 17,
+      "fixture": 5,
+      "status": 200,
+      "elapsedMs": 1171.633167,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.563583999995899
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.887125000001106
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1168.4943749999948,
+          "total_duration": 1167607917,
+          "load_duration": 740209,
+          "prompt_eval_count": 126,
+          "prompt_eval_duration": 486544000,
+          "eval_count": 21,
+          "eval_duration": 674611000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 18,
+      "fixture": 6,
+      "status": 200,
+      "elapsedMs": 2496.035624999997,
+      "result": {
+        "text": "Please do not cancel the reservation. The number of attendees has decreased from 12 to 9, and the start time has been changed from next Tuesday at 2:00 PM to 3:30 PM. Please keep the location and meal menu the same.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.6509169999990263
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.4039999999949941
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2491.127625000001,
+          "total_duration": 2490391583,
+          "load_duration": 1212875,
+          "prompt_eval_count": 166,
+          "prompt_eval_duration": 643187000,
+          "eval_count": 57,
+          "eval_duration": 1839332000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 19,
+      "fixture": 7,
+      "status": 200,
+      "elapsedMs": 2578.2246250000026,
+      "result": {
+        "text": "제출된 초안은 아직 승인되지 않았습니다. 목요일까지 미나에게 전체 보고서가 아닌, 수정된 서론 부분만 보내주시기 바랍니다. 만약 수치가 아직 검증되지 않았다면, 확정된 결과로 표시하는 대신 추정치로 표시해 주십시오.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.051791999998386
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.1376670000026934
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2574.1126670000012,
+          "total_duration": 2573369833,
+          "load_duration": 1034916,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 557406000,
+          "eval_count": 65,
+          "eval_duration": 2008422000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 20,
+      "fixture": 8,
+      "status": 200,
+      "elapsedMs": 2319.5604170000006,
+      "result": {
+        "text": "田中様、先にお送りしたファイルは使用しないでください。今度のメールに添付されているファイルを使用してください。金額は15,000円ではなく、1,500円です。確認ができましたら、ご返信をお願いいたします。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.3594579999989946
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3141659999964759
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2314.911291000004,
+          "total_duration": 2314236417,
+          "load_duration": 1014250,
+          "prompt_eval_count": 165,
+          "prompt_eval_duration": 650972000,
+          "eval_count": 54,
+          "eval_duration": 1655276000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 21,
+      "fixture": 9,
+      "status": 200,
+      "elapsedMs": 2095.3781669999953,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다. 타나카 씨는 자료를 준비해주시고, 유키 씨는 장소 예약만 확인해주시면 됩니다. 다시 예약을 할 필요는 없습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.1329579999946873
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.1287089999968885
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2091.209207999993,
+          "total_duration": 2090442125,
+          "load_duration": 1073416,
+          "prompt_eval_count": 148,
+          "prompt_eval_duration": 576061000,
+          "eval_count": 49,
+          "eval_duration": 1505831000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 22,
+      "fixture": 10,
+      "status": 200,
+      "elapsedMs": 2103.2999999999956,
+      "result": {
+        "text": "ユキさん、金曜日までに2ページから5ページまでをご確認ください。顧客の名前は変更しないでください。発売日を延期することに合意しましたが、新しい日程はまだ決定していません。予算は変更ありません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.9530419999937294
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.1520410000011907
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2099.332125000001,
+          "total_duration": 2098697292,
+          "load_duration": 1042334,
+          "prompt_eval_count": 152,
+          "prompt_eval_duration": 588314000,
+          "eval_count": 48,
+          "eval_duration": 1503081000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 23,
+      "fixture": 11,
+      "status": 200,
+      "elapsedMs": 2305.717457999999,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi. I would like to complete the check-in process by 6:00 PM, so please also provide a contact number in case I get lost along the way.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.010167000000365
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.518000000003667
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2301.2674999999945,
+          "total_duration": 2300383083,
+          "load_duration": 1027333,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 598015000,
+          "eval_count": 55,
+          "eval_duration": 1694939000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 24,
+      "fixture": 0,
+      "status": 200,
+      "elapsedMs": 1026.3290830000042,
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.138582999999926
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.1072080000012647
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1022.2083749999947,
+          "total_duration": 1021506542,
+          "load_duration": 1128000,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 507537000,
+          "eval_count": 17,
+          "eval_duration": 504215000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 25,
+      "fixture": 1,
+      "status": 200,
+      "elapsedMs": 1151.397917000002,
+      "result": {
+        "text": "예약을 취소하지 마십시오. 내일 저녁 7시로 변경해 주세요.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.3498749999998836
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3807500000039
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1146.7505410000012,
+          "total_duration": 1146078709,
+          "load_duration": 983875,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 503138000,
+          "eval_count": 21,
+          "eval_duration": 635783000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 26,
+      "fixture": 2,
+      "status": 200,
+      "elapsedMs": 1190.502416999996,
+      "result": {
+        "text": "この料理にはピーナッツが入っていますか？ 私はピーナッツを食べることができません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.9952909999992698
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.218458000003011
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1186.4203329999946,
+          "total_duration": 1185770167,
+          "load_duration": 1230167,
+          "prompt_eval_count": 129,
+          "prompt_eval_duration": 510139000,
+          "eval_count": 20,
+          "eval_duration": 668376000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 27,
+      "fixture": 3,
+      "status": 200,
+      "elapsedMs": 1040.861957999994,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.7486250000001746
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.0024580000026617
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1037.1786250000005,
+          "total_duration": 1036533834,
+          "load_duration": 1133500,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 519001999,
+          "eval_count": 17,
+          "eval_duration": 510688000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 28,
+      "fixture": 4,
+      "status": 200,
+      "elapsedMs": 935.2405829999989,
+      "result": {
+        "text": "更新されたスケジュールを金曜日までにユキに送ってください。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.5911659999983385
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.0311250000013388
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 931.9147920000032,
+          "total_duration": 931365458,
+          "load_duration": 882792,
+          "prompt_eval_count": 120,
+          "prompt_eval_duration": 519981000,
+          "eval_count": 14,
+          "eval_duration": 404424000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 29,
+      "fixture": 5,
+      "status": 200,
+      "elapsedMs": 1181.267541000001,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 4.011790999997174
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.8277089999974123
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1174.514375000006,
+          "total_duration": 1173569166,
+          "load_duration": 923791,
+          "prompt_eval_count": 126,
+          "prompt_eval_duration": 523578000,
+          "eval_count": 21,
+          "eval_duration": 643336000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 30,
+      "fixture": 6,
+      "status": 200,
+      "elapsedMs": 2547.435833000003,
+      "result": {
+        "text": "Please do not cancel the reservation. The number of attendees has decreased from 12 to 9, and the start time has been changed from next Tuesday at 2:00 PM to 3:30 PM. Please keep the location and meal menu the same.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.146082999999635
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.223334000002069
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2542.998083999999,
+          "total_duration": 2542324583,
+          "load_duration": 1051125,
+          "prompt_eval_count": 166,
+          "prompt_eval_duration": 767607000,
+          "eval_count": 57,
+          "eval_duration": 1768187000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 31,
+      "fixture": 7,
+      "status": 200,
+      "elapsedMs": 2657.1849159999983,
+      "result": {
+        "text": "제출된 초안은 아직 승인되지 않았습니다. 목요일까지 미나에게 전체 보고서가 아닌, 수정된 서론 부분만 보내주시기 바랍니다. 만약 수치가 아직 검증되지 않았다면, 확정된 결과로 표시하는 대신 추정치로 표시해 주십시오.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.691500000000815
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.2957920000044396
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2653.421500000004,
+          "total_duration": 2652753542,
+          "load_duration": 884750,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 637466000,
+          "eval_count": 65,
+          "eval_duration": 2008106000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 32,
+      "fixture": 8,
+      "status": 200,
+      "elapsedMs": 2467.700457999992,
+      "result": {
+        "text": "田中様、先にお送りしたファイルは使用しないでください。今度のメールに添付されているファイルを使用してください。金額は15,000円ではなく、1,500円です。確認ができましたら、ご返信をお願いいたします。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.9890839999934542
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.0294579999972484
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2463.806042000004,
+          "total_duration": 2462979292,
+          "load_duration": 993709,
+          "prompt_eval_count": 165,
+          "prompt_eval_duration": 748424000,
+          "eval_count": 54,
+          "eval_duration": 1707174000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 33,
+      "fixture": 9,
+      "status": 200,
+      "elapsedMs": 2158.980374999999,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다. 타나카 씨는 자료를 준비해주시고, 유키 씨는 장소 예약만 확인해주시면 됩니다. 다시 예약을 할 필요는 없습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.689708999998402
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.1812920000083977
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2154.0480830000015,
+          "total_duration": 2153365792,
+          "load_duration": 965250,
+          "prompt_eval_count": 148,
+          "prompt_eval_duration": 650603000,
+          "eval_count": 49,
+          "eval_duration": 1495469000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 34,
+      "fixture": 10,
+      "status": 200,
+      "elapsedMs": 2185.5501249999943,
+      "result": {
+        "text": "ユキさん、金曜日までに2ページから5ページまでをご確認ください。顧客の名前は変更しないでください。発売日を延期することに合意しましたが、新しい日程はまだ決定していません。予算は変更ありません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.0048749999987194
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.0803750000050059
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2181.634124999997,
+          "total_duration": 2181013875,
+          "load_duration": 970375,
+          "prompt_eval_count": 152,
+          "prompt_eval_duration": 653456000,
+          "eval_count": 48,
+          "eval_duration": 1519876000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 35,
+      "fixture": 11,
+      "status": 200,
+      "elapsedMs": 2316.995833000008,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi. I would like to complete the check-in process by 6:00 PM, so please also provide a contact number in case I get lost along the way.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.9654999999911524
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.2320420000032755
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2313.0330410000024,
+          "total_duration": 2312382292,
+          "load_duration": 1040750,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 638416000,
+          "eval_count": 55,
+          "eval_duration": 1665731000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 36,
+      "fixture": 0,
+      "status": 200,
+      "elapsedMs": 1037.314750000005,
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.5268329999962589
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.065083000008599
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1033.9499579999974,
+          "total_duration": 1033287417,
+          "load_duration": 895250,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 526756999,
+          "eval_count": 17,
+          "eval_duration": 495567000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 37,
+      "fixture": 1,
+      "status": 200,
+      "elapsedMs": 1159.8443750000006,
+      "result": {
+        "text": "예약을 취소하지 마십시오. 내일 저녁 7시로 변경해 주세요.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.7512500000011642
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9630840000027092
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1156.3656249999913,
+          "total_duration": 1155796750,
+          "load_duration": 743375,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 527912000,
+          "eval_count": 21,
+          "eval_duration": 621532000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 38,
+      "fixture": 2,
+      "status": 200,
+      "elapsedMs": 1118.648915999991,
+      "result": {
+        "text": "この料理にはピーナッツが入っていますか？ 私はピーナッツを食べることができません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.1387919999979204
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.032999999995809
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1114.8305839999957,
+          "total_duration": 1114270583,
+          "load_duration": 882541,
+          "prompt_eval_count": 129,
+          "prompt_eval_duration": 518943000,
+          "eval_count": 20,
+          "eval_duration": 589009000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 39,
+      "fixture": 3,
+      "status": 200,
+      "elapsedMs": 1025.215916999994,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.6229159999929834
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9831660000054399
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1021.8969579999975,
+          "total_duration": 1021329000,
+          "load_duration": 915917,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 516532000,
+          "eval_count": 17,
+          "eval_duration": 496286000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 40,
+      "fixture": 4,
+      "status": 200,
+      "elapsedMs": 932.4824999999983,
+      "result": {
+        "text": "更新されたスケジュールを金曜日までにユキに送ってください。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.012040999994497
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.912624999997206
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 928.8502910000097,
+          "total_duration": 928258250,
+          "load_duration": 888333,
+          "prompt_eval_count": 120,
+          "prompt_eval_duration": 513044999,
+          "eval_count": 14,
+          "eval_duration": 408961000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 41,
+      "fixture": 5,
+      "status": 200,
+      "elapsedMs": 1156.5274999999965,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.0114169999869773
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3344169999909354
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1152.4134170000034,
+          "total_duration": 1151871250,
+          "load_duration": 1244333,
+          "prompt_eval_count": 126,
+          "prompt_eval_duration": 515847000,
+          "eval_count": 21,
+          "eval_duration": 624655000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 42,
+      "fixture": 6,
+      "status": 200,
+      "elapsedMs": 2512.4665000000095,
+      "result": {
+        "text": "Please do not cancel the reservation. The number of attendees has decreased from 12 to 9, and the start time has been changed from next Tuesday at 2:00 PM to 3:30 PM. Please keep the location and meal menu the same.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.12599999998929
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9966249999997672
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2508.706999999995,
+          "total_duration": 2508149917,
+          "load_duration": 922625,
+          "prompt_eval_count": 166,
+          "prompt_eval_duration": 709858000,
+          "eval_count": 57,
+          "eval_duration": 1790199000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 43,
+      "fixture": 7,
+      "status": 200,
+      "elapsedMs": 2638.897167000003,
+      "result": {
+        "text": "제출된 초안은 아직 승인되지 않았습니다. 목요일까지 미나에게 전체 보고서가 아닌, 수정된 서론 부분만 보내주시기 바랍니다. 만약 수치가 아직 검증되지 않았다면, 확정된 결과로 표시하는 대신 추정치로 표시해 주십시오.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.7047919999895385
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.1768750000046566
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2635.287083999996,
+          "total_duration": 2634614250,
+          "load_duration": 915417,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 612570000,
+          "eval_count": 65,
+          "eval_duration": 2014704000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 44,
+      "fixture": 8,
+      "status": 200,
+      "elapsedMs": 2485.1503749999974,
+      "result": {
+        "text": "田中様、先にお送りしたファイルは使用しないでください。今度のメールに添付されているファイルを使用してください。金額は15,000円ではなく、1,500円です。確認ができましたら、ご返信をお願いいたします。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.6690840000082972
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9267079999990528
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2481.799542000008,
+          "total_duration": 2481164541,
+          "load_duration": 776833,
+          "prompt_eval_count": 165,
+          "prompt_eval_duration": 718013000,
+          "eval_count": 54,
+          "eval_duration": 1756194000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 45,
+      "fixture": 9,
+      "status": 200,
+      "elapsedMs": 2213.0289170000033,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다. 타나카 씨는 자료를 준비해주시고, 유키 씨는 장소 예약만 확인해주시면 됩니다. 다시 예약을 할 필요는 없습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 3.2517920000100276
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.252041999992798
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2207.6749169999966,
+          "total_duration": 2207025791,
+          "load_duration": 1043166,
+          "prompt_eval_count": 148,
+          "prompt_eval_duration": 634263000,
+          "eval_count": 49,
+          "eval_duration": 1564915000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 46,
+      "fixture": 10,
+      "status": 200,
+      "elapsedMs": 2191.7208329999994,
+      "result": {
+        "text": "ユキさん、金曜日までに2ページから5ページまでをご確認ください。顧客の名前は変更しないでください。発売日を延期することに合意しましたが、新しい日程はまだ決定していません。予算は変更ありません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.028042000005371
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.1427919999987353
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2187.792167000007,
+          "total_duration": 2187214458,
+          "load_duration": 1106000,
+          "prompt_eval_count": 152,
+          "prompt_eval_duration": 646134000,
+          "eval_count": 48,
+          "eval_duration": 1533641000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 47,
+      "fixture": 11,
+      "status": 200,
+      "elapsedMs": 2365.2048750000104,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi. I would like to complete the check-in process by 6:00 PM, so please also provide a contact number in case I get lost along the way.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.0840409999946132
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.8841669999965234
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2361.46983300001,
+          "total_duration": 2360874833,
+          "load_duration": 782958,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 614919000,
+          "eval_count": 55,
+          "eval_duration": 1739515000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 48,
+      "fixture": 0,
+      "status": 200,
+      "elapsedMs": 1056.843458000003,
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.436833999992814
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.6383329999953276
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1051.9012079999957,
+          "total_duration": 1051139083,
+          "load_duration": 1305583,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 511650000,
+          "eval_count": 17,
+          "eval_duration": 525212000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 49,
+      "fixture": 1,
+      "status": 200,
+      "elapsedMs": 1167.1282500000088,
+      "result": {
+        "text": "예약을 취소하지 마십시오. 내일 저녁 7시로 변경해 주세요.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.799417000001995
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9615000000048894
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1163.672041999991,
+          "total_duration": 1163082916,
+          "load_duration": 848250,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 507989000,
+          "eval_count": 21,
+          "eval_duration": 646897000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 50,
+      "fixture": 2,
+      "status": 200,
+      "elapsedMs": 1164.9703339999978,
+      "result": {
+        "text": "この料理にはピーナッツが入っていますか？ 私はピーナッツを食べることができません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.043999999994412
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.8898329999938142
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1161.3770829999994,
+          "total_duration": 1160830417,
+          "load_duration": 809709,
+          "prompt_eval_count": 129,
+          "prompt_eval_duration": 510184000,
+          "eval_count": 20,
+          "eval_duration": 644160000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 51,
+      "fixture": 3,
+      "status": 200,
+      "elapsedMs": 1058.7676250000077,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.560542000006535
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.852415999994264
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1055.6019579999993,
+          "total_duration": 1055017375,
+          "load_duration": 864875,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 530340000,
+          "eval_count": 17,
+          "eval_duration": 518374000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 52,
+      "fixture": 4,
+      "status": 200,
+      "elapsedMs": 904.8638749999955,
+      "result": {
+        "text": "更新されたスケジュールを金曜日までにユキに送ってください。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.5362499999901047
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.2070830000011483
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 900.1486670000013,
+          "total_duration": 899531250,
+          "load_duration": 1029250,
+          "prompt_eval_count": 120,
+          "prompt_eval_duration": 489246000,
+          "eval_count": 14,
+          "eval_duration": 403321000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 53,
+      "fixture": 5,
+      "status": 200,
+      "elapsedMs": 1148.6397909999941,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.5061669999995502
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.8452499999984866
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1145.5432909999945,
+          "total_duration": 1144864375,
+          "load_duration": 803291,
+          "prompt_eval_count": 126,
+          "prompt_eval_duration": 495714000,
+          "eval_count": 21,
+          "eval_duration": 638745000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 54,
+      "fixture": 6,
+      "status": 200,
+      "elapsedMs": 2436.7382500000094,
+      "result": {
+        "text": "Please do not cancel the reservation. The number of attendees has decreased from 12 to 9, and the start time has been changed from next Tuesday at 2:00 PM to 3:30 PM. Please keep the location and meal menu the same.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.358291000011377
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3325840000034077
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2432.184374999997,
+          "total_duration": 2431590084,
+          "load_duration": 1175209,
+          "prompt_eval_count": 166,
+          "prompt_eval_duration": 677918000,
+          "eval_count": 57,
+          "eval_duration": 1746412000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 55,
+      "fixture": 7,
+      "status": 200,
+      "elapsedMs": 2610.0837499999907,
+      "result": {
+        "text": "제출된 초안은 아직 승인되지 않았습니다. 목요일까지 미나에게 전체 보고서가 아닌, 수정된 서론 부분만 보내주시기 바랍니다. 만약 수치가 아직 검증되지 않았다면, 확정된 결과로 표시하는 대신 추정치로 표시해 주십시오.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.93895799999882
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.8912909999926342
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2606.5749159999978,
+          "total_duration": 2605978458,
+          "load_duration": 781833,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 582183000,
+          "eval_count": 65,
+          "eval_duration": 2017170000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 56,
+      "fixture": 8,
+      "status": 200,
+      "elapsedMs": 2337.9090409999917,
+      "result": {
+        "text": "田中様、先にお送りしたファイルは使用しないでください。今度のメールに添付されているファイルを使用してください。金額は15,000円ではなく、1,500円です。確認ができましたら、ご返信をお願いいたします。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.440499999996973
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3792909999901894
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2333.1842079999915,
+          "total_duration": 2332428667,
+          "load_duration": 1230459,
+          "prompt_eval_count": 165,
+          "prompt_eval_duration": 666585000,
+          "eval_count": 54,
+          "eval_duration": 1656694000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 57,
+      "fixture": 9,
+      "status": 200,
+      "elapsedMs": 2094.851125000001,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다. 타나카 씨는 자료를 준비해주시고, 유키 씨는 장소 예약만 확인해주시면 됩니다. 다시 예약을 할 필요는 없습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.4529590000020107
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.374708000003011
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2090.1388749999896,
+          "total_duration": 2089463500,
+          "load_duration": 1045542,
+          "prompt_eval_count": 148,
+          "prompt_eval_duration": 575362000,
+          "eval_count": 49,
+          "eval_duration": 1505949000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 58,
+      "fixture": 10,
+      "status": 200,
+      "elapsedMs": 2075.3139590000064,
+      "result": {
+        "text": "ユキさん、金曜日までに2ページから5ページまでをご確認ください。顧客の名前は変更しないでください。発売日を延期することに合意しましたが、新しい日程はまだ決定していません。予算は変更ありません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 3.1643329999933485
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.4470000000001164
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2069.4158330000064,
+          "total_duration": 2068461375,
+          "load_duration": 1271208,
+          "prompt_eval_count": 152,
+          "prompt_eval_duration": 575169000,
+          "eval_count": 48,
+          "eval_duration": 1484303000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 59,
+      "fixture": 11,
+      "status": 200,
+      "elapsedMs": 2264.620041999995,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi. I would like to complete the check-in process by 6:00 PM, so please also provide a contact number in case I get lost along the way.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.4272090000013122
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3742079999938142
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2259.832917000007,
+          "total_duration": 2259098625,
+          "load_duration": 1178917,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 564747000,
+          "eval_count": 55,
+          "eval_duration": 1686265000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 60,
+      "fixture": 0,
+      "status": 200,
+      "elapsedMs": 989.083249999996,
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 3.0378340000024764
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3905830000003334
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 983.6493749999936,
+          "total_duration": 983028000,
+          "load_duration": 1042583,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 470022000,
+          "eval_count": 17,
+          "eval_duration": 499446000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 61,
+      "fixture": 1,
+      "status": 200,
+      "elapsedMs": 1100.541207999995,
+      "result": {
+        "text": "예약을 취소하지 마십시오. 내일 저녁 7시로 변경해 주세요.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.881667000008747
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.0567920000030426
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1096.64833299999,
+          "total_duration": 1095724542,
+          "load_duration": 967958,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 467338000,
+          "eval_count": 21,
+          "eval_duration": 621522000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 62,
+      "fixture": 2,
+      "status": 200,
+      "elapsedMs": 1061.6922079999931,
+      "result": {
+        "text": "この料理にはピーナッツが入っていますか？ 私はピーナッツを食べることができません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.8984590000036405
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.950250000008964
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1058.119040999998,
+          "total_duration": 1057522958,
+          "load_duration": 869541,
+          "prompt_eval_count": 129,
+          "prompt_eval_duration": 464900000,
+          "eval_count": 20,
+          "eval_duration": 586444000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 63,
+      "fixture": 3,
+      "status": 200,
+      "elapsedMs": 973.7050829999935,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.0064169999968726
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.149875000002794
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 969.6301669999957,
+          "total_duration": 968938583,
+          "load_duration": 894708,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 466138000,
+          "eval_count": 17,
+          "eval_duration": 495419000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 64,
+      "fixture": 4,
+      "status": 200,
+      "elapsedMs": 884.4339170000021,
+      "result": {
+        "text": "更新されたスケジュールを金曜日までにユキに送ってください。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.97783299999719
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3639580000017304
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 879.0535000000091,
+          "total_duration": 878305792,
+          "load_duration": 1024417,
+          "prompt_eval_count": 120,
+          "prompt_eval_duration": 467137000,
+          "eval_count": 14,
+          "eval_duration": 403470000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 65,
+      "fixture": 5,
+      "status": 200,
+      "elapsedMs": 1096.1740419999987,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.326499999995576
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.2739999999903375
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1091.2621669999935,
+          "total_duration": 1090625209,
+          "load_duration": 1168334,
+          "prompt_eval_count": 126,
+          "prompt_eval_duration": 462716000,
+          "eval_count": 21,
+          "eval_duration": 619793000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 66,
+      "fixture": 6,
+      "status": 200,
+      "elapsedMs": 2392.2099580000067,
+      "result": {
+        "text": "Please do not cancel the reservation. The number of attendees has decreased from 12 to 9, and the start time has been changed from next Tuesday at 2:00 PM to 3:30 PM. Please keep the location and meal menu the same.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.623458000001847
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3578750000015134
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2387.347874999992,
+          "total_duration": 2386733459,
+          "load_duration": 1153167,
+          "prompt_eval_count": 166,
+          "prompt_eval_duration": 641909000,
+          "eval_count": 57,
+          "eval_duration": 1734920000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 67,
+      "fixture": 7,
+      "status": 200,
+      "elapsedMs": 2552.1876249999914,
+      "result": {
+        "text": "제출된 초안은 아직 승인되지 않았습니다. 목요일까지 미나에게 전체 보고서가 아닌, 수정된 서론 부분만 보내주시기 바랍니다. 만약 수치가 아직 검증되지 않았다면, 확정된 결과로 표시하는 대신 추정치로 표시해 주십시오.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.165500000002794
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.4047910000081174
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2547.7385000000068,
+          "total_duration": 2547060042,
+          "load_duration": 1298375,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 555468000,
+          "eval_count": 65,
+          "eval_duration": 1982860000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 68,
+      "fixture": 8,
+      "status": 200,
+      "elapsedMs": 2296.644042,
+      "result": {
+        "text": "田中様、先にお送りしたファイルは使用しないでください。今度のメールに添付されているファイルを使用してください。金額は15,000円ではなく、1,500円です。確認ができましたら、ご返信をお願いいたします。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.792457999996259
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.269165999998222
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2291.6767499999987,
+          "total_duration": 2290922500,
+          "load_duration": 1067625,
+          "prompt_eval_count": 165,
+          "prompt_eval_duration": 634789000,
+          "eval_count": 54,
+          "eval_duration": 1648350000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 69,
+      "fixture": 9,
+      "status": 200,
+      "elapsedMs": 2053.936666999987,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다. 타나카 씨는 자료를 준비해주시고, 유키 씨는 장소 예약만 확인해주시면 됩니다. 다시 예약을 할 필요는 없습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.525207999991835
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3253330000006827
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2049.2040829999896,
+          "total_duration": 2048569416,
+          "load_duration": 1324291,
+          "prompt_eval_count": 148,
+          "prompt_eval_duration": 553076000,
+          "eval_count": 49,
+          "eval_duration": 1486820000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 70,
+      "fixture": 10,
+      "status": 200,
+      "elapsedMs": 2056.290374999997,
+      "result": {
+        "text": "ユキさん、金曜日までに2ページから5ページまでをご確認ください。顧客の名前は変更しないでください。発売日を延期することに合意しましたが、新しい日程はまだ決定していません。予算は変更ありません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.114000000001397
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.0533750000031432
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2052.342749999996,
+          "total_duration": 2051607583,
+          "load_duration": 886333,
+          "prompt_eval_count": 152,
+          "prompt_eval_duration": 565536000,
+          "eval_count": 48,
+          "eval_duration": 1479712000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 71,
+      "fixture": 11,
+      "status": 200,
+      "elapsedMs": 2256.970666999987,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi. I would like to complete the check-in process by 6:00 PM, so please also provide a contact number in case I get lost along the way.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.5853750000096625
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3647499999933643
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2252.1781670000055,
+          "total_duration": 2251619458,
+          "load_duration": 1478958,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 555261000,
+          "eval_count": 55,
+          "eval_duration": 1686833000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 72,
+      "fixture": 0,
+      "status": 200,
+      "elapsedMs": 988.2549160000053,
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.962708000006387
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.8737499999988358
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 984.7639999999956,
+          "total_duration": 984279625,
+          "load_duration": 766750,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 468006000,
+          "eval_count": 17,
+          "eval_duration": 506132000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 73,
+      "fixture": 1,
+      "status": 200,
+      "elapsedMs": 1098.5462499999849,
+      "result": {
+        "text": "예약을 취소하지 마십시오. 내일 저녁 7시로 변경해 주세요.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.811042000015732
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.0289999999804422
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1094.6432499999937,
+          "total_duration": 1093967667,
+          "load_duration": 981709,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 469167000,
+          "eval_count": 21,
+          "eval_duration": 618200000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 74,
+      "fixture": 2,
+      "status": 200,
+      "elapsedMs": 1074.1691669999855,
+      "result": {
+        "text": "この料理にはピーナッツが入っていますか？ 私はピーナッツを食べることができません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.8631250000034925
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.2315420000231825
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1069.0577080000076,
+          "total_duration": 1068264250,
+          "load_duration": 1242625,
+          "prompt_eval_count": 129,
+          "prompt_eval_duration": 463240000,
+          "eval_count": 20,
+          "eval_duration": 596911000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 75,
+      "fixture": 3,
+      "status": 200,
+      "elapsedMs": 986.677457999991,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.842000000004191
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.4265420000010636
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 981.5233339999977,
+          "total_duration": 980920250,
+          "load_duration": 1729083,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 468526000,
+          "eval_count": 17,
+          "eval_duration": 497393000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 76,
+      "fixture": 4,
+      "status": 200,
+      "elapsedMs": 883.4691670000029,
+      "result": {
+        "text": "更新されたスケジュールを金曜日までにユキに送ってください。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.6576249999925494
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.8922909999964759
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 880.1547079999873,
+          "total_duration": 879534833,
+          "load_duration": 869583,
+          "prompt_eval_count": 120,
+          "prompt_eval_duration": 466027000,
+          "eval_count": 14,
+          "eval_duration": 407366000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 77,
+      "fixture": 5,
+      "status": 200,
+      "elapsedMs": 1097.8725419999973,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.5728330000129063
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3861659999820404
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1092.6897499999905,
+          "total_duration": 1092033416,
+          "load_duration": 1156791,
+          "prompt_eval_count": 126,
+          "prompt_eval_duration": 465887000,
+          "eval_count": 21,
+          "eval_duration": 616160000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 78,
+      "fixture": 6,
+      "status": 200,
+      "elapsedMs": 2398.0434999999998,
+      "result": {
+        "text": "Please do not cancel the reservation. The number of attendees has decreased from 12 to 9, and the start time has been changed from next Tuesday at 2:00 PM to 3:30 PM. Please keep the location and meal menu the same.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.4161669999884907
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.2574579999782145
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2393.5701249999984,
+          "total_duration": 2392967958,
+          "load_duration": 1229375,
+          "prompt_eval_count": 166,
+          "prompt_eval_duration": 634546000,
+          "eval_count": 57,
+          "eval_duration": 1748146000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 79,
+      "fixture": 7,
+      "status": 200,
+      "elapsedMs": 2610.871125000005,
+      "result": {
+        "text": "제출된 초안은 아직 승인되지 않았습니다. 목요일까지 미나에게 전체 보고서가 아닌, 수정된 서론 부분만 보내주시기 바랍니다. 만약 수치가 아직 검증되지 않았다면, 확정된 결과로 표시하는 대신 추정치로 표시해 주십시오.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.654792000015732
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.8714999999792781
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2607.5800410000084,
+          "total_duration": 2607002209,
+          "load_duration": 863459,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 585590000,
+          "eval_count": 65,
+          "eval_duration": 2013298000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 80,
+      "fixture": 8,
+      "status": 200,
+      "elapsedMs": 2324.0717919999734,
+      "result": {
+        "text": "田中様、先にお送りしたファイルは使用しないでください。今度のメールに添付されているファイルを使用してください。金額は15,000円ではなく、1,500円です。確認ができましたら、ご返信をお願いいたします。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.2711249999993015
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.2245000000111759
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2319.6311250000144,
+          "total_duration": 2318935708,
+          "load_duration": 1108292,
+          "prompt_eval_count": 165,
+          "prompt_eval_duration": 655413000,
+          "eval_count": 54,
+          "eval_duration": 1654825000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 81,
+      "fixture": 9,
+      "status": 200,
+      "elapsedMs": 2106.1014589999977,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다. 타나카 씨는 자료를 준비해주시고, 유키 씨는 장소 예약만 확인해주시면 됩니다. 다시 예약을 할 필요는 없습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.2096670000173617
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.1172910000022966
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2101.7637499999837,
+          "total_duration": 2101016209,
+          "load_duration": 1132625,
+          "prompt_eval_count": 148,
+          "prompt_eval_duration": 589371000,
+          "eval_count": 49,
+          "eval_duration": 1495802000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 82,
+      "fixture": 10,
+      "status": 200,
+      "elapsedMs": 2052.617666999984,
+      "result": {
+        "text": "ユキさん、金曜日までに2ページから5ページまでをご確認ください。顧客の名前は変更しないでください。発売日を延期することに合意しましたが、新しい日程はまだ決定していません。予算は変更ありません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.5434580000001006
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.5438339999818709
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2047.404750000016,
+          "total_duration": 2046665125,
+          "load_duration": 1259833,
+          "prompt_eval_count": 152,
+          "prompt_eval_duration": 566443000,
+          "eval_count": 48,
+          "eval_duration": 1471116000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 83,
+      "fixture": 11,
+      "status": 200,
+      "elapsedMs": 2297.6765000000014,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi. I would like to complete the check-in process by 6:00 PM, so please also provide a contact number in case I get lost along the way.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.53695899999002
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3680419999873266
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2292.7450409999874,
+          "total_duration": 2292040292,
+          "load_duration": 1100542,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 580629000,
+          "eval_count": 55,
+          "eval_duration": 1702569000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 84,
+      "fixture": 0,
+      "status": 200,
+      "elapsedMs": 1007.7337080000143,
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.679792000009911
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.346750000026077
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1002.9016660000198,
+          "total_duration": 1002374917,
+          "load_duration": 1617209,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 495194000,
+          "eval_count": 17,
+          "eval_duration": 496679000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 85,
+      "fixture": 1,
+      "status": 200,
+      "elapsedMs": 1110.2021669999813,
+      "result": {
+        "text": "예약을 취소하지 마십시오. 내일 저녁 7시로 변경해 주세요.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.4905830000061542
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.8169160000106785
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1107.1157499999972,
+          "total_duration": 1106492875,
+          "load_duration": 871583,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 470304000,
+          "eval_count": 21,
+          "eval_duration": 630023000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 86,
+      "fixture": 2,
+      "status": 200,
+      "elapsedMs": 1092.0576660000079,
+      "result": {
+        "text": "この料理にはピーナッツが入っていますか？ 私はピーナッツを食べることができません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.555916999990586
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.4627079999772832
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1087.120958000014,
+          "total_duration": 1086378500,
+          "load_duration": 1014750,
+          "prompt_eval_count": 129,
+          "prompt_eval_duration": 477133000,
+          "eval_count": 20,
+          "eval_duration": 596313000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 87,
+      "fixture": 3,
+      "status": 200,
+      "elapsedMs": 973.9346670000232,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.4938750000146683
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.2980830000014976
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 969.3253750000149,
+          "total_duration": 968746666,
+          "load_duration": 1234083,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 468066000,
+          "eval_count": 17,
+          "eval_duration": 492258000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 88,
+      "fixture": 4,
+      "status": 200,
+      "elapsedMs": 926.0477079999982,
+      "result": {
+        "text": "更新されたスケジュールを金曜日までにユキに送ってください。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.2887080000073183
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.0675829999963753
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 921.9141249999811,
+          "total_duration": 921267458,
+          "load_duration": 932833,
+          "prompt_eval_count": 120,
+          "prompt_eval_duration": 508777000,
+          "eval_count": 14,
+          "eval_duration": 406024000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 89,
+      "fixture": 5,
+      "status": 200,
+      "elapsedMs": 1110.9696669999976,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.77362500000163
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.230875000008382
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1105.3797919999924,
+          "total_duration": 1104569417,
+          "load_duration": 1233750,
+          "prompt_eval_count": 126,
+          "prompt_eval_duration": 468487000,
+          "eval_count": 21,
+          "eval_duration": 627838000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 90,
+      "fixture": 6,
+      "status": 200,
+      "elapsedMs": 2463.612833000021,
+      "result": {
+        "text": "Please do not cancel the reservation. The number of attendees has decreased from 12 to 9, and the start time has been changed from next Tuesday at 2:00 PM to 3:30 PM. Please keep the location and meal menu the same.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.724958000006154
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.4891659999848343
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2458.215916999994,
+          "total_duration": 2457428084,
+          "load_duration": 1246750,
+          "prompt_eval_count": 166,
+          "prompt_eval_duration": 674111000,
+          "eval_count": 57,
+          "eval_duration": 1772176000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 91,
+      "fixture": 7,
+      "status": 200,
+      "elapsedMs": 2631.3924580000166,
+      "result": {
+        "text": "제출된 초안은 아직 승인되지 않았습니다. 목요일까지 미나에게 전체 보고서가 아닌, 수정된 서론 부분만 보내주시기 바랍니다. 만약 수치가 아직 검증되지 않았다면, 확정된 결과로 표시하는 대신 추정치로 표시해 주십시오.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.7848330000124406
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.4917500000155997
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2626.059500000003,
+          "total_duration": 2625398917,
+          "load_duration": 1253917,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 591615000,
+          "eval_count": 65,
+          "eval_duration": 2024053000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 92,
+      "fixture": 8,
+      "status": 200,
+      "elapsedMs": 2407.6843750000116,
+      "result": {
+        "text": "田中様、先にお送りしたファイルは使用しないでください。今度のメールに添付されているファイルを使用してください。金額は15,000円ではなく、1,500円です。確認ができましたら、ご返信をお願いいたします。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.2310409999918193
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.2383330000157002
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2403.2624160000123,
+          "total_duration": 2402645292,
+          "load_duration": 1221667,
+          "prompt_eval_count": 165,
+          "prompt_eval_duration": 686623000,
+          "eval_count": 54,
+          "eval_duration": 1707142000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 93,
+      "fixture": 9,
+      "status": 200,
+      "elapsedMs": 2148.497707999981,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다. 타나카 씨는 자료를 준비해주시고, 유키 씨는 장소 예약만 확인해주시면 됩니다. 다시 예약을 할 필요는 없습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.7252499999885913
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3917919999803416
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2144.451166999992,
+          "total_duration": 2143666625,
+          "load_duration": 882667,
+          "prompt_eval_count": 148,
+          "prompt_eval_duration": 599524000,
+          "eval_count": 49,
+          "eval_duration": 1536733000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 94,
+      "fixture": 10,
+      "status": 200,
+      "elapsedMs": 2128.7445830000215,
+      "result": {
+        "text": "ユキさん、金曜日までに2ページから5ページまでをご確認ください。顧客の名前は変更しないでください。発売日を延期することに合意しましたが、新しい日程はまだ決定していません。予算は変更ありません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.7274169999873266
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.4617919999873266
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2123.151708999998,
+          "total_duration": 2122369125,
+          "load_duration": 1293958,
+          "prompt_eval_count": 152,
+          "prompt_eval_duration": 610359000,
+          "eval_count": 48,
+          "eval_duration": 1502625000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 95,
+      "fixture": 11,
+      "status": 200,
+      "elapsedMs": 2373.614500000025,
+      "result": {
+        "text": "How many minutes does it take to walk to the station? I will not be using a taxi. I would like to complete the check-in process by 6:00 PM, so please also provide a contact number in case I get lost along the way.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.8103330000012647
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.4694589999853633
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 2368.441749999998,
+          "total_duration": 2367826500,
+          "load_duration": 1456167,
+          "prompt_eval_count": 150,
+          "prompt_eval_duration": 609230000,
+          "eval_count": 55,
+          "eval_duration": 1749216000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 96,
+      "fixture": 0,
+      "status": 200,
+      "elapsedMs": 1021.7099579999922,
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.5329589999746531
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.8198330000159331
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1018.747417000006,
+          "total_duration": 1018267125,
+          "load_duration": 712333,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 506409000,
+          "eval_count": 17,
+          "eval_duration": 505062000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 97,
+      "fixture": 1,
+      "status": 200,
+      "elapsedMs": 1158.1641669999808,
+      "result": {
+        "text": "예약을 취소하지 마십시오. 내일 저녁 7시로 변경해 주세요.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.1086250000225846
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9292919999861624
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1154.3482079999812,
+          "total_duration": 1153796291,
+          "load_duration": 968958,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 513585000,
+          "eval_count": 21,
+          "eval_duration": 633917000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 98,
+      "fixture": 2,
+      "status": 200,
+      "elapsedMs": 1122.0512089999975,
+      "result": {
+        "text": "この料理にはピーナッツが入っていますか？ 私はピーナッツを食べることができません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.5795420000213198
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.8601670000061858
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1118.7222919999913,
+          "total_duration": 1118062375,
+          "load_duration": 1232167,
+          "prompt_eval_count": 129,
+          "prompt_eval_duration": 510695000,
+          "eval_count": 20,
+          "eval_duration": 600959000
+        }
+      ]
+    },
+    {
+      "group": "warm",
+      "index": 99,
+      "fixture": 3,
+      "status": 200,
+      "elapsedMs": 1035.7342089999875,
+      "result": {
+        "text": "회의는 금요일이 아닌 목요일 오후 2시로 변경되었습니다.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.273417000018526
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.1211250000051223
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1030.4852090000059,
+          "total_duration": 1029425500,
+          "load_duration": 1201041,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 514554999,
+          "eval_count": 17,
+          "eval_duration": 505706000
+        }
+      ]
+    },
+    {
+      "group": "after-summary-model",
+      "index": 0,
+      "fixture": 0,
+      "status": 200,
+      "elapsedMs": 3689.169165999978,
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.8224590000172611
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.8770829999994021
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 3684.995583000011,
+          "total_duration": 3684357375,
+          "load_duration": 2648768125,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 464274000,
+          "eval_count": 17,
+          "eval_duration": 568885000
+        }
+      ],
+      "residentBefore": [
+        {
+          "name": "gemma4:12b-it-qat",
+          "size_vram": 7949527284
+        }
+      ]
+    },
+    {
+      "group": "after-summary-model",
+      "index": 1,
+      "fixture": 1,
+      "status": 200,
+      "elapsedMs": 1148.8544589999947,
+      "result": {
+        "text": "예약을 취소하지 마십시오. 내일 저녁 7시로 변경해 주세요.",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 4.167125000007218
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.8657079999975394
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1142.2182079999766,
+          "total_duration": 1141346625,
+          "load_duration": 804167,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 473771000,
+          "eval_count": 21,
+          "eval_duration": 651385000
+        }
+      ],
+      "residentBefore": [
+        {
+          "name": "translategemma:12b",
+          "size_vram": 8072105819
+        },
+        {
+          "name": "gemma4:12b-it-qat",
+          "size_vram": 7652759304
+        }
+      ]
+    },
+    {
+      "group": "after-summary-model",
+      "index": 2,
+      "fixture": 2,
+      "status": 200,
+      "elapsedMs": 1101.5525419999904,
+      "result": {
+        "text": "この料理にはピーナッツが入っていますか？ 私はピーナッツを食べることができません。",
+        "revision": 1
+      },
+      "metrics": [
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.211791000008816
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.2387080000189599
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1096.9616250000254,
+          "total_duration": 1096418209,
+          "load_duration": 1097834,
+          "prompt_eval_count": 129,
+          "prompt_eval_duration": 488455000,
+          "eval_count": 20,
+          "eval_duration": 592575000
+        },
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.622709000017494
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.1170419999980368
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 892.3206660000142,
+          "total_duration": 891789125,
+          "load_duration": 895334,
+          "prompt_eval_count": 121,
+          "prompt_eval_duration": 473671000,
+          "eval_count": 14,
+          "eval_duration": 405092000
+        },
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.5942500000237487
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9667499999923166
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 877.3614579999994,
+          "total_duration": 876842166,
+          "load_duration": 883875,
+          "prompt_eval_count": 121,
+          "prompt_eval_duration": 474402000,
+          "eval_count": 14,
+          "eval_duration": 399672000
+        },
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.6584580000198912
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3131670000148006
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 902.6367920000048,
+          "total_duration": 902091792,
+          "load_duration": 799292,
+          "prompt_eval_count": 121,
+          "prompt_eval_duration": 470212000,
+          "eval_count": 14,
+          "eval_duration": 429368000
+        },
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.638082999998005
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9698750000097789
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 900.0335410000116,
+          "total_duration": 899411875,
+          "load_duration": 1047750,
+          "prompt_eval_count": 121,
+          "prompt_eval_duration": 488851000,
+          "eval_count": 14,
+          "eval_duration": 406767000
+        },
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.5718749999941792
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.943291000003228
+        },
+        {
+          "path": "/api/generate",
+          "elapsedMs": 1957.237374999997
+        },
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.7120830000203568
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.8995409999915864
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 982.0224999999919,
+          "total_duration": 981470750,
+          "load_duration": 1933000,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 466138000,
+          "eval_count": 17,
+          "eval_duration": 511631000
+        },
+        {
+          "path": "/api/tags",
+          "elapsedMs": 1.7347909999953117
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9837500000139698
+        },
+        {
+          "path": "/api/generate",
+          "elapsedMs": 1621.9972080000152
+        },
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.5545409999904223
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.3277499999967404
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1102.8669579999987,
+          "total_duration": 1102327416,
+          "load_duration": 1197500,
+          "prompt_eval_count": 125,
+          "prompt_eval_duration": 465499000,
+          "eval_count": 21,
+          "eval_duration": 633225000
+        },
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.0327499999839347
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 0.9427499999874271
+        },
+        {
+          "path": "/api/generate",
+          "elapsedMs": 1614.6385840000003
+        },
+        {
+          "path": "/api/tags",
+          "elapsedMs": 2.88466700000572
+        },
+        {
+          "path": "/api/show",
+          "elapsedMs": 1.650792000000365
+        },
+        {
+          "path": "/api/chat",
+          "elapsedMs": 1074.138874999975,
+          "total_duration": 1073555708,
+          "load_duration": 1267583,
+          "prompt_eval_count": 129,
+          "prompt_eval_duration": 461982000,
+          "eval_count": 20,
+          "eval_duration": 607528000
+        }
+      ],
+      "residentBefore": [
+        {
+          "name": "translategemma:12b",
+          "size_vram": 8072105819
+        },
+        {
+          "name": "gemma4:12b-it-qat",
+          "size_vram": 7652759304
+        }
+      ]
+    }
+  ],
+  "models": [
+    {
+      "name": "qwen3.5:9b-q8_0",
+      "digest": "3cc004da6860671a26fc1d45391434dbc2508dde1901f3e3b93e566434cce02f",
+      "size": 10449218124
+    },
+    {
+      "name": "translategemma:4b",
+      "digest": "c49d986b0764f5881c476eb21435bb62b7abc62347aab3d4a6071e811be510a1",
+      "size": 3298875707
+    },
+    {
+      "name": "gemma4:12b-it-qat",
+      "digest": "38044be4f923e5a55264ed7df4eaac2676651a905f735197c504045140c02bd3",
+      "size": 7151003754
+    },
+    {
+      "name": "translategemma:12b",
+      "digest": "c2f9a9ca1ec7149f2422581c89937ab0363d9399d9355514d753ee012e99c252",
+      "size": 8109827612
+    }
+  ],
+  "concurrent": [
+    {
+      "status": 200,
+      "elapsedMs": 897.3712499999965,
+      "result": {
+        "text": "Please send me the materials for meeting number 1 by tomorrow.",
+        "revision": 1
+      }
+    },
+    {
+      "status": 200,
+      "elapsedMs": 1777.2779170000285,
+      "result": {
+        "text": "Please send me the materials for meeting number 2 by tomorrow.",
+        "revision": 1
+      }
+    },
+    {
+      "status": 200,
+      "elapsedMs": 2682.9585420000076,
+      "result": {
+        "text": "Please send me document number 3 for the meeting by tomorrow.",
+        "revision": 1
+      }
+    },
+    {
+      "status": 200,
+      "elapsedMs": 3585.5658330000006,
+      "result": {
+        "text": "Please send me document number 4 for the meeting by tomorrow.",
+        "revision": 1
+      }
+    },
+    {
+      "status": 429,
+      "elapsedMs": 2.921834000007948,
+      "result": {
+        "error": {
+          "code": "busy",
+          "message": "AI 서버가 처리 중입니다. 잠시 후 다시 시도해 주세요."
+        }
+      }
+    },
+    {
+      "status": 429,
+      "elapsedMs": 3.0940000000118744,
+      "result": {
+        "error": {
+          "code": "busy",
+          "message": "AI 서버가 처리 중입니다. 잠시 후 다시 시도해 주세요."
+        }
+      }
+    },
+    {
+      "status": 429,
+      "elapsedMs": 3.433374999993248,
+      "result": {
+        "error": {
+          "code": "busy",
+          "message": "AI 서버가 처리 중입니다. 잠시 후 다시 시도해 주세요."
+        }
+      }
+    },
+    {
+      "status": 429,
+      "elapsedMs": 3.8773329999821726,
+      "result": {
+        "error": {
+          "code": "busy",
+          "message": "AI 서버가 처리 중입니다. 잠시 후 다시 시도해 주세요."
+        }
+      }
+    },
+    {
+      "status": 429,
+      "elapsedMs": 4.017124999983935,
+      "result": {
+        "error": {
+          "code": "busy",
+          "message": "AI 서버가 처리 중입니다. 잠시 후 다시 시도해 주세요."
+        }
+      }
+    },
+    {
+      "status": 429,
+      "elapsedMs": 4.03887499999837,
+      "result": {
+        "error": {
+          "code": "busy",
+          "message": "AI 서버가 처리 중입니다. 잠시 후 다시 시도해 주세요."
+        }
+      }
+    }
+  ],
+  "residentAfter": [
+    {
+      "name": "translategemma:12b",
+      "size_vram": 8072105819
+    },
+    {
+      "name": "gemma4:12b-it-qat",
+      "size_vram": 7652759304
+    }
+  ],
+  "summary": {
+    "cold": {
+      "n": 3,
+      "meanMs": 3680.9916113333334,
+      "p50Ms": 3758.3967920000005,
+      "p95Ms": 4604.329042,
+      "p99Ms": 4604.329042
+    },
+    "warm": {
+      "n": 100,
+      "meanMs": 1665.4371829099994,
+      "p50Ms": 1171.633167,
+      "p95Ms": 2578.2246250000026,
+      "p99Ms": 2638.897167000003
+    },
+    "after-summary-model": {
+      "n": 3,
+      "meanMs": 1979.8587223333209,
+      "p50Ms": 1148.8544589999947,
+      "p95Ms": 3689.169165999978,
+      "p99Ms": 3689.169165999978
+    }
+  },
+  "preparedFirst": [
+    {
+      "fixture": 0,
+      "preparationMs": 1959.9382500000065,
+      "status": 200,
+      "elapsedMs": 985.567584000004,
+      "result": {
+        "text": "Please send two copies of the report by 3:00 PM tomorrow.",
+        "revision": 1
+      }
+    },
+    {
+      "fixture": 1,
+      "preparationMs": 1624.8585409999941,
+      "status": 200,
+      "elapsedMs": 1107.5986250000133,
+      "result": {
+        "text": "예약을 취소하지 마십시오. 내일 저녁 7시로 변경해 주세요.",
+        "revision": 1
+      }
+    },
+    {
+      "fixture": 2,
+      "preparationMs": 1617.7483749999956,
+      "status": 200,
+      "elapsedMs": 1079.72445899999,
+      "result": {
+        "text": "この料理にはピーナッツが入っていますか？ 私はピーナッツを食べることができません。",
+        "revision": 1
+      }
+    }
+  ]
+}

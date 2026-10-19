@@ -300,10 +300,21 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
                     val result = u.translation.takeIf { u.translationRevision == u.revision }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("번역", Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                        if(result != null) IconButton(onClick = speak,
-                            enabled = voice.phase !in setOf(VoicePhase.PERMISSION, VoicePhase.RECORDING, VoicePhase.TRANSCRIBING),
-                            modifier = Modifier.semantics { contentDescription = if(voice.playingKey == u.id) "번역 읽기 중지" else "번역 소리로 듣기" }) {
-                            AppSymbol(if(voice.playingKey == u.id) Symbol.STOP else Symbol.SPEAKER)
+                        if(result != null) {
+                            val active = voice.playingKey == u.id
+                            val preparing = active && voice.phase == VoicePhase.SYNTHESIZING
+                            TextButton(onClick = speak,
+                                enabled = voice.phase !in setOf(VoicePhase.PERMISSION, VoicePhase.RECORDING, VoicePhase.TRANSCRIBING),
+                                modifier = Modifier.semantics { contentDescription = when {
+                                    preparing -> "음성 생성 취소"
+                                    active -> "번역 읽기 중지"
+                                    else -> "번역 소리로 듣기"
+                                } }) {
+                                if(preparing) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                                else AppSymbol(if(active) Symbol.STOP else Symbol.SPEAKER)
+                                Spacer(Modifier.width(6.dp))
+                                Text(if(preparing) "준비 중" else if(active) "중지" else "듣기")
+                            }
                         }
                     }
                     if(result != null) SelectionContainer { Text(result, style = MaterialTheme.typography.bodyLarge) }
@@ -461,6 +472,13 @@ private data class ItemEditor(val sourceId: String, val existing: ActionItem? = 
                             style = MaterialTheme.typography.labelMedium, color = if(chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
+            }
+        } }
+        item { Panel {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("번역 자동 읽기", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                Switch(checked = state.autoReadTranslation, onCheckedChange = vm::setAutoReadTranslation,
+                    modifier = Modifier.semantics { contentDescription = "번역 자동 읽기" })
             }
         } }
         item { Panel {
