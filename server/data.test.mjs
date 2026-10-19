@@ -160,3 +160,14 @@ test('device platform is recorded on reads and metadata never changes mutation i
   await assert.rejects(data.snapshot(user.id,'bad','other'),{status:400});
   await assert.rejects(data.mutate(user.id,{...mutation,platform:'other'}),{status:400});
 });
+
+
+test('automatic TTS preference persists in PostgreSQL and old clients preserve it', async t => {
+  const {data,user,put}=await fixture(t);
+  assert.equal((await data.snapshot(user.id,'test-device')).archive.autoReadTranslation,true);
+  await put('settings','settings',{appearance:'DARK',autoReadTranslation:false});
+  assert.equal((await data.snapshot(user.id,'second-device')).archive.autoReadTranslation,false);
+  await put('settings','settings',{appearance:'LIGHT'},'1');
+  assert.equal((await data.snapshot(user.id,'test-device')).archive.autoReadTranslation,false);
+  await assert.rejects(put('settings','settings',{appearance:'DARK',autoReadTranslation:'false'},'2'),{code:'invalid_data'});
+});

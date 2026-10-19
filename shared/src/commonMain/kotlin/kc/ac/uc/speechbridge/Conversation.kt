@@ -110,12 +110,12 @@ fun newId(): String = "${Clock.System.now().toEpochMilliseconds()}-${Random.next
     })
 }
 
-@Serializable data class Archive(val version: Int, val conversations: List<Conversation>, val folders: List<WorkFolder> = emptyList(), val appearance: Appearance = Appearance.SYSTEM)
+@Serializable data class Archive(val version: Int, val conversations: List<Conversation>, val folders: List<WorkFolder> = emptyList(), val appearance: Appearance = Appearance.SYSTEM, val autoReadTranslation: Boolean = true)
 
 object ArchiveCodec {
     val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
-    fun encode(conversations: List<Conversation>, folders: List<WorkFolder> = emptyList(), appearance: Appearance = Appearance.SYSTEM): String = json.encodeToString(
-        Archive(version = 1, conversations = conversations.filter { it.record }, folders = folders, appearance = appearance))
+    fun encode(conversations: List<Conversation>, folders: List<WorkFolder> = emptyList(), appearance: Appearance = Appearance.SYSTEM, autoReadTranslation: Boolean = true): String = json.encodeToString(
+        Archive(version = 1, conversations = conversations.filter { it.record }, folders = folders, appearance = appearance, autoReadTranslation = autoReadTranslation))
     fun decode(text: String): List<Conversation> = decodeArchive(text).conversations
     fun decodeArchive(text: String): Archive {
         val archive = json.decodeFromString<Archive>(text)

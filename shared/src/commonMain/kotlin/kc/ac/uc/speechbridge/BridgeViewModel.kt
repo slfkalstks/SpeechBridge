@@ -11,6 +11,7 @@ enum class Page(val label: String) { TALK("대화"), HISTORY("기록"), TASKS("�
 data class BridgeState(
     val page: Page = Page.TALK,
     val appearance: Appearance = Appearance.SYSTEM,
+    val autoReadTranslation: Boolean = true,
     val conversations: List<Conversation> = emptyList(),
     val selectedId: String? = null,
     val activeId: String? = null,
@@ -103,7 +104,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
                 val write = (request as WriteRequest.Save).value
                 if (write.generation != generation) continue
                 try {
-                    if (sync == null) store.write(ArchiveCodec.encode(write.archive.conversations, write.archive.folders, write.archive.appearance))
+                    if (sync == null) store.write(ArchiveCodec.encode(write.archive.conversations, write.archive.folders, write.archive.appearance, write.archive.autoReadTranslation))
                     else {
                         // Preserve each component in the account's retry queue even when an
                         // earlier component could not reach secure storage.
@@ -176,7 +177,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
             try {
                 val text = store.read()
                 val archive = text?.let(ArchiveCodec::decodeArchive) ?: Archive(1, emptyList())
-                mutable.update { it.copy(loaded = true, conversations = archive.conversations, folders = archive.folders, appearance = archive.appearance, message = null) }
+                mutable.update { it.copy(loaded = true, conversations = archive.conversations, folders = archive.folders, appearance = archive.appearance, autoReadTranslation = archive.autoReadTranslation, message = null) }
             } catch (e: CancellationException) { throw e }
             catch (_: Exception) {
                 mutable.update { it.copy(loadFailed = true,
@@ -195,7 +196,7 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
             ?: archive.conversations.lastOrNull { !it.ended }?.id
         val selected = (copies[current.selectedId] ?: current.selectedId).takeIf { id -> archive.conversations.any { it.id == id } } ?: active
         return current.copy(loaded = true, conversations = archive.conversations, folders = archive.folders,
-            appearance = archive.appearance, activeId = active, selectedId = selected,
+            appearance = archive.appearance, autoReadTranslation = archive.autoReadTranslation, activeId = active, selectedId = selected,
             startDraft = StartDraft(first = first, second = second),
             idleDraft = UtteranceDraft(first,initial?.get("text")?.jsonPrimitive?.content.orEmpty()),
             inputDrafts = drafts.filterKeys { id -> archive.conversations.any { it.id == id && !it.ended } }
@@ -368,7 +369,13 @@ class BridgeViewModel(private val store: SessionStore, private val api: BridgeAp
         writeRevision++
         mutable.update { it.copy(unsaved = true) }
         writes.trySend(WriteRequest.Save(Write(writeRevision, generation, identity,
-            Archive(1, current.conversations.filter { it.record }, current.folders, current.appearance), drafts)))
+            Archive(1, current.conversations.filter { it.record }, current.folders, current.appearance, current.autoReadTranslation), drafts)))
+    }
+    fun setAutoReadTranslation(enabled: Boolean) {
+        if (!canEdit()) return
+        mutable.update { it.copy(autoReadTranslation = enabled) }
+        if (!enabled && voice.state.value.phase in setOf(VoicePhase.SYNTHESIZING, VoicePhase.PLAYING)) voice.cancel()
+        persist()
     }
     fun setAppearance(appearance: Appearance) {
         if (!canEdit()) return
