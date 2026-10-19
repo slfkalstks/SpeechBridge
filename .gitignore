@@ -44,3 +44,6 @@ docs/validation/*.png
 # Account databases must never be published
 *.sqlite
 *.sqlite-*
+
+# PowerPoint creates a local lock file while a presentation is open
+presentation/~$*.pptx

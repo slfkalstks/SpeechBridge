@@ -1,50 +1,124 @@
-/* Editable PowerPoint; generated only from product facts and captured simulator screens. */
-const fs=require('node:fs');const path=require('node:path');
-const pptxgen=require(require.resolve('pptxgenjs',{paths:[path.resolve(__dirname,'../presentation'),...module.paths]}));
-const deck=new pptxgen();deck.layout='LAYOUT_WIDE';deck.author='SpeechBridge';deck.subject='학교 과제 · 앱 구현과 시연';deck.title='SpeechBridge — 대화에서 실행까지';deck.company='SpeechBridge';deck.lang='ko-KR';
-deck.theme={headFontFace:'Apple SD Gothic Neo',bodyFontFace:'Apple SD Gothic Neo',lang:'ko-KR'};
-const C={bg:'F2F3F9',ink:'242938',muted:'626B80',blue:'405394',pale:'DFE5FF',white:'FFFFFF',night:'141A29'};
-const out=path.resolve(__dirname,'../presentation');const assets=path.join(out,'assets');const notes=[];
-function text(s,t,x,y,w,h,size=22,color=C.ink,bold=false){s.addText(t,{x,y,w,h,fontSize:size,color,bold,margin:0,breakLine:false,paraSpaceAfterPt:6,valign:'mid',fontFace:'Apple SD Gothic Neo'});}
-function box(s,x,y,w,h,color=C.white){s.addShape(deck.ShapeType.roundRect,{x,y,w,h,rectRadius:.22,radius:.2,line:{color,transparency:100},fill:{color}});}
-function slide(kicker,title,note,dark=false){const s=deck.addSlide();s.background={color:dark?C.night:C.bg};const n=deck._slides.length;text(s,'SPEECHBRIDGE  /  '+kicker,.55,.3,11,.3,12,dark?C.pale:C.blue,true);if(title)text(s,title,.55,.84,12.2,.8,34,dark?C.white:C.ink,true);text(s,String(n).padStart(2,'0'),12.25,7.02,.5,.2,10,dark?C.pale:C.muted);text(s,'학교 과제 · 실제 앱 캡처 / 합성 시연 데이터',.55,7.02,10,.2,10,dark?C.pale:C.muted);s.addNotes(note);notes.push({n,title,kicker,note});return s;}
-// Keep source captures intact; show only the device viewport in both documents.
-const captureWidth=912,captureHeight=1944,toolbarHeight=120;
-for(const name of ['talk','translation','history','summary','tasks','evidence']) {
-    const png=fs.readFileSync(path.join(assets,name+'.png'));
-    const meta=require(require.resolve('image-size',{paths:[out]})).imageSize(png);
-    if(meta.width!==captureWidth || meta.height!==captureHeight) throw new Error('Review screenshot viewport: '+name);
-    const mime=meta.type==='jpg'?'image/jpeg':'image/png';
-    fs.writeFileSync(path.join(assets,name+'.svg'),`<svg xmlns="http://www.w3.org/2000/svg" width="${captureWidth}" height="${captureHeight-toolbarHeight}" viewBox="0 ${toolbarHeight} ${captureWidth} ${captureHeight-toolbarHeight}"><title>SpeechBridge ${name}</title><image width="${captureWidth}" height="${captureHeight}" href="data:${mime};base64,${png.toString('base64')}"/></svg>\n`);
+/* Editable product presentation. All screen content comes from real app captures. */
+const fs = require('node:fs');
+const path = require('node:path');
+const out = path.resolve(__dirname, '../presentation');
+const pptxgen = require(require.resolve('pptxgenjs', { paths: [out, ...module.paths] }));
+const { imageSize } = require(require.resolve('image-size', { paths: [out] }));
+const deck = new pptxgen();
+deck.layout = 'LAYOUT_WIDE';
+deck.author = 'SpeechBridge';
+deck.subject = '학교 과제 · 앱 소개와 시연';
+deck.title = 'SpeechBridge — 번역에서 할 일까지';
+deck.lang = 'ko-KR';
+deck.theme = { headFontFace: 'Apple SD Gothic Neo', bodyFontFace: 'Apple SD Gothic Neo', lang: 'ko-KR' };
+const C = { bg: 'F2F3F9', ink: '242938', muted: '626B80', blue: '405394', pale: 'DFE5FF', white: 'FFFFFF' };
+const assets = path.join(out, 'assets');
+const notes = [];
+const captureWidth = 912, captureHeight = 1944, toolbarHeight = 120;
+
+// Preserve the source captures. Document viewports exclude only the Simulator toolbar.
+for (const name of ['talk', 'translation', 'history', 'summary', 'tasks', 'evidence']) {
+    const capture = fs.readFileSync(path.join(assets, name + '.png'));
+    const meta = imageSize(capture);
+    if (meta.width !== captureWidth || meta.height !== captureHeight) throw new Error('Review screenshot viewport: ' + name);
+    const mime = meta.type === 'jpg' ? 'image/jpeg' : 'image/png';
+    fs.writeFileSync(path.join(assets, name + '.svg'), `<svg xmlns="http://www.w3.org/2000/svg" width="${captureWidth}" height="${captureHeight - toolbarHeight}" viewBox="0 ${toolbarHeight} ${captureWidth} ${captureHeight - toolbarHeight}"><title>SpeechBridge ${name}</title><image width="${captureWidth}" height="${captureHeight}" href="data:${mime};base64,${capture.toString('base64')}"/></svg>\n`);
 }
-function phone(s,file,x,y,h){const p=path.join(assets,file+'.png'),scale=h/(captureHeight-toolbarHeight),w=captureWidth*scale;s.addImage({path:p,x,y,w,h:captureHeight*scale,sizing:{type:'crop',x:0,y:toolbarHeight*scale,w,h}});}
-function point(s,n,title,body,x,y,w=6){text(s,n,x,y,.55,.4,16,C.blue,true);text(s,title,x+.6,y,w-.6,.45,23,C.ink,true);text(s,body,x+.6,y+.58,w-.6,.8,17,C.muted);}
-let s=slide('VOICE → ACTION','', 'SpeechBridge는 대화를 번역한 뒤 기록과 할 일로 연결하는 앱입니다. 음성 중심 UI이며 Android와 iOS 공통 구현입니다. 오늘 보여주는 화면은 실제 iOS 시뮬레이터에서 만든 가상 시연 기록입니다. 실제 마이크와 휴대전화 검증은 보류 상태임을 먼저 분명히 설명합니다.');
-text(s,'말한 순간부터\n해야 할 일까지.',.65,1.55,7.7,1.75,48,C.ink,true);text(s,'SpeechBridge',.7,3.65,7,.65,30,C.blue,true);text(s,'번역 · 기록 · 요약 · 할 일을\n하나의 대화 흐름으로',.7,4.5,7,1.0,24,C.muted);phone(s,'talk',9.25,.45,6.45);
-s=slide('WHY','번역한 대화, 그다음은 어디에 남을까요?','회의나 일상 대화에서는 번역된 문장만큼 맥락과 후속 행동이 중요합니다. 번역 내용을 다른 메모 앱에 옮기고 할 일을 다시 작성하는 흐름을 줄이는 것이 목표입니다. 별도의 사용자 조사 수치나 시간 절감률을 주장하지 않습니다.');
-[['01','이해','상대방의 말을 번역'],['02','보관','내용과 맥락을 기록'],['03','실행','해야 할 일을 확인']].forEach((v,i)=>{box(s,.65+i*4.15,2.3,3.8,2.8);text(s,v[0],.95+i*4.15,2.65,3,.4,16,C.blue,true);text(s,v[1],.95+i*4.15,3.28,3,.65,32,C.ink,true);text(s,v[2],.95+i*4.15,4.2,3.2,.45,19,C.muted);});text(s,'세 가지 흐름을, 한 앱 안에서.',.7,5.8,11,.6,30,C.blue,true);
-s=slide('01 / TALK','입력은 단순하게. 번역은 이어서.','대화 화면의 중심은 큰 마이크 버튼입니다. 한국어·영어·일본어를 지원하며, 구현된 음성 파이프라인은 발화 완료 후 처리합니다. 키보드는 보조 입력입니다. 오른쪽 실제 결과는 영어 문장을 직접 입력한 뒤 로컬 AI가 번역한 사례이며 음성 인식 결과라고 설명하지 않습니다.');
-point(s,'01','큰 마이크가 대화의 시작','키보드는 보조 입력으로 배치',.7,2.1,6.3);point(s,'02','언어 선택과 맞바꾸기','원하는 언어쌍을 바로 전환',.7,3.65,6.3);point(s,'03','기록과 번역이 함께','원문을 유지하고 번역을 나란히 확인',.7,5.2,6.3);phone(s,'translation',9.1,1.0,5.9);
-s=slide('02 / RECORD','대화가 끝나면, 처음 한 번 AI가 정리합니다.','대화 종료 시 서버에 저장되는 작업이 제목·일상 또는 업무 분류·요약을 생성합니다. 작업 상태는 DB에 남기므로 서버가 재시작되어도 이어갈 수 있습니다. 화면의 demo reviewed는 자동 제목을 사람이 수정한 결과입니다. 이후 제목·분류·요약 편집은 사용자에게 맡깁니다.');
-phone(s,'history',.7,1.9,4.95);phone(s,'summary',3.45,1.9,4.95);point(s,'01','짧은 제목과 요약','다시 읽을 때 필요한 맥락부터',6.55,2.35,5.9);point(s,'02','일상 / 업무 / 업무 폴더','필요한 기록을 빠르게 좁히기',6.55,3.9,5.9);point(s,'03','이후 편집은 사용자에게','AI가 수동 수정 내용을 덮어쓰지 않음',6.55,5.45,5.9);
-s=slide('03 / ACTION','AI가 찾고, 사용자가 근거를 확인합니다.','AI가 만든 요청·결정 후보에는 참조 원문이 연결됩니다. 사용자가 근거를 읽고 내용을 검토한 뒤 할 일로 등록하거나 완료할 수 있습니다. 검토 표시는 상대방의 동의나 업무 수락을 뜻하지 않습니다. 준비된 수동 예시와 실제 AI 추출 항목을 구분해서 보여줍니다.');
-phone(s,'evidence',.7,1.85,5.0);phone(s,'tasks',3.5,1.85,5.0);point(s,'01','원문 근거 확인','누가 동의했다고 임의로 판단하지 않기',6.6,2.35,5.8);point(s,'02','검토 → 등록 → 완료','후보와 실제 할 일을 구분',6.6,3.95,5.8);point(s,'03','기록으로 돌아가기','할 일과 대화의 연결 유지',6.6,5.5,5.8);
-s=slide('ARCHITECTURE','AI는 Mac에서, 사용자 데이터는 PostgreSQL에.','앱은 Kotlin Multiplatform과 Compose로 구현했습니다. 회원 인증된 HTTPS 요청을 Mac 서버가 받아 로컬 모델로 처리합니다. 번역은 TranslateGemma, 요약과 추출은 Gemma 계열이며 유료 API fallback은 없습니다. PostgreSQL에 계정별 원본을 저장하고, 기기에는 암호화된 미전송 변경만 남깁니다. 아래는 주요 흐름을 단순화한 구조입니다.');
-[['모바일 앱','Android · iOS\n음성 중심 Compose UI'],['Mac 서버','회원 API · 로컬 AI\nSTT / 번역 / 요약 / TTS'],['PostgreSQL','계정별 기록 원본\n분류 · 할 일 · 설정']].forEach((v,i)=>{box(s,.7+i*4.15,2.55,3.65,2.25,i===1?C.pale:C.white);text(s,v[0],1+i*4.15,2.95,3.05,.5,26,C.blue,true);text(s,v[1],1+i*4.15,3.68,3.05,.8,20,C.ink);if(i<2)text(s,'→',4.38+i*4.15,3.3,.45,.5,26,C.blue,true);});text(s,'HTTPS  /  개별 회원 인증  /  계정별 데이터 격리',.85,5.65,11.6,.6,24,C.blue,true);
-// Model choices: official support is separated from our small local comparisons.
-s=slide('MODELS / PIPELINE','한 모델에 모두 맡기지 않고, 역할을 나눴습니다.','모델을 새로 학습한 것이 아니라 공개 가중치를 Mac에서 실행합니다. STT는 Nemotron 3.5 ASR Streaming 0.6B Q8 GGUF, 번역은 TranslateGemma 12B Q4_K_M, 정리는 Gemma 4 12B IT QAT, TTS는 Qwen3-TTS-12Hz-0.6B-CustomVoice의 MLX bf16 변환본입니다. B는 이름의 규모 표기이며 파일 크기나 메모리 용량과 다릅니다. 구현·버전·선정 근거: docs/MODEL_SELECTION.md, docs/LOCAL_AI_RESULTS.md, docs/LOCAL_VOICE_RESULTS.md.');
-[['01  음성 → 원문','Nemotron 3.5 ASR','Streaming 0.6B · Q8 GGUF','NeMo-Speech.cpp / Metal'],['02  원문 → 번역','TranslateGemma 12B','Q4_K_M','Ollama / 번역 전용'],['03  기록 → 정리','Gemma 4 12B','IT QAT','Ollama / JSON + 서버 검증'],['04  번역 → 음성','Qwen3-TTS 0.6B','12Hz CustomVoice · bf16','MLX / 고정 음색']].forEach((v,i)=>{const x=.7+(i%2)*6.15,y=1.95+Math.floor(i/2)*2.23;box(s,x,y,5.85,2.03);text(s,v[0],x+.25,y+.18,5.35,.3,14,C.blue,true);text(s,v[1],x+.25,y+.65,5.35,.48,26,C.ink,true);text(s,v[2],x+.25,y+1.2,5.35,.3,17,C.muted);text(s,v[3],x+.25,y+1.62,5.35,.25,15,C.muted);});text(s,'Mac 로컬 추론 · 유료 API 없음 · 앱 지원 언어: 한국어 / 영어 / 일본어',.85,6.58,11.8,.3,17,C.blue,true);
-s=slide('MODELS / TEXT','의미를 보존하고, 근거를 확인할 수 있도록.','번역에는 번역 전용 모델인 TranslateGemma 12B Q4_K_M을 사용합니다. 업무 대화의 수량·시간·부정 표현과 이름을 보존하는 것이 선정 기준이며, 현재 Mac에서 필요한 세 언어의 예제 실행을 확인했습니다. 제목·분류·요약·할 일 후보에는 Gemma 4 12B IT QAT를 사용합니다. JSON mode로 구조화된 결과를 받고 서버가 원문 ID와 인용 근거를 검증할 수 있어 기록 기능에 적합합니다. 최초 정리는 AI가 담당하고 이후 편집은 사용자에게 맡깁니다. 이는 현재 프로젝트 조건에 맞춘 선정이며 일반 정확도나 모든 후보 대비 우위를 보장하지 않습니다. 선정 근거 문서: docs/MODEL_SELECTION.md.');
-box(s,.7,2.0,5.85,4.22);box(s,6.8,2.0,5.85,4.22,C.pale);text(s,'번역  /  TranslateGemma 12B',1,2.35,5.25,.5,24,C.blue,true);text(s,'대화의 의미 보존',1,3.2,5.1,.65,30,C.ink,true);text(s,'한국어 · 영어 · 일본어\n수량 · 시간 · 부정 표현 · 이름\nMac에서 로컬 실행',1,4.17,5.1,1.3,22,C.ink);text(s,'오역은 원문 확인 후 수정',1,5.65,5.1,.3,18,C.blue,true);text(s,'정리  /  Gemma 4 12B IT QAT',7.1,2.35,5.25,.5,24,C.blue,true);text(s,'검토 가능한 기록 정리',7.1,3.2,5.1,.65,30,C.ink,true);text(s,'제목 · 분류 · 요약 · 할 일 후보\nJSON 형식으로 결과 구성\n서버에서 원문 근거 검증',7.1,4.17,5.1,1.3,22,C.ink);text(s,'최초 정리 후 편집은 사용자에게',7.1,5.65,5.1,.3,18,C.blue,true);text(s,'선정 기준: 필요한 언어 · 의미 보존 · 결과 검증 가능성 · 현재 Mac에서의 실행',.85,6.55,11.8,.3,17,C.muted);
-s=slide('MODELS / VOICE','세 언어와 Mac 실행 조건을 충족하는 음성 모델.','STT는 필요한 한국어·영어·일본어와 Metal 런타임을 확인해 선택했습니다. 합성 샘플에서 세 언어의 전사를 확인했지만 일본어 고유명사 오류가 남아 있습니다. TTS는 Qwen 공식 카드에 한·영·일 지원이 명시되어 있고 현재 Mac의 MLX 변환본에서 PCM 생성이 성공했습니다. 고정 음색을 사용하며 사용자 음성 복제를 요구하지 않습니다. 음성 모델의 실사용 품질과 고유명사 인식은 추가 검증이 필요하며, TTS 생성에는 준비 시간이 있습니다. 실제 마이크·사람 청취는 미검증입니다. 공식 근거: https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b , https://github.com/NVIDIA/NeMo-Speech.cpp/blob/v0.2.0/docs/install.md , https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice . 로컬 결과: docs/LOCAL_VOICE_RESULTS.md 및 .ecc/benchmarks/tts-member-https.json.');
-point(s,'01','Nemotron: 음성 인식과 언어 감지','한·영·일 합성 샘플 확인 / Mac Metal 실행',.8,2.0,11.4);point(s,'02','Qwen3-TTS: 번역문을 소리로','한·영·일 지원 / MLX 실행 / 고정 음색',.8,3.5,11.4);point(s,'03','자동 읽기, 필요하면 설정에서 끄기','새 번역만 읽기 / 준비 중·중지 상태 표시',.8,5.0,11.4);text(s,'현재는 녹음 완료 후 처리 · 실시간 스트리밍 및 실사용 음성 품질은 별도 검증',.85,6.55,11.8,.3,17,C.muted);
-s=slide('DATA & RECOVERY','연결이 끊겨도, 변경 내용을 잃지 않도록.','연결이 끊기면 대기 내용만 Android 보안 저장소 또는 iOS Keychain에 보관합니다. 서버가 응답하면 대기 항목을 제거하고 mutation ID로 재전송 중복을 막습니다. 다중 기기 충돌은 무조건 덮어쓰지 않습니다. 백업은 검증 후 복원하며, 계정 삭제 이력을 다시 적용합니다. 실제 오프라인 UI에서 전송 대기 1건이 재연결 후 자동 저장 완료로 바뀌는 것을 확인했습니다.');
-point(s,'01','서버가 원본','기기에는 암호화된 전송 대기만',.8,2.2,11.3);point(s,'02','재전송·충돌·재시작에 대비','중복 반영 방지 / 충돌 시 내용 보존 / AI 작업 복구',.8,3.75,11.3);point(s,'03','삭제한 계정이 되살아나지 않도록','앱·웹 삭제 경로 / 백업 30일 정책 / 복원 시 삭제 이력 반영',.8,5.3,11.3);
-s=slide('VALIDATION','동작한 것과, 아직 확인하지 않은 것을 구분합니다.','핵심 시연 흐름을 직접 앱에서 조작하고, 최종 저장 결과를 PostgreSQL과 대조했습니다. 서버 테스트와 Android Host 및 iOS 시뮬레이터 회귀를 실행했습니다. 테스트 수가 제품 전체 커버리지나 실사용 정확도를 뜻하지는 않습니다. 음성은 합성 샘플로 파이프라인을 검사했고 실제 마이크, 휴대전화, 청취는 보류 상태입니다. 최신 수치는 저장소의 PRE_RELEASE 문서에서 확인합니다.');
-box(s,.7,2.1,5.85,3.95);box(s,6.8,2.1,5.85,3.95,C.pale);text(s,'직접 확인',1,2.5,5,.5,28,C.blue,true);text(s,'번역 → 저장 → 요약 → 할 일\n언어 반전 · 필터 · 화면 모드\n재실행 · 연결 중단 후 복구\n권한 거절 안내 · 알림 자동 닫힘',1,3.35,5.1,2.1,22);text(s,'별도 확인 필요',7.1,2.5,5,.5,28,C.blue,true);text(s,'실제 휴대전화와 마이크 · 청취\n운영 도메인 · 스토어 서명\n고유명사 등 음성 인식 품질\n정확도는 입력 환경에 따라 달라짐',7.1,3.35,5.1,2.1,22);
-s=slide('LIVE DEMO','한 문장이 기록과 할 일이 되는 과정.','시연 시작은 프로젝트의 Demo.command입니다. Mac 서버가 실행되고 iOS 시뮬레이터는 시연 계정에 로그인되어 있습니다. 음성 시연이 보류된 자리에서는 키보드 보조 입력으로 표시한 문장을 입력합니다. 원문과 번역을 보여 준 뒤 종료하고 요약을 기다립니다. 할 일 추출 후 근거를 검토하고 완료합니다. 네트워크 장애 시 준비된 기록으로 설명하되 AI가 새로 처리한 것처럼 말하지 않습니다.');
-text(s,'“please prepare demo slides by friday”',.8,2.0,11.7,.8,30,C.blue,true);[['1','입력·번역'],['2','종료·요약'],['3','근거 확인'],['4','할 일 완료']].forEach((v,i)=>{box(s,.8+i*3.13,3.5,2.85,1.6);text(s,v[0],1.05+i*3.13,3.72,2.3,.35,14,C.muted,true);text(s,v[1],1.05+i*3.13,4.28,2.3,.45,23,C.ink,true);});text(s,'시연 예시 데이터 사용 · AI 응답은 실행마다 달라질 수 있습니다.',.9,5.9,11.6,.5,20,C.muted);
-s=slide('SPEECHBRIDGE','', '마무리입니다. SpeechBridge는 번역에서 멈추지 않고 대화의 맥락과 실행할 일을 연결합니다. 전체 소스, 시연 절차, 검증 결과와 배포 전 남은 외부 설정은 GitHub에 정리했습니다. 공개 출시와 실기기 검증이 끝났다고 주장하지 않습니다. 디자인 참고: Canva Pitch Deck 템플릿 목록과 미리캔버스 PPT 목록. 템플릿 자산을 내려받거나 복제하지 않고 앱 팔레트로 새 레이아웃을 작성했습니다.',true);
-text(s,'대화가 끝나도,\n기록과 할 일은 남습니다.',.7,1.6,11.9,1.95,44,C.white,true);text(s,'SpeechBridge',.8,4.25,11,.65,32,C.pale,true);text(s,'github.com/slfkalstks/SpeechBridge',.8,5.25,11,.45,24,C.pale);text(s,'시연 절차 · 구현 코드 · 검증 근거 · 발표 자료',.8,6,11,.4,18,C.pale);
-fs.writeFileSync(path.join(out,'발표자-노트.md'),'# SpeechBridge 발표자 노트\n\n실제 앱 캡처와 합성 시연 데이터를 사용합니다. 약 8–10분 구성이며 실기기 녹음 성공을 주장하지 않습니다.\n\n'+notes.map(v=>`## ${v.n}. ${v.title||v.kicker}\n\n${v.note}\n`).join('\n'));
-deck.writeFile({fileName:path.join(out,'SpeechBridge.pptx')});
+function text(s, value, x, y, w, h, size = 24, color = C.ink, bold = false) {
+    s.addText(value, { x, y, w, h, fontSize: size, color, bold, margin: 0, valign: 'mid', fontFace: 'Apple SD Gothic Neo', paraSpaceAfterPt: 0 });
+}
+function box(s, x, y, w, h, color = C.white) {
+    s.addShape(deck.ShapeType.roundRect, { x, y, w, h, radius: .2, rectRadius: .2, line: { color, transparency: 100 }, fill: { color } });
+}
+function slide(title, note) {
+    const s = deck.addSlide();
+    s.background = { color: C.bg };
+    const n = deck._slides.length;
+    text(s, 'SpeechBridge', .6, .24, 4, .25, 12, C.blue, true);
+    if (title) text(s, title, .6, .77, 12.1, .62, 34, C.ink, true);
+    text(s, String(n).padStart(2, '0'), 12.2, 7.13, .5, .2, 10, C.muted);
+    s.addNotes(note);
+    notes.push({ n, title: title || 'SpeechBridge', note });
+    return s;
+}
+function viewport(s, file, x, y, w, source) {
+    const [left, top, width, height] = source;
+    const scale = w / width;
+    s.addImage({ path: path.join(assets, file + '.png'), x, y,
+        w: captureWidth * scale, h: captureHeight * scale,
+        sizing: { type: 'crop', x: left * scale, y: top * scale, w, h: height * scale } });
+}
+function phone(s, file, x, y, h) {
+    viewport(s, file, x, y, h * captureWidth / (captureHeight - toolbarHeight), [0, toolbarHeight, captureWidth, captureHeight - toolbarHeight]);
+}
+function label(s, value, x, y, w = 7.8) {
+    text(s, value, x, y, w, .45, 24, C.blue, true);
+}
+
+let s = slide('', 'SpeechBridge는 대화를 번역하고 기록·요약·할 일로 이어주는 앱입니다. Android와 iOS에서 사용할 수 있습니다.');
+text(s, '대화에서\n할 일까지.', .7, 1.48, 7.4, 1.8, 52, C.ink, true);
+text(s, 'SpeechBridge', .75, 3.75, 7.2, .65, 32, C.blue, true);
+text(s, '번역  ·  기록  ·  요약  ·  할 일', .75, 4.8, 7.6, .5, 25, C.muted);
+text(s, 'Android · iOS', .78, 6.38, 6, .35, 18, C.muted);
+phone(s, 'talk', 9.25, .45, 6.45);
+
+s = slide('말하고, 번역하고, 듣기', '마이크 중심 화면에서 언어를 선택하고 녹음 완료 후 번역합니다. 한국어·영어·일본어를 지원합니다. 새 번역은 자동으로 읽으며 설정에서 끌 수 있습니다. 오른쪽은 실제 텍스트 입력으로 얻은 번역 결과입니다.');
+phone(s, 'translation', 9.1, 1.0, 5.9);
+label(s, '음성 중심 입력', .75, 2.15, 7.6);
+text(s, '한국어 · 영어 · 일본어', .75, 3.15, 7.6, .55, 29);
+label(s, '새 번역 자동 읽기', .75, 4.5, 7.6);
+text(s, '설정에서 끄기 · 수동 듣기', .75, 5.25, 7.6, .45, 24, C.muted);
+
+s = slide('대화는 기록으로, 내용은 요약으로', '대화는 자동 저장되고 종료 시 AI가 제목·분류·요약을 정리합니다. 이후에는 사용자가 직접 수정합니다. 일상·업무·업무 폴더로 기록을 찾을 수 있습니다.');
+phone(s, 'history', .7, 1.9, 4.95);
+phone(s, 'summary', 3.45, 1.9, 4.95);
+label(s, '자동 저장 · 종료 후 요약', 6.55, 2.4, 5.8);
+text(s, '일상 / 업무 / 업무 폴더', 6.55, 3.7, 5.8, .55, 27);
+label(s, '이후 편집은 직접', 6.55, 5.1, 5.8);
+
+s = slide('할 일은 원문을 확인하고 관리', '대화에서 찾은 할 일 후보의 원문 근거를 확인하고 등록·완료합니다. 할 일에서 원래 기록으로 돌아갈 수 있습니다.');
+phone(s, 'evidence', .7, 1.85, 5.0);
+phone(s, 'tasks', 3.5, 1.85, 5.0);
+label(s, '원문 근거 확인', 6.6, 2.4, 5.8);
+text(s, '검토 → 등록 → 완료', 6.6, 3.8, 5.8, .55, 28, C.blue, true);
+text(s, '할 일과 대화 기록 연결', 6.6, 5.2, 5.8, .55, 25);
+
+s = slide('AI 모델별 역할', 'Nemotron은 음성 인식, TranslateGemma는 번역, Gemma 4는 기록 정리, Qwen3-TTS는 번역문 음성 합성을 담당합니다.');
+[
+    ['Nemotron 3.5 ASR', '음성 인식 · 언어 감지'],
+    ['TranslateGemma', '대화 번역'],
+    ['Gemma 4', '제목 · 분류 · 요약 · 할 일 추출'],
+    ['Qwen3-TTS', '번역문 음성 합성'],
+].forEach(([name, role], i) => {
+    const y = 1.85 + i * 1.18;
+    box(s, .7, y, 11.9, .98, i % 2 === 0 ? C.white : C.pale);
+    text(s, name, 1.02, y + .19, 4.7, .56, 27, C.blue, true);
+    text(s, role, 6.02, y + .19, 6.15, .56, 25);
+});
+
+s = slide('앱은 휴대전화에서, AI는 Mac에서', '앱의 회원 요청을 Mac 서버가 처리합니다. 사용자 데이터는 PostgreSQL에 저장하며 연결이 끊기면 변경 내용을 기기에 암호화해 임시 보관하고 다시 연결되면 전송합니다.');
+[
+    ['모바일 앱', 'Android · iOS'],
+    ['Mac 서버', '회원 인증 · AI 처리'],
+    ['PostgreSQL', '계정별 기록 저장'],
+].forEach(([title, body], i) => {
+    const x = .7 + i * 4.13;
+    box(s, x, 2.4, 3.66, 2.3, i === 1 ? C.pale : C.white);
+    text(s, title, x + .26, 2.87, 3.14, .55, 29, C.blue, true);
+    text(s, body, x + .26, 3.8, 3.14, .45, 22);
+    if (i < 2) text(s, '→', x + 3.7, 3.27, .4, .4, 27, C.blue, true);
+});
+text(s, '연결이 복구되면 자동 동기화', .85, 5.65, 11.7, .6, 28, C.blue, true);
+
+s = slide('번역에서 할 일까지, 직접 시연', 'Demo.command로 준비합니다. 보조 키보드로 “please prepare demo slides by friday”를 입력해 번역을 보여주고, 대화를 종료해 요약을 확인한 뒤 할 일 근거를 검토합니다. 화면은 가상 시연 데이터입니다. 실제 휴대전화·마이크·청취 검증은 보류 중이므로 이번 시연은 텍스트 입력으로 진행합니다.');
+text(s, '“please prepare demo slides by friday”', .8, 2.1, 11.7, .7, 30, C.blue, true);
+[['01', '번역'], ['02', '기록·요약'], ['03', '할 일']].forEach(([number, title], i) => {
+    const x = .8 + i * 4.15;
+    box(s, x, 3.6, 3.7, 1.8);
+    text(s, number, x + .3, 3.85, 3.1, .3, 16, C.muted);
+    text(s, title, x + .3, 4.45, 3.1, .55, 30, C.ink, true);
+});
+text(s, '텍스트 입력으로 시연 · 실기기·마이크·청취 검증은 보류', .8, 6.8, 11.5, .25, 15, C.muted);
+
+fs.writeFileSync(path.join(out, '발표자-노트.md'), '# SpeechBridge 발표자 노트\n\n앱 화면과 핵심 기능 중심의 7장 구성입니다. 설명과 시연을 합쳐 약 5–7분입니다. 실제 앱 캡처에 가상 시연 데이터를 사용합니다.\n\n' + notes.map(v => `## ${v.n}. ${v.title}\n\n${v.note}\n`).join('\n'));
+deck.writeFile({ fileName: path.join(out, 'SpeechBridge.pptx') });

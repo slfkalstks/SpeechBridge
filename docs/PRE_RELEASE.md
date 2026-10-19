@@ -8,7 +8,7 @@
 - 30일 검증 백업 보존, 기존 보존 사본 등록, 서버 시작/매시간 정리와 하루 단위 백업.
 - 복원 사본의 명시적 활성화·최신 삭제 이력 적용·세션 폐기·퇴역 DB 차단·강제 종료 후 재개.
 - 운영 HTTPS 주소가 없는 Release 빌드 차단, 테스트 CA의 Release 포함 차단, Android 클라우드/기기 이동 백업 제외, 앱 아이콘.
-- 편집 가능한 13장 [PPTX](../presentation/SpeechBridge.pptx), 발표자 노트, 실제 앱 화면 6개와 README 삽입.
+- 편집 가능한 7장 [PPTX](../presentation/SpeechBridge.pptx), 발표자 노트, 실제 앱 화면 6개와 README 삽입.
 - 시뮬레이터 서버 주소를 loopback HTTPS로 고정. 음성 네트워크 오류를 일반 음성 실패와 구분. 번역 모델 유지·API 시작 시 preload·상주 허용 2개. [측정](TRANSLATION_PERFORMANCE.md).
 
 ## 확인한 결과
@@ -24,7 +24,7 @@
 | Debug | 프로젝트 CA를 포함한 설치 APK와 signed iOS simulator 앱. 현재 loopback용이며 휴대전화는 LAN용 재빌드 필요 |
 | 합성 음성 | 3언어 STT→번역→PostgreSQL 왕복→TTS 성공. [현재 원자료](../server/validation/member-voice-flow.json) |
 | 접근성 점검 | 가로 테마/언어/마이크 등의 접근성 라벨 직접 확인. 정적 텍스트 대비 30쌍 통과, 최소 5.62:1. 전체 접근성 인증 아님 |
-| 발표 | 13장/모델 역할·선정 이유/발표자 노트/6개 실제 화면 포함. PDF 전체 렌더링으로 한글·배치 확인 |
+| 발표 | 7장/핵심 기능·모델별 역할/발표자 노트/6개 실제 화면 포함. PDF 전체 렌더링으로 한글·배치 확인 |
 
 로컬 근거는 `.runtime/demo/release-final-coverage.log`, `voice-transport-{red,green}.log`, `release-android-final.log`, `release-ios-final.log`, `release-demo-build.log`, `readiness.json`에 있다. 이 폴더의 자격정보·모델·로그는 Git에 올리지 않는다.
 
