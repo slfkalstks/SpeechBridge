@@ -45,3 +45,6 @@
 출시 전에 필요한 외부 값과 보류 검증을 임의로 완료 처리하지 않았다. 사용자가 보고한 음성 오류는 주소 불일치가 확인됐고 수정 빌드를 준비했다. 실제 마이크에서 동일 오류가 사라졌는지는 아직 확인하지 않았다. 주소 변경 전 전송 대기 1건은 이전 origin의 암호화 대기함에 보존하며 자동 이관하지 않는다.
 
 공식 근거: [Android 백업 제외 규칙](https://developer.android.com/identity/data/autobackup), [Ollama 모델 준비·유지](https://github.com/ollama/ollama/blob/main/docs/faq.mdx), [Google Play 계정 삭제](https://support.google.com/googleplay/android-developer/answer/13327111?hl=ko). 이 문서는 법적 적합성 인증이 아니다.
+
+
+2026-10-19 후속: ‘녹음 완료’ 이후 오류 조사로 iOS 파일 읽기를 AVAudioFile 기반으로 변경하고 입력/파일 실패를 구분했다. 합성 파일 포함 iOS 116개 테스트 통과. 기존 정상 Apple WAV 파싱 자체는 통과했으며, 실제 사용자 녹음 오류의 근본 원인·해결은 아직 미확인이다. [검증 근거](NATIVE_VOICE_VALIDATION.md#2026-10-19-녹음-완료-이후-실패-조사).

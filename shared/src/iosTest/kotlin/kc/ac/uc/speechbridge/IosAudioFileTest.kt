@@ -1,4 +1,4 @@
-@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlinx.cinterop.BetaInteropApi::class)
 package kc.ac.uc.speechbridge
 
 import kotlinx.cinterop.*
@@ -13,7 +13,7 @@ class IosAudioFileTest {
     }
     private fun write(file: NSURL, frames: Int, rate: Double = 16000.0) {
         val format = AVAudioFormat(AVAudioPCMFormatInt16, rate, 1u, true)
-        val buffer = AVAudioPCMBuffer(format, frames.toUInt())!!
+        val buffer = AVAudioPCMBuffer(format, frames.toUInt())
         buffer.frameLength = frames.toUInt()
         repeat(frames) { buffer.int16ChannelData!![0]!![it] = (it % 2000 - 1000).toShort() }
         val output = AVAudioFile(forWriting = file, settings = format.settings,
@@ -40,4 +40,11 @@ class IosAudioFileTest {
         write(file, 2400, 24000.0)
         assertEquals("audio_format_invalid", assertFailsWith<BridgeRequestException> { readIosRecording(file) }.code)
     }
+    @Test fun emptyAndOverlongRecordingsAreRejectedBeforeUpload() = fixture { file ->
+        write(file, 0)
+        assertEquals("no_speech", assertFailsWith<BridgeRequestException> { readIosRecording(file) }.code)
+        write(file, 480001)
+        assertEquals("audio_too_long", assertFailsWith<BridgeRequestException> { readIosRecording(file) }.code)
+    }
+
 }

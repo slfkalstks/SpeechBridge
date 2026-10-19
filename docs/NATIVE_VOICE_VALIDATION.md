@@ -83,3 +83,18 @@ node server/evaluate-member-voice.mjs --with-translation
 현재 합성 샘플 3언어 STT→번역→DB 왕복→TTS 재검사는 모두 성공했다. STT 335–520ms, 번역은 결과 JSON 참조, TTS 3.8–6.1초다. 소수의 합성 샘플이며 실기기 성능이 아니다. [원자료](../server/validation/member-voice-flow.json).
 
 호명/수신자 의미 변화와 일본어 이름 오류는 여전히 알려진 모델 품질 한계다. 문장을 자동 치환해 숨기지 않았으며 원문 수정·재번역·근거 검토를 사용한다. 별도 [호명 평가](../server/validation/vocative-before.json)는 정해진 5문장에 대한 검사이며 일반 정확도 수치가 아니다.
+
+
+## 2026-10-19 녹음 완료 이후 실패 조사
+
+사용자가 오류 발생 시점을 ‘녹음 완료를 누른 뒤’로 확인했다. 당시 SpeechBridge 프로세스의 CoreAudio 로그에 입력 장치 소실과 Stop timeout이 남아 있었다. 이는 입력 경로 이상을 보여 주지만, 사용자에게 표시된 일반 오류와 직접 연결하는 앱 예외 로그는 없어서 근본 원인으로 확정하지 않는다.
+
+실제 마이크 없이 Apple AVAudioFile로 만든 합성 PCM 파일을 검사했다. Apple의 JUNK/FLLR 메타데이터를 포함한 정상 파일은 기존 파서로도 읽혔으므로 ‘모든 iOS WAV가 호환되지 않는다’는 가설은 기각했다. 반면 손상 파일·잘못된 샘플레이트가 일반 예외로 끝나는 오류 분류 문제는 테스트 2개로 재현했다(RED `8bdff69`).
+
+- 완료된 임시 파일은 AVAudioFile로 PCM16을 읽은 뒤 서버용 표준 WAV로 변환한다. 16kHz·모노·0.1–30초 제한을 확인하며 변환 후 샘플이 보존되는지 검사한다.
+- 입력 장치 시작/예상치 못한 중단, 저장 공간/파일 보호, 파일 읽기, 샘플레이트, 빈/짧은 녹음, 길이 초과를 별도로 안내한다. 임시 파일 삭제와 취소 처리는 유지한다.
+- iOS 파일 회귀 5개(정상 샘플 보존, 짧은 입력, 손상 파일, 다른 샘플레이트, 빈 파일/길이 초과)와 기존 테스트를 포함해 총 116개가 통과했다. 실제 녹음이나 청취를 수행한 결과가 아니다.
+
+시뮬레이터에서 다시 확인할 때 `I/O → Audio Input → MacBook Pro 마이크`를 선택하고 녹음한다. 이 메뉴와 내장 마이크 항목의 존재는 UI에서 확인했으며 입력 설정 자체를 바꾸거나 마이크 권한을 새로 부여하지 않았다. 같은 현상이 계속되면 새 안내 문구로 입력·파일·연결 중 실패 단계를 구분한다. 실제 사용자 녹음의 재현·해결 여부는 여전히 미확인이다.
+
+API 근거: [AVAudioRecorder.stop](https://developer.apple.com/documentation/avfaudio/avaudiorecorder/stop()), [AVAudioFile](https://developer.apple.com/documentation/avfaudio/avaudiofile). 로컬 Xcode SDK 헤더의 PCM 읽기/변환 및 파일 닫기 계약도 확인했다.

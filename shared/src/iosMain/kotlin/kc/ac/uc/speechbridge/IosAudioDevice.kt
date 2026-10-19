@@ -35,7 +35,9 @@ class IosAudioDevice : AudioDevice {
     }
     override suspend fun record(progress: (Float, Int) -> Unit): ByteArray {
         finish = false; cancelled = false; interrupted = false
-        val folder = directory()
+        val folder = try { directory() } catch (_: Exception) {
+            throw BridgeRequestException("audio_storage_failed", "임시 녹음 파일을 준비하지 못했습니다. 기기 저장 공간을 확인해 주세요.")
+        }
         // Only this adapter's temporary files; conversation archives are elsewhere.
         NSFileManager.defaultManager.contentsOfDirectoryAtPath(folder.path!!, null)?.filterIsInstance<String>()
             ?.filter { it.startsWith("capture-") && it.endsWith(".wav") }?.forEach {
@@ -43,17 +45,20 @@ class IosAudioDevice : AudioDevice {
             }
         val file = folder.URLByAppendingPathComponent("capture-${NSUUID().UUIDString}.wav")!!
         try {
-            check(session.setCategory(AVAudioSessionCategoryPlayAndRecord, AVAudioSessionCategoryOptionDefaultToSpeaker, null))
-            check(session.setPreferredSampleRate(16000.0, null))
-            check(session.setActive(true, null))
-            val input = AVAudioRecorder(file, mapOf<Any?,Any>(
+            captureReady(session.setCategory(AVAudioSessionCategoryPlayAndRecord, AVAudioSessionCategoryOptionDefaultToSpeaker, null))
+            captureReady(session.setPreferredSampleRate(16000.0, null))
+            captureReady(session.setActive(true, null))
+            val input = try { AVAudioRecorder(file, mapOf<Any?,Any>(
                 AVFormatIDKey to kAudioFormatLinearPCM, AVSampleRateKey to 16000.0, AVNumberOfChannelsKey to 1,
-                AVLinearPCMBitDepthKey to 16, AVLinearPCMIsBigEndianKey to false, AVLinearPCMIsFloatKey to false), null)
+                AVLinearPCMBitDepthKey to 16, AVLinearPCMIsBigEndianKey to false, AVLinearPCMIsFloatKey to false), null) } catch (_: Exception) {
+                throw BridgeRequestException("audio_input_failed", "녹음 장치를 준비하지 못했습니다. 마이크 연결을 확인해 주세요.")
+            }
             recorder = input
             input.meteringEnabled = true
-            check(input.prepareToRecord())
-            check(NSFileManager.defaultManager.setAttributes(mapOf(NSFileProtectionKey to NSFileProtectionComplete), file.path!!, null))
-            check(input.recordForDuration(30.0))
+            captureReady(input.prepareToRecord())
+            if (!NSFileManager.defaultManager.setAttributes(mapOf(NSFileProtectionKey to NSFileProtectionComplete), file.path!!, null))
+                throw BridgeRequestException("audio_storage_failed", "녹음 파일을 보호하지 못했습니다. 다시 시작해 주세요.")
+            captureReady(input.recordForDuration(30.0))
             val started = NSDate.timeIntervalSinceReferenceDate
             while(input.recording && !finish && !cancelled && NSDate.timeIntervalSinceReferenceDate-started < 30.1) {
                 currentCoroutineContext().ensureActive()
@@ -62,10 +67,14 @@ class IosAudioDevice : AudioDevice {
                 progress((10.0.pow(input.averagePowerForChannel(0u)/20.0)*5).toFloat(),input.currentTime.toInt())
                 delay(50)
             }
+            val stoppedUnexpectedly = !input.recording && !finish && !cancelled &&
+                NSDate.timeIntervalSinceReferenceDate-started < 29.5
             input.stop()
             currentCoroutineContext().ensureActive()
             if(cancelled) throw CancellationException("Audio cancelled")
             if(interrupted) throw BridgeRequestException("audio_interrupted", "음성 입력이 중단되었습니다. 다시 시작해 주세요.")
+            if (stoppedUnexpectedly) throw BridgeRequestException("audio_input_failed",
+                "녹음 도중 입력 장치가 중단되었습니다. 마이크 연결을 확인한 뒤 다시 녹음해 주세요.")
             return readIosRecording(file)
         } finally {
             recorder?.stop(); recorder = null
@@ -101,9 +110,28 @@ class IosAudioDevice : AudioDevice {
 
 /** Normalize only the completed temporary capture before upload. */
 internal fun readIosRecording(file: NSURL): ByteArray {
-    val data = NSData.dataWithContentsOfURL(file) ?: error("Audio read failed")
-    require(data.length <= 1_025_580u)
-    val samples = PcmWave.decode(data.bytes!!.readBytes(data.length.toInt()),16000,allowMetadata = true).samples
-    if(samples.size < 1600) throw BridgeRequestException("no_speech", "조금 더 길게 말한 뒤 완료를 눌러 주세요.")
-    return PcmWave.encode(samples,16000)
+    // Let AVFoundation decode its own container; only canonical PCM leaves the device.
+    val input = try {
+        AVAudioFile(forReading = file, commonFormat = AVAudioPCMFormatInt16, interleaved = true, error = null)
+    } catch (_: Exception) {
+        throw BridgeRequestException("audio_read_failed", "녹음 파일을 읽지 못했습니다. 입력 장치를 확인하고 다시 녹음해 주세요.")
+    }
+    try {
+        val format = input.processingFormat
+        if (format.sampleRate != 16000.0 || format.channelCount != 1u)
+            throw BridgeRequestException("audio_format_invalid", "녹음 형식을 확인할 수 없습니다. 입력 장치를 다시 연결해 주세요.")
+        val frames = input.length
+        if (frames < 1600) throw BridgeRequestException("no_speech", "녹음된 소리가 너무 짧습니다. 입력 장치를 확인하고 조금 더 길게 말해 주세요.")
+        if (frames > 480000) throw BridgeRequestException("audio_too_long", "녹음이 30초를 넘었습니다. 짧게 나누어 말해 주세요.")
+        val buffer = AVAudioPCMBuffer(format, frames.toUInt())
+        if (!input.readIntoBuffer(buffer, null) || buffer.frameLength.toLong() != frames)
+            throw BridgeRequestException("audio_read_failed", "녹음 파일을 끝까지 읽지 못했습니다. 다시 녹음해 주세요.")
+        val channel = buffer.int16ChannelData?.get(0)
+            ?: throw BridgeRequestException("audio_read_failed", "녹음된 소리가 없습니다. 입력 장치를 확인해 주세요.")
+        return PcmWave.encode(ShortArray(frames.toInt()) { channel[it] }, 16000)
+    } finally { input.close() }
+}
+
+private fun captureReady(success: Boolean) {
+    if (!success) throw BridgeRequestException("audio_input_failed", "마이크 입력을 시작하지 못했습니다. 입력 장치와 마이크 권한을 확인해 주세요.")
 }
